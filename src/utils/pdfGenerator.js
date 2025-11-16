@@ -2,111 +2,87 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { format } from 'date-fns';
 
-// PDF Generator for HEALit Med Laboratories
+// PDF Generator - EXACT Thyrocare Format
 export const generatePatientReport = (patient, profile, snapshot, labInfo) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  let yPos = 15;
+  let yPos = 10;
 
-  // ========== HEADER WITH LOGOS ==========
-  
-  // HEALit Logo (Left) - Load from images folder
-  try {
-    const healitLogo = '/images/@heal original editable file (png).png';
-    doc.addImage(healitLogo, 'PNG', 15, yPos, 35, 15);
-  } catch (e) {
-    console.log('HEALit logo not loaded');
-  }
-
-  // Lab Name (Center)
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(26, 35, 126); // Navy blue
-  doc.text('HEALit Med Laboratories', pageWidth / 2, yPos + 5, { align: 'center' });
-  
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 100, 100);
-  doc.text('Kunnathpeedika Centre', pageWidth / 2, yPos + 10, { align: 'center' });
-  doc.text(`Phone: ${labInfo?.phone || '7356865161'} | Email: ${labInfo?.email || 'info@healitlab.com'}`, pageWidth / 2, yPos + 14, { align: 'center' });
-
-  // Thyrocare Logo (Right)
-  try {
-    const thyrocareLogo = '/images/download.jpeg.jpg';
-    doc.addImage(thyrocareLogo, 'JPEG', pageWidth - 50, yPos, 35, 15);
-  } catch (e) {
-    console.log('Thyrocare logo not loaded');
-  }
-
-  yPos += 20;
-
-  // Divider line
-  doc.setDrawColor(198, 40, 40); // Red
-  doc.setLineWidth(0.5);
-  doc.line(15, yPos, pageWidth - 15, yPos);
-  yPos += 8;
-
-  // ========== PATIENT INFORMATION ==========
-  doc.setFontSize(11);
+  // ========== HEADER SECTION ==========
+  // Left: Lab Details
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('PATIENT DETAILS', 15, yPos);
-  yPos += 6;
-
-  doc.setFontSize(9);
+  doc.text('Reported At:', 15, yPos);
   doc.setFont('helvetica', 'normal');
-  
-  const patientDetails = [
-    [`Patient Name: ${patient.name}`, `Age/Gender: ${patient.age} years / ${patient.gender}`],
-    [`Phone: ${patient.phone}`, `Visit ID: ${patient.id}`],
-    [`Referred By: ${patient.referredBy || 'Self'}`, `Test Profile: ${profile.name}`]
-  ];
+  doc.text('HEALit Med Laboratories', 15, yPos + 4);
+  doc.text(labInfo?.address || 'Kunnathpeedika, Kerala', 15, yPos + 8);
+  doc.text(`Phone: ${labInfo?.phone || '7356865161'}`, 15, yPos + 12);
 
-  patientDetails.forEach(row => {
-    doc.text(row[0], 15, yPos);
-    doc.text(row[1], 110, yPos);
-    yPos += 5;
-  });
-
-  yPos += 2;
-
-  // ========== TIMESTAMPS ==========
-  doc.setFontSize(9);
+  // Right: Thyrocare Logo placeholder
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(26, 35, 126);
+  doc.setTextColor(200, 16, 46);
+  doc.text('Thyrocare', pageWidth - 15, yPos + 6, { align: 'right' });
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(0, 0, 0);
+  doc.text('India you can trust', pageWidth - 15, yPos + 10, { align: 'right' });
+
+  yPos += 18;
+
+  // Blue Header Bar
+  doc.setFillColor(41, 128, 185);
+  doc.rect(0, yPos, pageWidth, 8, 'F');
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text(`${patient.name} - ${profile.name}`, pageWidth / 2, yPos + 5, { align: 'center' });
+
+  yPos += 12;
+
+  // ========== PATIENT & LAB DETAILS SECTION ==========
+  // Left: Patient Details
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
   
-  const timestamps = [
-    ['Collected On:', patient.collectedAt ? format(new Date(patient.collectedAt), 'dd-MMM-yyyy hh:mm a') : '-'],
-    ['Received On:', patient.receivedAt ? format(new Date(patient.receivedAt), 'dd-MMM-yyyy hh:mm a') : '-'],
-    ['Reported On:', patient.reportedAt ? format(new Date(patient.reportedAt), 'dd-MMM-yyyy hh:mm a') : format(new Date(), 'dd-MMM-yyyy hh:mm a')]
-  ];
+  const leftCol = 15;
+  const rightCol = 120;
+  
+  doc.text('PATIENT DETAILS', leftCol, yPos);
+  yPos += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Name: ${patient.name}`, leftCol, yPos);
+  doc.text(`Age/Gender: ${patient.age}Y / ${patient.gender}`, leftCol + 60, yPos);
+  yPos += 4;
+  doc.text(`Phone: ${patient.phone}`, leftCol, yPos);
+  doc.text(`Ref. By: ${patient.referredBy || 'Self'}`, leftCol + 60, yPos);
+  yPos += 4;
+  doc.text(`Booking ID: ${patient.id}`, leftCol, yPos);
 
-  timestamps.forEach(([label, value]) => {
-    doc.text(label, 15, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text(value, 45, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(26, 35, 126);
-    yPos += 5;
-  });
+  // Right: Sample Details
+  yPos -= 13;
+  doc.setFont('helvetica', 'bold');
+  doc.text('SAMPLE DETAILS', rightCol, yPos);
+  yPos += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Collected: ${patient.collectedAt ? format(new Date(patient.collectedAt), 'dd-MMM-yyyy HH:mm') : 'N/A'}`, rightCol, yPos);
+  yPos += 4;
+  doc.text(`Received: ${patient.receivedAt ? format(new Date(patient.receivedAt), 'dd-MMM-yyyy HH:mm') : 'N/A'}`, rightCol, yPos);
+  yPos += 4;
+  doc.text(`Reported: ${patient.reportedAt ? format(new Date(patient.reportedAt), 'dd-MMM-yyyy HH:mm') : format(new Date(), 'dd-MMM-yyyy HH:mm')}`, rightCol, yPos);
 
-  yPos += 3;
+  yPos += 8;
 
   // ========== TEST RESULTS TABLE ==========
-  doc.setDrawColor(198, 40, 40);
+  doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.5);
   doc.line(15, yPos, pageWidth - 15, yPos);
-  yPos += 8;
+  yPos += 2;
 
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(198, 40, 40);
-  doc.text(profile.name.toUpperCase(), pageWidth / 2, yPos, { align: 'center' });
-  yPos += 8;
-
-  // Group tests by category
+  // Group by category
   const categories = {};
   snapshot.forEach(test => {
     if (!categories[test.category]) {
@@ -115,103 +91,92 @@ export const generatePatientReport = (patient, profile, snapshot, labInfo) => {
     categories[test.category].push(test);
   });
 
-  // Render each category
   Object.keys(categories).forEach((category, idx) => {
-    if (idx > 0) yPos += 5;
-
-    // Category header
-    doc.setFillColor(26, 35, 126);
-    doc.rect(15, yPos - 5, pageWidth - 30, 7, 'F');
-    doc.setFontSize(10);
+    // Category Header
+    doc.setFillColor(240, 240, 240);
+    doc.rect(15, yPos, pageWidth - 30, 6, 'F');
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text(category, 17, yPos);
+    doc.setTextColor(0, 0, 0);
+    doc.text(category, 17, yPos + 4);
+    doc.text('METHODOLOGY', 120, yPos + 4);
+    doc.text('VALUE', 150, yPos + 4);
+    doc.text('UNITS', 165, yPos + 4);
+    doc.text('BIO. REF. INTERVAL', 178, yPos + 4);
     yPos += 8;
 
-    // Tests table
-    const tableData = categories[category]
-      .sort((a, b) => a.order - b.order)
-      .map(test => {
-        const value = test.value || '-';
-        const status = test.validation?.status;
-        
-        return [
-          test.testName,
-          { content: value, styles: { fontStyle: 'bold', textColor: getColorForStatus(status) } },
-          test.unit,
-          test.referenceRange
-        ];
-      });
-
-    doc.autoTable({
-      startY: yPos,
-      head: [['Test', 'Result', 'Unit', 'Reference Range']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [240, 240, 240],
-        textColor: [0, 0, 0],
-        fontStyle: 'bold',
-        fontSize: 9
-      },
-      bodyStyles: {
-        fontSize: 9,
-        textColor: [0, 0, 0]
-      },
-      columnStyles: {
-        0: { cellWidth: 70 },
-        1: { cellWidth: 35, halign: 'center' },
-        2: { cellWidth: 25, halign: 'center' },
-        3: { cellWidth: 50, halign: 'center' }
-      },
-      margin: { left: 15, right: 15 },
-      didDrawPage: function (data) {
-        // Handle page overflow
-        if (data.cursor.y > pageHeight - 40) {
-          doc.addPage();
-          yPos = 20;
-        }
+    // Tests
+    categories[category].forEach(test => {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      
+      // Test name
+      doc.setTextColor(0, 0, 0);
+      doc.text(test.testName, 17, yPos);
+      
+      // Methodology
+      doc.text('Automated', 120, yPos);
+      
+      // Value with color
+      const status = test.validation?.status;
+      if (status === 'HIGH') {
+        doc.setTextColor(198, 40, 40);
+        doc.setFont('helvetica', 'bold');
+      } else if (status === 'LOW') {
+        doc.setTextColor(25, 118, 210);
+        doc.setFont('helvetica', 'bold');
+      } else {
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
       }
+      doc.text(String(test.value || '-'), 150, yPos);
+      
+      // Unit
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.text(test.unit || '', 165, yPos);
+      
+      // Reference Range
+      doc.text(test.referenceRange || '-', 178, yPos);
+      
+      yPos += 5;
     });
 
-    yPos = doc.lastAutoTable.finalY + 5;
+    yPos += 2;
   });
 
-  // ========== FOOTER ==========
-  const footerY = pageHeight - 35;
+  // End of report line
+  doc.setDrawColor(0, 0, 0);
+  doc.line(15, yPos, pageWidth - 15, yPos);
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.text('--- End of report ---', pageWidth / 2, yPos + 4, { align: 'center' });
+
+  // ========== FOOTER SECTION ==========
+  const footerY = pageHeight - 40;
   
-  doc.setDrawColor(198, 40, 40);
+  doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.3);
   doc.line(15, footerY, pageWidth - 15, footerY);
 
-  // Lab Address
+  // Lab info
+  doc.setFontSize(7);
+  doc.setTextColor(0, 0, 0);
+  doc.text('COMPLETE CARE LABS LTD.', pageWidth / 2, footerY + 5, { align: 'center' });
+  doc.text(`HEALit Med Laboratories - ${labInfo?.address || 'Kunnathpeedika, Kerala'}`, pageWidth / 2, footerY + 9, { align: 'center' });
+  doc.text(`Phone: ${labInfo?.phone || '7356865161'} | Email: ${labInfo?.email || 'info@healitlab.com'}`, pageWidth / 2, footerY + 13, { align: 'center' });
+
+  // Signature area
+  yPos = footerY + 20;
   doc.setFontSize(8);
+  doc.text(`Prepared by: ${patient.resultEnteredBy || 'Staff'}`, 15, yPos);
+  doc.setFont('helvetica', 'bold');
+  doc.text('___________________', pageWidth - 50, yPos);
+  doc.text('Authorized Signatory', pageWidth - 50, yPos + 4);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
-  doc.text('HEALit Med Laboratories - Kunnathpeedika Centre', pageWidth / 2, footerY + 4, { align: 'center' });
-  doc.text(`Address: ${labInfo?.address || 'Kunnathpeedika, Kerala'} | Phone: ${labInfo?.phone || '7356865161'}`, pageWidth / 2, footerY + 8, { align: 'center' });
-  doc.text(`Booking Number: ${patient.id} | Email: ${labInfo?.email || 'info@healitlab.com'}`, pageWidth / 2, footerY + 12, { align: 'center' });
-
   doc.setFontSize(7);
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(100, 100, 100);
-  doc.text('** End of Report **', pageWidth / 2, footerY + 17, { align: 'center' });
-  
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Prepared by: ${patient.resultEnteredBy || 'Staff'}`, 15, footerY + 22);
-  doc.text(`Lab In-Charge: ${labInfo?.inCharge || 'Awsin'}`, 15, footerY + 26);
-  doc.text('Report digitally verified', pageWidth - 15, footerY + 22, { align: 'right' });
-  doc.text(`Generated: ${format(new Date(), 'dd-MMM-yyyy hh:mm a')}`, pageWidth - 15, footerY + 26, { align: 'right' });
-
-  // Page numbers
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-  }
+  doc.text(`Lab In-Charge: ${labInfo?.inCharge || 'Awsin'}`, 15, yPos + 4);
+  doc.text(`Report Generated: ${format(new Date(), 'dd-MMM-yyyy HH:mm')}`, 15, yPos + 8);
 
   return doc;
 };
