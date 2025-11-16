@@ -13,6 +13,8 @@ import Results from './pages/Results/Results';
 import EnterResults from './pages/Results/EnterResults';
 import Financial from './pages/Financial/Financial';
 import Settings from './pages/Settings/Settings';
+import TestMaster from './pages/Admin/TestMaster';
+import ProfileManager from './pages/Admin/ProfileManager';
 import Layout from './components/Layout/Layout';
 
 // Protected Route Component
@@ -89,6 +91,22 @@ function App() {
             element={
               <ProtectedRoute adminOnly>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/test-master"
+            element={
+              <ProtectedRoute adminOnly>
+                <TestMaster />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/profile-manager"
+            element={
+              <ProtectedRoute adminOnly>
+                <ProfileManager />
               </ProtectedRoute>
             }
           />

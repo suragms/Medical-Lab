@@ -6,6 +6,8 @@ import {
   FileText, 
   DollarSign, 
   Settings as SettingsIcon,
+  FlaskConical,
+  Layers,
   LogOut,
   Menu,
   X
@@ -23,6 +25,8 @@ const Layout = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['admin', 'staff'] },
     { icon: Users, label: 'Patients', path: '/patients', roles: ['admin', 'staff'] },
     { icon: FileText, label: 'Results', path: '/results', roles: ['admin', 'staff'] },
+    { icon: FlaskConical, label: 'Test Master', path: '/admin/test-master', roles: ['admin'] },
+    { icon: Layers, label: 'Profile Manager', path: '/admin/profile-manager', roles: ['admin'] },
     { icon: DollarSign, label: 'Financial', path: '/financial', roles: ['admin'] },
     { icon: SettingsIcon, label: 'Settings', path: '/settings', roles: ['admin'] },
   ];
@@ -39,7 +43,7 @@ const Layout = () => {
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <h2 className="sidebar-title">Thyrocare Lab</h2>
+          <h2 className="sidebar-title">HEALit Med Lab</h2>
           <button className="sidebar-close" onClick={() => setSidebarOpen(false)}>
             <X size={24} />
           </button>
