@@ -25,10 +25,10 @@ export const generatePatientReport = (patient, profile, snapshot, labInfo) => {
   doc.setTextColor(26, 35, 126); // Navy blue
   doc.text('HEALit Med Laboratories', pageWidth / 2, yPos + 5, { align: 'center' });
   
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
-  doc.text(labInfo?.address || 'Kunnathpeedika, Kerala', pageWidth / 2, yPos + 10, { align: 'center' });
+  doc.text('Kunnathpeedika Centre', pageWidth / 2, yPos + 10, { align: 'center' });
   doc.text(`Phone: ${labInfo?.phone || '7356865161'} | Email: ${labInfo?.email || 'info@healitlab.com'}`, pageWidth / 2, yPos + 14, { align: 'center' });
 
   // Thyrocare Logo (Right)
@@ -178,22 +178,31 @@ export const generatePatientReport = (patient, profile, snapshot, labInfo) => {
   });
 
   // ========== FOOTER ==========
-  const footerY = pageHeight - 30;
+  const footerY = pageHeight - 35;
   
   doc.setDrawColor(198, 40, 40);
   doc.setLineWidth(0.3);
   doc.line(15, footerY, pageWidth - 15, footerY);
 
+  // Lab Address
   doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60, 60, 60);
+  doc.text('HEALit Med Laboratories - Kunnathpeedika Centre', pageWidth / 2, footerY + 4, { align: 'center' });
+  doc.text(`Address: ${labInfo?.address || 'Kunnathpeedika, Kerala'} | Phone: ${labInfo?.phone || '7356865161'}`, pageWidth / 2, footerY + 8, { align: 'center' });
+  doc.text(`Booking Number: ${patient.id} | Email: ${labInfo?.email || 'info@healitlab.com'}`, pageWidth / 2, footerY + 12, { align: 'center' });
+
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(100, 100, 100);
-  doc.text('** End of Report **', pageWidth / 2, footerY + 5, { align: 'center' });
+  doc.text('** End of Report **', pageWidth / 2, footerY + 17, { align: 'center' });
   
   doc.setFontSize(7);
-  doc.text(`Prepared by: ${patient.resultEnteredBy || 'Staff'}`, 15, footerY + 10);
-  doc.text(`Lab In-Charge: ${labInfo?.inCharge || 'Awsin'}`, 15, footerY + 14);
-  doc.text('Report digitally verified', pageWidth - 15, footerY + 10, { align: 'right' });
-  doc.text(`Generated: ${format(new Date(), 'dd-MMM-yyyy hh:mm a')}`, pageWidth - 15, footerY + 14, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Prepared by: ${patient.resultEnteredBy || 'Staff'}`, 15, footerY + 22);
+  doc.text(`Lab In-Charge: ${labInfo?.inCharge || 'Awsin'}`, 15, footerY + 26);
+  doc.text('Report digitally verified', pageWidth - 15, footerY + 22, { align: 'right' });
+  doc.text(`Generated: ${format(new Date(), 'dd-MMM-yyyy hh:mm a')}`, pageWidth - 15, footerY + 26, { align: 'right' });
 
   // Page numbers
   const pageCount = doc.internal.getNumberOfPages();

@@ -45,8 +45,8 @@ const Login = () => {
     <div className="login-page">
       <div className="login-container">
         <div className="login-header">
-          <h1>THYROCARE LAB</h1>
-          <p>Kunnathpeedika</p>
+          <h1>HEALit Med Laboratories</h1>
+          <p>Kunnathpeedika Centre</p>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>

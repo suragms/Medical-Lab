@@ -152,7 +152,7 @@ export const useSettingsStore = create(
   persist(
     (set) => ({
       labInfo: {
-        name: 'HEALit Med Laboratories',
+        name: 'HEALit Med Laboratories - Kunnathpeedika Centre',
         phone: '7356865161',
         address: 'Kunnathpeedika, Kerala',
         email: 'info@healitlab.com',
