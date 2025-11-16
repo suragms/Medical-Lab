@@ -1,14 +1,8 @@
 import React from 'react';
-import Card from '../../components/ui/Card';
+import ExpenseManagement from './ExpenseManagement';
 
 const Financial = () => {
-  return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <Card title="Financial Management">
-        <p>Financial dashboard coming soon...</p>
-      </Card>
-    </div>
-  );
+  return <ExpenseManagement />;
 };
 
 export default Financial;
