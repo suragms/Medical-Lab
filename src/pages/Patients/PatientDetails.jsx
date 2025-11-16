@@ -1,7 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { usePatientStore } from '../../store';
+import { getProfileById } from '../../data/testMaster';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 
@@ -10,6 +11,7 @@ const PatientDetails = () => {
   const navigate = useNavigate();
   const { getPatientById } = usePatientStore();
   const patient = getPatientById(id);
+  const profile = patient ? getProfileById(patient.testProfile) : null;
 
   if (!patient) {
     return <div>Patient not found</div>;
@@ -26,10 +28,21 @@ const PatientDetails = () => {
           <div><strong>Age:</strong> {patient.age} years</div>
           <div><strong>Gender:</strong> {patient.gender}</div>
           <div><strong>Phone:</strong> {patient.phone}</div>
-          <div><strong>Referred By:</strong> {patient.referredBy || 'N/A'}</div>
-          <div><strong>Test Package:</strong> {patient.testPackage}</div>
+          {patient.address && <div><strong>Address:</strong> {patient.address}</div>}
+          <div><strong>Test Profile:</strong> {profile?.name || patient.testProfile}</div>
+          {patient.referredBy && <div><strong>Referred By:</strong> {patient.referredBy}</div>}
           <div><strong>Created:</strong> {new Date(patient.createdAt).toLocaleString()}</div>
           <div><strong>Status:</strong> {patient.status}</div>
+          
+          {patient.status === 'registered' && (
+            <Button 
+              onClick={() => navigate(`/results/enter/${patient.id}`)}
+              icon={FileText}
+              variant="primary"
+            >
+              Enter Results
+            </Button>
+          )}
         </div>
       </Card>
     </div>

@@ -1,571 +1,685 @@
-// Complete Test Master Data - Preloaded Tests
-export const TEST_CATEGORIES = {
-  HAEMATOLOGY: 'HAEMATOLOGY',
-  BIOCHEMISTRY: 'BIOCHEMISTRY',
-  LIPID_PROFILE: 'LIPID PROFILE',
-  LIVER_FUNCTION: 'LIVER FUNCTION TEST (LFT)',
-  KIDNEY_FUNCTION: 'KIDNEY FUNCTION TEST (KFT)',
-  THYROID: 'THYROID PROFILE',
-  DIABETES: 'DIABETES PROFILE',
-  VITAMINS: 'VITAMINS',
-  ELECTROLYTES: 'ELECTROLYTES',
-  CARDIAC: 'CARDIAC MARKERS',
-  URINE: 'URINE ANALYSIS'
+// HEALit Med Laboratories - Complete Test Master Database
+// This is the core medical test database for the lab
+
+export const TEST_TYPES = {
+  NUMBER: 'number',
+  TEXT: 'text',
+  DROPDOWN: 'dropdown',
+  MICROSCOPY_NUMBER: 'microscopy_number',
+  CALCULATED: 'calculated'
 };
 
+export const TEST_CATEGORIES = {
+  KIDNEY: 'KIDNEY FUNCTION TEST',
+  LIVER: 'LIVER FUNCTION TEST',
+  LIPID: 'LIPID PROFILE',
+  DIABETES: 'DIABETES PROFILE',
+  URINE: 'URINE ROUTINE EXAMINATION',
+  SUGAR: 'SUGAR PROFILE'
+};
+
+export const PROFILES = {
+  KIDNEY: 'kidney',
+  LIVER: 'liver',
+  LIPID: 'lipid',
+  DIABETES: 'diabetes',
+  URINE: 'urine',
+  SUGAR: 'sugar'
+};
+
+// Complete Test Master - All medical tests
 export const TEST_MASTER = [
-  // HAEMATOLOGY
-  {
-    id: 'HB001',
-    name: 'Haemoglobin',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: 'g/dL',
-    referenceRange: '12 - 16',
-    genderSpecific: true,
-    maleRange: '13 - 17',
-    femaleRange: '12 - 16',
-    description: 'Measures oxygen-carrying protein in blood',
-    visible: true
-  },
-  {
-    id: 'RBC001',
-    name: 'RBC Count',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: 'mill/cumm',
-    referenceRange: '4.5 - 5.5',
-    genderSpecific: true,
-    maleRange: '4.5 - 5.5',
-    femaleRange: '3.8 - 4.8',
-    visible: true
-  },
-  {
-    id: 'WBC001',
-    name: 'WBC Count',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: 'cumm',
-    referenceRange: '4000 - 11000',
-    visible: true
-  },
-  {
-    id: 'PLT001',
-    name: 'Platelet Count',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: 'lakhs/cumm',
-    referenceRange: '1.5 - 4.5',
-    visible: true
-  },
-  {
-    id: 'PCV001',
-    name: 'PCV / Haematocrit',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: '%',
-    referenceRange: '40 - 50',
-    genderSpecific: true,
-    maleRange: '40 - 50',
-    femaleRange: '36 - 46',
-    visible: true
-  },
-  {
-    id: 'MCV001',
-    name: 'MCV',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: 'fL',
-    referenceRange: '83 - 101',
-    visible: true
-  },
-  {
-    id: 'MCH001',
-    name: 'MCH',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: 'pg',
-    referenceRange: '27 - 32',
-    visible: true
-  },
-  {
-    id: 'MCHC001',
-    name: 'MCHC',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: 'g/dL',
-    referenceRange: '31.5 - 34.5',
-    visible: true
-  },
-  {
-    id: 'NEU001',
-    name: 'Neutrophils',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: '%',
-    referenceRange: '40 - 80',
-    visible: true
-  },
-  {
-    id: 'LYM001',
-    name: 'Lymphocytes',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: '%',
-    referenceRange: '20 - 40',
-    visible: true
-  },
-  {
-    id: 'EOS001',
-    name: 'Eosinophils',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: '%',
-    referenceRange: '1 - 6',
-    visible: true
-  },
-  {
-    id: 'MON001',
-    name: 'Monocytes',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: '%',
-    referenceRange: '2 - 10',
-    visible: true
-  },
-  {
-    id: 'BAS001',
-    name: 'Basophils',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: '%',
-    referenceRange: '0 - 2',
-    visible: true
-  },
-  {
-    id: 'ESR001',
-    name: 'ESR',
-    category: TEST_CATEGORIES.HAEMATOLOGY,
-    unit: 'mm/hr',
-    referenceRange: '0 - 20',
-    genderSpecific: true,
-    maleRange: '0 - 15',
-    femaleRange: '0 - 20',
-    visible: true
-  },
-
-  // BIOCHEMISTRY
-  {
-    id: 'GLU001',
-    name: 'Blood Glucose Fasting',
-    category: TEST_CATEGORIES.BIOCHEMISTRY,
-    unit: 'mg/dL',
-    referenceRange: '70 - 110',
-    visible: true
-  },
-  {
-    id: 'GLU002',
-    name: 'Blood Glucose PP',
-    category: TEST_CATEGORIES.BIOCHEMISTRY,
-    unit: 'mg/dL',
-    referenceRange: 'Up to 140',
-    visible: true
-  },
-  {
-    id: 'GLU003',
-    name: 'Blood Glucose Random',
-    category: TEST_CATEGORIES.BIOCHEMISTRY,
-    unit: 'mg/dL',
-    referenceRange: '70 - 140',
-    visible: true
-  },
-  {
-    id: 'HBA1C001',
-    name: 'HbA1c',
-    category: TEST_CATEGORIES.DIABETES,
-    unit: '%',
-    referenceRange: '< 5.7',
-    description: 'Normal: < 5.7%, Prediabetes: 5.7-6.4%, Diabetes: ≥ 6.5%',
-    visible: true
-  },
-  {
-    id: 'CREAT001',
-    name: 'Creatinine',
-    category: TEST_CATEGORIES.BIOCHEMISTRY,
-    unit: 'mg/dL',
-    referenceRange: '0.6 - 1.2',
-    genderSpecific: true,
-    maleRange: '0.7 - 1.3',
-    femaleRange: '0.6 - 1.1',
-    visible: true
-  },
-  {
-    id: 'UREA001',
-    name: 'Blood Urea',
-    category: TEST_CATEGORIES.BIOCHEMISTRY,
-    unit: 'mg/dL',
-    referenceRange: '15 - 40',
-    visible: true
-  },
-  {
-    id: 'URIC001',
-    name: 'Uric Acid',
-    category: TEST_CATEGORIES.BIOCHEMISTRY,
-    unit: 'mg/dL',
-    referenceRange: '3.5 - 7.2',
-    genderSpecific: true,
-    maleRange: '3.5 - 7.2',
-    femaleRange: '2.6 - 6.0',
-    visible: true
-  },
-  {
-    id: 'CAL001',
-    name: 'Calcium',
-    category: TEST_CATEGORIES.BIOCHEMISTRY,
-    unit: 'mg/dL',
-    referenceRange: '8.5 - 10.5',
-    visible: true
-  },
-
-  // LIPID PROFILE
-  {
-    id: 'CHOL001',
-    name: 'Total Cholesterol',
-    category: TEST_CATEGORIES.LIPID_PROFILE,
-    unit: 'mg/dL',
-    referenceRange: 'Up to 200',
-    description: 'Desirable: < 200, Borderline: 200-239, High: ≥ 240',
-    visible: true
-  },
-  {
-    id: 'TG001',
-    name: 'Triglycerides',
-    category: TEST_CATEGORIES.LIPID_PROFILE,
-    unit: 'mg/dL',
-    referenceRange: '60 - 150',
-    visible: true
-  },
-  {
-    id: 'HDL001',
-    name: 'HDL Cholesterol',
-    category: TEST_CATEGORIES.LIPID_PROFILE,
-    unit: 'mg/dL',
-    referenceRange: '35 - 55',
-    genderSpecific: true,
-    maleRange: '35 - 55',
-    femaleRange: '45 - 65',
-    visible: true
-  },
-  {
-    id: 'LDL001',
-    name: 'LDL Cholesterol',
-    category: TEST_CATEGORIES.LIPID_PROFILE,
-    unit: 'mg/dL',
-    referenceRange: 'Up to 100',
-    description: 'Optimal: < 100, Near Optimal: 100-129, Borderline: 130-159, High: ≥ 160',
-    visible: true
-  },
-  {
-    id: 'VLDL001',
-    name: 'VLDL',
-    category: TEST_CATEGORIES.LIPID_PROFILE,
-    unit: 'mg/dL',
-    referenceRange: '15 - 35',
-    visible: true
-  },
-  {
-    id: 'RATIO001',
-    name: 'TC/HDL Ratio',
-    category: TEST_CATEGORIES.LIPID_PROFILE,
-    unit: 'ratio',
-    referenceRange: '< 4.5',
-    visible: true
-  },
-
-  // LIVER FUNCTION TEST (LFT)
-  {
-    id: 'BIL001',
-    name: 'Bilirubin Total',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'mg/dL',
-    referenceRange: '0.3 - 1.2',
-    visible: true
-  },
-  {
-    id: 'BIL002',
-    name: 'Bilirubin Direct',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'mg/dL',
-    referenceRange: '0 - 0.3',
-    visible: true
-  },
-  {
-    id: 'BIL003',
-    name: 'Bilirubin Indirect',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'mg/dL',
-    referenceRange: '0.2 - 0.9',
-    visible: true
-  },
-  {
-    id: 'SGOT001',
-    name: 'SGOT (AST)',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'U/L',
-    referenceRange: 'Up to 40',
-    visible: true
-  },
-  {
-    id: 'SGPT001',
-    name: 'SGPT (ALT)',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'U/L',
-    referenceRange: 'Up to 41',
-    visible: true
-  },
-  {
-    id: 'ALP001',
-    name: 'Alkaline Phosphatase',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'U/L',
-    referenceRange: '30 - 120',
-    visible: true
-  },
-  {
-    id: 'TP001',
-    name: 'Total Protein',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'g/dL',
-    referenceRange: '6.0 - 8.3',
-    visible: true
-  },
-  {
-    id: 'ALB001',
-    name: 'Albumin',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'g/dL',
-    referenceRange: '3.5 - 5.0',
-    visible: true
-  },
-  {
-    id: 'GLOB001',
-    name: 'Globulin',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'g/dL',
-    referenceRange: '2.0 - 3.5',
-    visible: true
-  },
-  {
-    id: 'AG001',
-    name: 'A/G Ratio',
-    category: TEST_CATEGORIES.LIVER_FUNCTION,
-    unit: 'ratio',
-    referenceRange: '0.9 - 2.0',
-    visible: true
-  },
-
-  // KIDNEY FUNCTION TEST (KFT)
+  // KIDNEY FUNCTION TESTS
   {
     id: 'KFT001',
-    name: 'Blood Urea',
-    category: TEST_CATEGORIES.KIDNEY_FUNCTION,
+    name: 'Creatinine',
+    category: TEST_CATEGORIES.KIDNEY,
+    type: TEST_TYPES.NUMBER,
     unit: 'mg/dL',
-    referenceRange: '15 - 40',
-    visible: true
+    refLow: 0.6,
+    refHigh: 1.2,
+    referenceText: '0.6 - 1.2',
+    genderSpecific: true,
+    maleRange: { low: 0.7, high: 1.3, text: '0.7 - 1.3' },
+    femaleRange: { low: 0.6, high: 1.1, text: '0.6 - 1.1' },
+    order: 1,
+    active: true
   },
   {
     id: 'KFT002',
-    name: 'Creatinine',
-    category: TEST_CATEGORIES.KIDNEY_FUNCTION,
+    name: 'Urea',
+    category: TEST_CATEGORIES.KIDNEY,
+    type: TEST_TYPES.NUMBER,
     unit: 'mg/dL',
-    referenceRange: '0.6 - 1.2',
-    visible: true
+    refLow: 10,
+    refHigh: 45,
+    referenceText: '10 - 45',
+    order: 2,
+    active: true
   },
   {
     id: 'KFT003',
     name: 'Uric Acid',
-    category: TEST_CATEGORIES.KIDNEY_FUNCTION,
+    category: TEST_CATEGORIES.KIDNEY,
+    type: TEST_TYPES.NUMBER,
     unit: 'mg/dL',
-    referenceRange: '3.5 - 7.2',
-    visible: true
+    refLow: 3.4,
+    refHigh: 7.0,
+    referenceText: '3.4 - 7.0',
+    genderSpecific: true,
+    maleRange: { low: 3.4, high: 7.0, text: '3.4 - 7.0' },
+    femaleRange: { low: 2.4, high: 6.0, text: '2.4 - 6.0' },
+    order: 3,
+    active: true
   },
   {
     id: 'KFT004',
-    name: 'Sodium (Na+)',
-    category: TEST_CATEGORIES.KIDNEY_FUNCTION,
-    unit: 'mEq/L',
-    referenceRange: '135 - 145',
-    visible: true
+    name: 'Calcium',
+    category: TEST_CATEGORIES.KIDNEY,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 8.5,
+    refHigh: 10.5,
+    referenceText: '8.5 - 10.5',
+    order: 4,
+    active: true
   },
   {
     id: 'KFT005',
-    name: 'Potassium (K+)',
-    category: TEST_CATEGORIES.KIDNEY_FUNCTION,
-    unit: 'mEq/L',
-    referenceRange: '3.5 - 5.0',
-    visible: true
+    name: 'BUN (Blood Urea Nitrogen)',
+    category: TEST_CATEGORIES.KIDNEY,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 7,
+    refHigh: 20,
+    referenceText: '7 - 20',
+    order: 5,
+    active: true
   },
   {
     id: 'KFT006',
-    name: 'Chloride (Cl-)',
-    category: TEST_CATEGORIES.KIDNEY_FUNCTION,
-    unit: 'mEq/L',
-    referenceRange: '96 - 106',
-    visible: true
+    name: 'eGFR',
+    category: TEST_CATEGORIES.KIDNEY,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mL/min/1.73m²',
+    refLow: 90,
+    refHigh: 120,
+    referenceText: '>90',
+    order: 6,
+    active: true
   },
 
-  // THYROID PROFILE
+  // LIVER FUNCTION TESTS
   {
-    id: 'T3001',
-    name: 'T3 (Triiodothyronine)',
-    category: TEST_CATEGORIES.THYROID,
-    unit: 'ng/mL',
-    referenceRange: '0.8 - 2.0',
-    visible: true
-  },
-  {
-    id: 'T4001',
-    name: 'T4 (Thyroxine)',
-    category: TEST_CATEGORIES.THYROID,
-    unit: 'μg/dL',
-    referenceRange: '4.5 - 12.0',
-    visible: true
-  },
-  {
-    id: 'TSH001',
-    name: 'TSH',
-    category: TEST_CATEGORIES.THYROID,
-    unit: 'μIU/mL',
-    referenceRange: '0.5 - 5.0',
-    visible: true
-  },
-
-  // VITAMINS
-  {
-    id: 'VITD001',
-    name: 'Vitamin D (25-OH)',
-    category: TEST_CATEGORIES.VITAMINS,
-    unit: 'ng/mL',
-    referenceRange: '30 - 100',
-    description: 'Deficient: < 20, Insufficient: 20-29, Sufficient: 30-100',
-    visible: true
-  },
-  {
-    id: 'VITB12001',
-    name: 'Vitamin B12',
-    category: TEST_CATEGORIES.VITAMINS,
-    unit: 'pg/mL',
-    referenceRange: '200 - 900',
-    visible: true
-  },
-
-  // ELECTROLYTES
-  {
-    id: 'NA001',
-    name: 'Sodium (Na+)',
-    category: TEST_CATEGORIES.ELECTROLYTES,
-    unit: 'mEq/L',
-    referenceRange: '135 - 145',
-    visible: true
-  },
-  {
-    id: 'K001',
-    name: 'Potassium (K+)',
-    category: TEST_CATEGORIES.ELECTROLYTES,
-    unit: 'mEq/L',
-    referenceRange: '3.5 - 5.0',
-    visible: true
-  },
-  {
-    id: 'CL001',
-    name: 'Chloride (Cl-)',
-    category: TEST_CATEGORIES.ELECTROLYTES,
-    unit: 'mEq/L',
-    referenceRange: '96 - 106',
-    visible: true
-  },
-
-  // CARDIAC MARKERS
-  {
-    id: 'TROP001',
-    name: 'Troponin I',
-    category: TEST_CATEGORIES.CARDIAC,
-    unit: 'ng/mL',
-    referenceRange: '< 0.04',
-    visible: true
-  },
-  {
-    id: 'CK001',
-    name: 'CPK (Creatine Kinase)',
-    category: TEST_CATEGORIES.CARDIAC,
+    id: 'LFT001',
+    name: 'SGOT (AST)',
+    category: TEST_CATEGORIES.LIVER,
+    type: TEST_TYPES.NUMBER,
     unit: 'U/L',
-    referenceRange: '24 - 195',
+    refLow: 0,
+    refHigh: 40,
+    referenceText: 'Up to 40',
+    order: 1,
+    active: true
+  },
+  {
+    id: 'LFT002',
+    name: 'SGPT (ALT)',
+    category: TEST_CATEGORIES.LIVER,
+    type: TEST_TYPES.NUMBER,
+    unit: 'U/L',
+    refLow: 0,
+    refHigh: 41,
+    referenceText: 'Up to 41',
+    order: 2,
+    active: true
+  },
+  {
+    id: 'LFT003',
+    name: 'ALP (Alkaline Phosphatase)',
+    category: TEST_CATEGORIES.LIVER,
+    type: TEST_TYPES.NUMBER,
+    unit: 'U/L',
+    refLow: 30,
+    refHigh: 120,
+    referenceText: '30 - 120',
+    order: 3,
+    active: true
+  },
+  {
+    id: 'LFT004',
+    name: 'Total Bilirubin',
+    category: TEST_CATEGORIES.LIVER,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 0.3,
+    refHigh: 1.2,
+    referenceText: '0.3 - 1.2',
+    order: 4,
+    active: true
+  },
+  {
+    id: 'LFT005',
+    name: 'Direct Bilirubin',
+    category: TEST_CATEGORIES.LIVER,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 0,
+    refHigh: 0.3,
+    referenceText: '0 - 0.3',
+    order: 5,
+    active: true
+  },
+  {
+    id: 'LFT006',
+    name: 'Total Protein',
+    category: TEST_CATEGORIES.LIVER,
+    type: TEST_TYPES.NUMBER,
+    unit: 'g/dL',
+    refLow: 6.0,
+    refHigh: 8.3,
+    referenceText: '6.0 - 8.3',
+    order: 6,
+    active: true
+  },
+  {
+    id: 'LFT007',
+    name: 'Albumin',
+    category: TEST_CATEGORIES.LIVER,
+    type: TEST_TYPES.NUMBER,
+    unit: 'g/dL',
+    refLow: 3.5,
+    refHigh: 5.0,
+    referenceText: '3.5 - 5.0',
+    order: 7,
+    active: true
+  },
+  {
+    id: 'LFT008',
+    name: 'A/G Ratio',
+    category: TEST_CATEGORIES.LIVER,
+    type: TEST_TYPES.NUMBER,
+    unit: 'ratio',
+    refLow: 0.9,
+    refHigh: 2.0,
+    referenceText: '0.9 - 2.0',
+    order: 8,
+    active: true
+  },
+
+  // LIPID PROFILE
+  {
+    id: 'LIP001',
+    name: 'Total Cholesterol',
+    category: TEST_CATEGORIES.LIPID,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 0,
+    refHigh: 200,
+    referenceText: 'Up to 200',
+    order: 1,
+    active: true
+  },
+  {
+    id: 'LIP002',
+    name: 'HDL Cholesterol',
+    category: TEST_CATEGORIES.LIPID,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 40,
+    refHigh: 60,
+    referenceText: '40 - 60',
     genderSpecific: true,
-    maleRange: '24 - 195',
-    femaleRange: '24 - 170',
-    visible: true
+    maleRange: { low: 35, high: 55, text: '35 - 55' },
+    femaleRange: { low: 45, high: 65, text: '45 - 65' },
+    order: 2,
+    active: true
   },
   {
-    id: 'CKMB001',
-    name: 'CK-MB',
-    category: TEST_CATEGORIES.CARDIAC,
-    unit: 'U/L',
-    referenceRange: '< 25',
-    visible: true
+    id: 'LIP003',
+    name: 'LDL Cholesterol',
+    category: TEST_CATEGORIES.LIPID,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 0,
+    refHigh: 100,
+    referenceText: 'Up to 100',
+    order: 3,
+    active: true
+  },
+  {
+    id: 'LIP004',
+    name: 'VLDL',
+    category: TEST_CATEGORIES.LIPID,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 15,
+    refHigh: 35,
+    referenceText: '15 - 35',
+    order: 4,
+    active: true
+  },
+  {
+    id: 'LIP005',
+    name: 'Triglycerides',
+    category: TEST_CATEGORIES.LIPID,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 60,
+    refHigh: 150,
+    referenceText: '60 - 150',
+    order: 5,
+    active: true
+  },
+  {
+    id: 'LIP006',
+    name: 'TC/HDL Ratio',
+    category: TEST_CATEGORIES.LIPID,
+    type: TEST_TYPES.CALCULATED,
+    unit: 'ratio',
+    refLow: 0,
+    refHigh: 4.5,
+    referenceText: 'Up to 4.5',
+    formula: 'LIP001 / LIP002',
+    order: 6,
+    active: true
+  },
+  {
+    id: 'LIP007',
+    name: 'LDL/HDL Ratio',
+    category: TEST_CATEGORIES.LIPID,
+    type: TEST_TYPES.CALCULATED,
+    unit: 'ratio',
+    refLow: 0,
+    refHigh: 3.0,
+    referenceText: 'Up to 3.0',
+    formula: 'LIP003 / LIP002',
+    order: 7,
+    active: true
+  },
+  {
+    id: 'LIP008',
+    name: 'Non-HDL Cholesterol',
+    category: TEST_CATEGORIES.LIPID,
+    type: TEST_TYPES.CALCULATED,
+    unit: 'mg/dL',
+    refLow: 0,
+    refHigh: 130,
+    referenceText: 'Up to 130',
+    formula: 'LIP001 - LIP002',
+    order: 8,
+    active: true
+  },
+
+  // DIABETES PROFILE
+  {
+    id: 'DIA001',
+    name: 'FBS (Fasting Blood Sugar)',
+    category: TEST_CATEGORIES.DIABETES,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 70,
+    refHigh: 110,
+    referenceText: '70 - 110',
+    order: 1,
+    active: true
+  },
+  {
+    id: 'DIA002',
+    name: 'RBS (Random Blood Sugar)',
+    category: TEST_CATEGORIES.DIABETES,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 70,
+    refHigh: 140,
+    referenceText: '70 - 140',
+    order: 2,
+    active: true
+  },
+  {
+    id: 'DIA003',
+    name: 'PPBS (Post Prandial Blood Sugar)',
+    category: TEST_CATEGORIES.DIABETES,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 0,
+    refHigh: 140,
+    referenceText: 'Up to 140',
+    order: 3,
+    active: true
+  },
+  {
+    id: 'DIA004',
+    name: 'HbA1c',
+    category: TEST_CATEGORIES.DIABETES,
+    type: TEST_TYPES.NUMBER,
+    unit: '%',
+    refLow: 4.0,
+    refHigh: 5.7,
+    referenceText: '4.0 - 5.7',
+    order: 4,
+    active: true
+  },
+
+  // URINE ROUTINE EXAMINATION
+  {
+    id: 'URI001',
+    name: 'Colour',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.TEXT,
+    unit: '',
+    referenceText: 'Pale Yellow',
+    order: 1,
+    active: true
+  },
+  {
+    id: 'URI002',
+    name: 'Appearance',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.TEXT,
+    unit: '',
+    referenceText: 'Clear',
+    order: 2,
+    active: true
+  },
+  {
+    id: 'URI003',
+    name: 'pH',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.NUMBER,
+    unit: '',
+    refLow: 5.0,
+    refHigh: 7.0,
+    referenceText: '5.0 - 7.0',
+    order: 3,
+    active: true
+  },
+  {
+    id: 'URI004',
+    name: 'Specific Gravity',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.NUMBER,
+    unit: '',
+    refLow: 1.010,
+    refHigh: 1.025,
+    referenceText: '1.010 - 1.025',
+    order: 4,
+    active: true
+  },
+  {
+    id: 'URI005',
+    name: 'Protein',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.DROPDOWN,
+    unit: '',
+    referenceText: 'Negative',
+    dropdownOptions: ['Negative', 'Trace', '1+', '2+', '3+', '4+'],
+    order: 5,
+    active: true
+  },
+  {
+    id: 'URI006',
+    name: 'Glucose',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.DROPDOWN,
+    unit: '',
+    referenceText: 'Negative',
+    dropdownOptions: ['Negative', 'Trace', '1+', '2+', '3+', '4+'],
+    order: 6,
+    active: true
+  },
+  {
+    id: 'URI007',
+    name: 'Ketone',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.DROPDOWN,
+    unit: '',
+    referenceText: 'Negative',
+    dropdownOptions: ['Negative', 'Trace', '1+', '2+', '3+'],
+    order: 7,
+    active: true
+  },
+  {
+    id: 'URI008',
+    name: 'Nitrite',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.DROPDOWN,
+    unit: '',
+    referenceText: 'Negative',
+    dropdownOptions: ['Negative', 'Positive'],
+    order: 8,
+    active: true
+  },
+  {
+    id: 'URI009',
+    name: 'Leukocyte Esterase',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.DROPDOWN,
+    unit: '',
+    referenceText: 'Negative',
+    dropdownOptions: ['Negative', 'Trace', '1+', '2+', '3+'],
+    order: 9,
+    active: true
+  },
+  {
+    id: 'URI010',
+    name: 'RBC',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.MICROSCOPY_NUMBER,
+    unit: '/HPF',
+    refLow: 0,
+    refHigh: 2,
+    referenceText: '0 - 2 /HPF',
+    order: 10,
+    active: true
+  },
+  {
+    id: 'URI011',
+    name: 'Pus Cells',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.MICROSCOPY_NUMBER,
+    unit: '/HPF',
+    refLow: 0,
+    refHigh: 5,
+    referenceText: '0 - 5 /HPF',
+    order: 11,
+    active: true
+  },
+  {
+    id: 'URI012',
+    name: 'Epithelial Cells',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.MICROSCOPY_NUMBER,
+    unit: '/HPF',
+    refLow: 0,
+    refHigh: 3,
+    referenceText: '0 - 3 /HPF',
+    order: 12,
+    active: true
+  },
+  {
+    id: 'URI013',
+    name: 'Casts',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.TEXT,
+    unit: '',
+    referenceText: 'Nil',
+    order: 13,
+    active: true
+  },
+  {
+    id: 'URI014',
+    name: 'Crystals',
+    category: TEST_CATEGORIES.URINE,
+    type: TEST_TYPES.TEXT,
+    unit: '',
+    referenceText: 'Nil',
+    order: 14,
+    active: true
+  },
+
+  // SUGAR PROFILE
+  {
+    id: 'SUG001',
+    name: 'FBS (Fasting Blood Sugar)',
+    category: TEST_CATEGORIES.SUGAR,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 70,
+    refHigh: 110,
+    referenceText: '70 - 110',
+    order: 1,
+    active: true
+  },
+  {
+    id: 'SUG002',
+    name: 'RBS (Random Blood Sugar)',
+    category: TEST_CATEGORIES.SUGAR,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 70,
+    refHigh: 140,
+    referenceText: '70 - 140',
+    order: 2,
+    active: true
+  },
+  {
+    id: 'SUG003',
+    name: 'PPBS (Post Prandial Blood Sugar)',
+    category: TEST_CATEGORIES.SUGAR,
+    type: TEST_TYPES.NUMBER,
+    unit: 'mg/dL',
+    refLow: 0,
+    refHigh: 140,
+    referenceText: 'Up to 140',
+    order: 3,
+    active: true
   }
 ];
 
-// Test Packages (Common combinations)
-export const TEST_PACKAGES = [
-  {
-    id: 'PKG001',
-    name: 'Complete Blood Count (CBC)',
-    tests: ['HB001', 'RBC001', 'WBC001', 'PLT001', 'PCV001', 'MCV001', 'MCH001', 'MCHC001', 'NEU001', 'LYM001', 'EOS001', 'MON001', 'BAS001', 'ESR001'],
-    price: 250,
-    visible: true
-  },
-  {
-    id: 'PKG002',
-    name: 'Lipid Profile',
-    tests: ['CHOL001', 'TG001', 'HDL001', 'LDL001', 'VLDL001', 'RATIO001'],
-    price: 400,
-    visible: true
-  },
-  {
-    id: 'PKG003',
-    name: 'Liver Function Test (LFT)',
-    tests: ['BIL001', 'BIL002', 'BIL003', 'SGOT001', 'SGPT001', 'ALP001', 'TP001', 'ALB001', 'GLOB001', 'AG001'],
-    price: 500,
-    visible: true
-  },
-  {
-    id: 'PKG004',
-    name: 'Kidney Function Test (KFT)',
+// Profile Definitions
+export const PROFILE_DEFINITIONS = {
+  kidney: {
+    id: PROFILES.KIDNEY,
+    name: 'Kidney Function Test',
+    shortName: 'KFT',
     tests: ['KFT001', 'KFT002', 'KFT003', 'KFT004', 'KFT005', 'KFT006'],
-    price: 450,
-    visible: true
+    price: 500,
+    active: true
   },
-  {
-    id: 'PKG005',
-    name: 'Thyroid Profile',
-    tests: ['T3001', 'T4001', 'TSH001'],
+  liver: {
+    id: PROFILES.LIVER,
+    name: 'Liver Function Test',
+    shortName: 'LFT',
+    tests: ['LFT001', 'LFT002', 'LFT003', 'LFT004', 'LFT005', 'LFT006', 'LFT007', 'LFT008'],
     price: 600,
-    visible: true
+    active: true
   },
-  {
-    id: 'PKG006',
+  lipid: {
+    id: PROFILES.LIPID,
+    name: 'Lipid Profile',
+    shortName: 'LIPID',
+    tests: ['LIP001', 'LIP002', 'LIP003', 'LIP004', 'LIP005', 'LIP006', 'LIP007', 'LIP008'],
+    price: 450,
+    active: true
+  },
+  diabetes: {
+    id: PROFILES.DIABETES,
     name: 'Diabetes Profile',
-    tests: ['GLU001', 'GLU002', 'HBA1C001'],
+    shortName: 'DIABETES',
+    tests: ['DIA001', 'DIA002', 'DIA003', 'DIA004'],
     price: 550,
-    visible: true
+    active: true
   },
-  {
-    id: 'PKG007',
-    name: 'Master Health Checkup',
-    tests: ['HB001', 'RBC001', 'WBC001', 'PLT001', 'ESR001', 'GLU001', 'HBA1C001', 'CHOL001', 'TG001', 'HDL001', 'LDL001', 'CREAT001', 'UREA001', 'URIC001', 'SGOT001', 'SGPT001', 'TSH001'],
-    price: 1500,
-    visible: true
+  urine: {
+    id: PROFILES.URINE,
+    name: 'Urine Routine Examination',
+    shortName: 'URINE',
+    tests: ['URI001', 'URI002', 'URI003', 'URI004', 'URI005', 'URI006', 'URI007', 'URI008', 'URI009', 'URI010', 'URI011', 'URI012', 'URI013', 'URI014'],
+    price: 200,
+    active: true
+  },
+  sugar: {
+    id: PROFILES.SUGAR,
+    name: 'Sugar Profile',
+    shortName: 'SUGAR',
+    tests: ['SUG001', 'SUG002', 'SUG003'],
+    price: 150,
+    active: true
   }
-];
+};
 
-// Helper function to get test by ID
+// Helper Functions
 export const getTestById = (testId) => {
   return TEST_MASTER.find(test => test.id === testId);
 };
 
-// Helper function to get tests by category
-export const getTestsByCategory = (category) => {
-  return TEST_MASTER.filter(test => test.category === category && test.visible);
+export const getTestsByProfile = (profileId) => {
+  const profile = PROFILE_DEFINITIONS[profileId];
+  if (!profile) return [];
+  
+  return profile.tests
+    .map(testId => getTestById(testId))
+    .filter(test => test && test.active)
+    .sort((a, b) => a.order - b.order);
 };
 
-// Helper function to get package by ID
-export const getPackageById = (packageId) => {
-  return TEST_PACKAGES.find(pkg => pkg.id === packageId);
+export const getTestsByCategory = (category) => {
+  return TEST_MASTER
+    .filter(test => test.category === category && test.active)
+    .sort((a, b) => a.order - b.order);
+};
+
+export const getProfileById = (profileId) => {
+  return PROFILE_DEFINITIONS[profileId];
+};
+
+export const getAllProfiles = () => {
+  return Object.values(PROFILE_DEFINITIONS).filter(p => p.active);
+};
+
+// Validate test value against reference range
+export const validateTestValue = (test, value, gender = null) => {
+  if (test.type === TEST_TYPES.TEXT || test.type === TEST_TYPES.DROPDOWN) {
+    return { status: 'NORMAL', value };
+  }
+
+  const numValue = parseFloat(value);
+  if (isNaN(numValue)) {
+    return { status: 'INVALID', value };
+  }
+
+  let refLow = test.refLow;
+  let refHigh = test.refHigh;
+
+  // Use gender-specific ranges if available
+  if (test.genderSpecific && gender) {
+    if (gender.toLowerCase() === 'male' && test.maleRange) {
+      refLow = test.maleRange.low;
+      refHigh = test.maleRange.high;
+    } else if (gender.toLowerCase() === 'female' && test.femaleRange) {
+      refLow = test.femaleRange.low;
+      refHigh = test.femaleRange.high;
+    }
+  }
+
+  if (numValue < refLow) {
+    return { status: 'LOW', value: numValue, refLow, refHigh };
+  } else if (numValue > refHigh) {
+    return { status: 'HIGH', value: numValue, refLow, refHigh };
+  } else {
+    return { status: 'NORMAL', value: numValue, refLow, refHigh };
+  }
+};
+
+// Get reference range text based on gender
+export const getReferenceRange = (test, gender = null) => {
+  if (test.genderSpecific && gender) {
+    if (gender.toLowerCase() === 'male' && test.maleRange) {
+      return test.maleRange.text;
+    } else if (gender.toLowerCase() === 'female' && test.femaleRange) {
+      return test.femaleRange.text;
+    }
+  }
+  return test.referenceText;
 };

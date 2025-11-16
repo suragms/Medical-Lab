@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search } from 'lucide-react';
 import { usePatientStore } from '../../store';
+import { getProfileById } from '../../data/testMaster';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import './Patients.css';
@@ -53,19 +54,22 @@ const Patients = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredPatients.map((patient) => (
-                  <tr key={patient.id} onClick={() => navigate(`/patients/${patient.id}`)}>
-                    <td>{patient.name}</td>
-                    <td>{patient.age} / {patient.gender}</td>
-                    <td>{patient.phone}</td>
-                    <td>{new Date(patient.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <Button size="small" onClick={() => navigate(`/patients/${patient.id}`)}>
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredPatients.map((patient) => {
+                  const profile = getProfileById(patient.testProfile);
+                  return (
+                    <tr key={patient.id} onClick={() => navigate(`/patients/${patient.id}`)}>
+                      <td>{patient.name}</td>
+                      <td>{patient.age} / {patient.gender}</td>
+                      <td>{patient.phone}</td>
+                      <td>{new Date(patient.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <Button size="small" onClick={() => navigate(`/patients/${patient.id}`)}>
+                          View
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { usePatientStore, useAuthStore } from '../../store';
-import { TEST_PACKAGES } from '../../data/testMaster';
+import { getAllProfiles } from '../../data/testMaster';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 
@@ -11,13 +11,16 @@ const AddPatient = () => {
   const navigate = useNavigate();
   const { addPatient } = usePatientStore();
   const { user } = useAuthStore();
+  const profiles = getAllProfiles();
+  
   const [formData, setFormData] = useState({
     name: '',
     age: '',
     gender: 'Male',
     phone: '',
+    address: '',
     referredBy: '',
-    testPackage: ''
+    testProfile: ''
   });
 
   const handleSubmit = (e) => {
@@ -27,13 +30,16 @@ const AddPatient = () => {
       id: Date.now().toString(),
       ...formData,
       createdAt: new Date().toISOString(),
+      collectedAt: null,
+      receivedAt: null,
+      reportedAt: null,
       createdBy: user?.name || 'Staff',
       status: 'registered'
     };
 
     addPatient(newPatient);
     toast.success('Patient added successfully!');
-    navigate('/patients');
+    navigate(`/results/enter/${newPatient.id}`);
   };
 
   const handleChange = (e) => {
@@ -100,17 +106,29 @@ const AddPatient = () => {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Test Package *</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Address</label>
+              <input
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e0e0e0' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Test Profile *</label>
               <select
-                name="testPackage"
-                value={formData.testPackage}
+                name="testProfile"
+                value={formData.testProfile}
                 onChange={handleChange}
                 required
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e0e0e0' }}
               >
-                <option value="">Select Package</option>
-                {TEST_PACKAGES.map(pkg => (
-                  <option key={pkg.id} value={pkg.id}>{pkg.name} - ₹{pkg.price}</option>
+                <option value="">Select Profile</option>
+                {profiles.map(profile => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name} ({profile.shortName}) - ₹{profile.price}
+                  </option>
                 ))}
               </select>
             </div>
@@ -121,12 +139,13 @@ const AddPatient = () => {
                 name="referredBy"
                 value={formData.referredBy}
                 onChange={handleChange}
+                placeholder="Doctor name (optional)"
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e0e0e0' }}
               />
             </div>
 
             <Button type="submit" icon={Save} fullWidth>
-              Save Patient
+              Save & Continue to Results
             </Button>
           </div>
         </form>
