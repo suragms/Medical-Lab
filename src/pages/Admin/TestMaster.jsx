@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Power } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Power, Search, Filter, DollarSign, ArrowUpDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSettingsStore } from '../../store';
 import { TEST_MASTER, TEST_TYPES, TEST_CATEGORIES } from '../../data/testMaster';
@@ -10,18 +10,29 @@ import './TestMaster.css';
 const TestMaster = () => {
   const { testMaster, setTestMaster, updateTest } = useSettingsStore();
   const [tests, setTests] = useState([]);
+  const [filteredTests, setFilteredTests] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [isAdding, setIsAdding] = useState(false);
+  
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  
   const [newTest, setNewTest] = useState({
     id: '',
     name: '',
+    description: '',
     category: TEST_CATEGORIES.KIDNEY,
     type: TEST_TYPES.NUMBER,
     unit: '',
     refLow: '',
     refHigh: '',
     referenceText: '',
+    price: '',
+    notes: '',
     genderSpecific: false,
     maleRange: { low: '', high: '', text: '' },
     femaleRange: { low: '', high: '', text: '' },
@@ -34,11 +45,44 @@ const TestMaster = () => {
     // Load from store or use default TEST_MASTER
     if (testMaster && testMaster.length > 0) {
       setTests(testMaster);
+      setFilteredTests(testMaster);
     } else {
       setTests(TEST_MASTER);
+      setFilteredTests(TEST_MASTER);
       setTestMaster(TEST_MASTER);
     }
   }, [testMaster, setTestMaster]);
+
+  // Apply filters
+  useEffect(() => {
+    let result = [...tests];
+
+    // Search filter
+    if (searchQuery) {
+      result = result.filter(t => 
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.id.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Category filter
+    if (categoryFilter !== 'ALL') {
+      result = result.filter(t => t.category === categoryFilter);
+    }
+
+    // Type filter
+    if (typeFilter !== 'ALL') {
+      result = result.filter(t => t.type === typeFilter);
+    }
+
+    // Status filter
+    if (statusFilter !== 'ALL') {
+      const isActive = statusFilter === 'ACTIVE';
+      result = result.filter(t => t.active === isActive);
+    }
+
+    setFilteredTests(result);
+  }, [searchQuery, categoryFilter, typeFilter, statusFilter, tests]);
 
   const handleEdit = (test) => {
     setEditingId(test.id);
@@ -86,6 +130,7 @@ const TestMaster = () => {
       ...newTest,
       refLow: parseFloat(newTest.refLow) || 0,
       refHigh: parseFloat(newTest.refHigh) || 0,
+      price: parseFloat(newTest.price) || 0,
       order: tests.filter(t => t.category === newTest.category).length + 1
     };
 
@@ -96,12 +141,15 @@ const TestMaster = () => {
     setNewTest({
       id: '',
       name: '',
+      description: '',
       category: TEST_CATEGORIES.KIDNEY,
       type: TEST_TYPES.NUMBER,
       unit: '',
       refLow: '',
       refHigh: '',
       referenceText: '',
+      price: '',
+      notes: '',
       genderSpecific: false,
       maleRange: { low: '', high: '', text: '' },
       femaleRange: { low: '', high: '', text: '' },
@@ -130,12 +178,65 @@ const TestMaster = () => {
       <div className="page-header">
         <div>
           <h1>Test Master Management</h1>
-          <p>Add, edit, or deactivate medical tests</p>
+          <p>Complete control over all medical tests - Add, Edit, Set Prices, Manage Profiles</p>
         </div>
         <Button onClick={() => setIsAdding(true)} icon={Plus} size="large">
           Add New Test
         </Button>
       </div>
+
+      {/* Filters Section */}
+      <Card className="filters-card">
+        <div className="filters-container">
+          {/* Search */}
+          <div className="filter-item search-box">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Search by test name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Category Filter */}
+          <div className="filter-item">
+            <Filter size={18} />
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+              <option value="ALL">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Type Filter */}
+          <div className="filter-item">
+            <Filter size={18} />
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+              <option value="ALL">All Types</option>
+              {Object.values(TEST_TYPES).map(type => (
+                <option key={type} value={type}>{type.toUpperCase()}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div className="filter-item">
+            <Power size={18} />
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="ALL">All Status</option>
+              <option value="ACTIVE">Active Only</option>
+              <option value="INACTIVE">Inactive Only</option>
+            </select>
+          </div>
+
+          {/* Results count */}
+          <div className="results-count">
+            Showing {filteredTests.length} of {tests.length} tests
+          </div>
+        </div>
+      </Card>
 
       {/* Add New Test Form */}
       {isAdding && (
@@ -143,7 +244,7 @@ const TestMaster = () => {
           <div className="test-form">
             <div className="form-row">
               <div className="form-group">
-                <label>Test ID*</label>
+                <label>Test ID* <span className="field-info">(Unique identifier)</span></label>
                 <input
                   type="text"
                   placeholder="e.g., CREAT001"
@@ -158,6 +259,15 @@ const TestMaster = () => {
                   placeholder="e.g., Creatinine"
                   value={newTest.name}
                   onChange={(e) => setNewTest({ ...newTest, name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Description <span className="field-info">(Optional)</span></label>
+                <input
+                  type="text"
+                  placeholder="e.g., Serum Creatinine"
+                  value={newTest.description}
+                  onChange={(e) => setNewTest({ ...newTest, description: e.target.value })}
                 />
               </div>
             </div>
@@ -175,7 +285,7 @@ const TestMaster = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>Type*</label>
+                <label>Input Type*</label>
                 <select
                   value={newTest.type}
                   onChange={(e) => setNewTest({ ...newTest, type: e.target.value })}
@@ -228,6 +338,45 @@ const TestMaster = () => {
               </div>
             )}
 
+            <div className="form-row">
+              <div className="form-group">
+                <label>
+                  <DollarSign size={16} style={{ display: 'inline', marginRight: '4px' }} />
+                  Price (₹) <span className="field-info">(For revenue calculation only, NOT printed on PDF)</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g., 150"
+                  value={newTest.price}
+                  onChange={(e) => setNewTest({ ...newTest, price: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Notes <span className="field-info">(Optional)</span></label>
+                <input
+                  type="text"
+                  placeholder="e.g., Fasting recommended"
+                  value={newTest.notes}
+                  onChange={(e) => setNewTest({ ...newTest, notes: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <div className="toggle-switch">
+                  <input
+                    type="checkbox"
+                    id="newTestActive"
+                    checked={newTest.active}
+                    onChange={(e) => setNewTest({ ...newTest, active: e.target.checked })}
+                  />
+                  <label htmlFor="newTestActive">
+                    {newTest.active ? 'Active' : 'Inactive'}
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <div className="form-actions">
               <Button onClick={handleAddTest} variant="primary" icon={Save}>
                 Add Test
@@ -242,19 +391,21 @@ const TestMaster = () => {
 
       {/* Tests by Category */}
       {categories.map(category => {
-        const categoryTests = tests.filter(t => t.category === category);
+        const categoryTests = filteredTests.filter(t => t.category === category);
         if (categoryTests.length === 0) return null;
 
         return (
-          <Card key={category} title={category} className="category-card">
+          <Card key={category} title={`${category} (${categoryTests.length} tests)`} className="category-card">
             <div className="tests-table">
               <table>
                 <thead>
                   <tr>
                     <th>Test Name</th>
+                    <th>Description</th>
                     <th>Type</th>
                     <th>Unit</th>
                     <th>Reference Range</th>
+                    <th>Price (₹)</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -318,9 +469,15 @@ const TestMaster = () => {
                     ) : (
                       <tr key={test.id} className={!test.active ? 'inactive-row' : ''}>
                         <td><strong>{test.name}</strong></td>
-                        <td>{test.type}</td>
+                        <td><span className="test-description">{test.description || '-'}</span></td>
+                        <td><span className="type-badge">{test.type}</span></td>
                         <td>{test.unit}</td>
                         <td>{test.referenceText || '-'}</td>
+                        <td>
+                          <span className="price-badge">
+                            {test.price ? `₹${test.price}` : '-'}
+                          </span>
+                        </td>
                         <td>
                           <span className={`status-badge ${test.active ? 'active' : 'inactive'}`}>
                             {test.active ? 'ACTIVE' : 'INACTIVE'}
