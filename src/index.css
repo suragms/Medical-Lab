@@ -5,35 +5,41 @@
 }
 
 :root {
-  /* Brand Colors - Eye-healthy palette */
-  --primary-red: #c62828;
-  --primary-navy: #1a237e;
-  --primary-blue: #1976d2;
+  /* Medical Lab Brand Colors */
+  --primary-medical: #00897b;
+  --primary-dark: #00695c;
+  --primary-light: #4db6ac;
+  --accent-red: #e53935;
+  --accent-blue: #1e88e5;
   
-  /* Neutral Colors */
+  /* Neutral Colors - Clean medical aesthetic */
   --bg-primary: #ffffff;
-  --bg-secondary: #f5f5f5;
-  --bg-tertiary: #fafafa;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #eceff1;
+  --bg-accent: #e0f2f1;
   
-  /* Text Colors - Reduced contrast for eye comfort */
-  --text-primary: #2c3e50;
+  /* Text Colors - Professional medical palette */
+  --text-primary: #263238;
   --text-secondary: #546e7a;
   --text-tertiary: #78909c;
+  --text-light: #90a4ae;
   
-  /* Accent Colors */
-  --success: #2e7d32;
-  --warning: #f57c00;
-  --error: #c62828;
-  --info: #0288d1;
+  /* Medical Accent Colors */
+  --success: #43a047;
+  --warning: #fb8c00;
+  --error: #e53935;
+  --info: #039be5;
   
-  /* Borders */
-  --border-light: #e0e0e0;
-  --border-medium: #bdbdbd;
+  /* Borders - Clean medical borders */
+  --border-light: #eceff1;
+  --border-medium: #cfd8dc;
+  --border-accent: #b2dfdb;
   
-  /* Shadows - Soft for eye comfort */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  /* Shadows - Soft professional shadows */
+  --shadow-sm: 0 2px 4px rgba(0, 137, 123, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 137, 123, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 137, 123, 0.15);
+  --shadow-xl: 0 12px 32px rgba(0, 137, 123, 0.18);
   
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -41,11 +47,13 @@
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
   
-  /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* Border Radius - Modern medical design */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
   
   /* Typography */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
