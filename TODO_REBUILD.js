@@ -34,7 +34,7 @@ export const TODO_LIST = [
     id: 5,
     title: 'Build PDF Generation with HEALit + Thyrocare Logos',
     priority: 'CRITICAL',
-    status: 'PENDING',
+    status: 'COMPLETE',
     description: 'Professional PDF template with both logos, patient info, test results table, timestamps, color-coded values'
   },
   {

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, FileText, TrendingUp, Plus } from 'lucide-react';
 import { useAuthStore, usePatientStore, useFinancialStore } from '../../store';
+import StaffDashboard from './StaffDashboard';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import './Dashboard.css';
@@ -9,6 +10,13 @@ import './Dashboard.css';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { role } = useAuthStore();
+  
+  // Show Staff Dashboard for staff users
+  if (role === 'staff') {
+    return <StaffDashboard />;
+  }
+  
+  // Admin Dashboard
   const { patients } = usePatientStore();
   const { getTotalRevenue, getProfit } = useFinancialStore();
 
