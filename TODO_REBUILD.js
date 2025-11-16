@@ -6,28 +6,28 @@ export const TODO_LIST = [
     id: 1,
     title: 'Fix AddPatient.jsx - Update to use new profile system',
     priority: 'CRITICAL',
-    status: 'IN_PROGRESS',
+    status: 'COMPLETE',
     description: 'Replace TEST_PACKAGES with getAllProfiles(), add address field, use testProfile instead of testPackage'
   },
   {
     id: 2,
     title: 'Create Result Entry Page - PDF-Style Live UI',
     priority: 'CRITICAL',
-    status: 'PENDING',
+    status: 'COMPLETE',
     description: 'Build table UI with test name, value input, unit, reference range. Auto-detect HIGH/LOW values with color coding'
   },
   {
     id: 3,
     title: 'Implement Result Snapshot System',
     priority: 'CRITICAL',
-    status: 'PENDING',
+    status: 'COMPLETE',
     description: 'When saving results, create snapshot of test data + reference values so old reports stay accurate when admin changes references'
   },
   {
     id: 4,
     title: 'Add Timestamp Management',
     priority: 'CRITICAL',
-    status: 'PENDING',
+    status: 'COMPLETE',
     description: 'Add collectedAt, receivedAt, reportedAt timestamps. Auto-generate, admin can edit'
   },
   {
