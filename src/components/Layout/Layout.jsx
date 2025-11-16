@@ -20,6 +20,7 @@ const Layout = () => {
   const location = useLocation();
   const { user, role, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['admin', 'staff'] },
@@ -41,9 +42,12 @@ const Layout = () => {
   return (
     <div className="layout">
       {/* Sidebar */}
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarExpanded ? 'expanded' : 'collapsed'}`}>
         <div className="sidebar-header">
-          <h2 className="sidebar-title">HEALit Med Lab</h2>
+          <h2 className="sidebar-title">{sidebarExpanded && 'HEALit Med Lab'}</h2>
+          <button className="sidebar-toggle" onClick={() => setSidebarExpanded(!sidebarExpanded)}>
+            <Menu size={24} />
+          </button>
           <button className="sidebar-close" onClick={() => setSidebarOpen(false)}>
             <X size={24} />
           </button>
@@ -58,9 +62,10 @@ const Layout = () => {
                 setSidebarOpen(false);
               }}
               className={`sidebar-item ${location.pathname === item.path ? 'active' : ''}`}
+              title={item.label}
             >
               <item.icon size={20} />
-              <span>{item.label}</span>
+              <span className="sidebar-label">{item.label}</span>
             </button>
           ))}
         </nav>
@@ -68,14 +73,16 @@ const Layout = () => {
         <div className="sidebar-footer">
           <div className="user-info">
             <div className="user-avatar">{user?.name?.charAt(0) || 'U'}</div>
-            <div className="user-details">
-              <div className="user-name">{user?.name || 'User'}</div>
-              <div className="user-role">{role === 'admin' ? 'Admin' : 'Staff'}</div>
-            </div>
+            {sidebarExpanded && (
+              <div className="user-details">
+                <div className="user-name">{user?.name || 'User'}</div>
+                <div className="user-role">{role === 'admin' ? 'Admin' : 'Staff'}</div>
+              </div>
+            )}
           </div>
-          <button className="logout-btn" onClick={handleLogout}>
+          <button className="logout-btn" onClick={handleLogout} title="Logout">
             <LogOut size={20} />
-            <span>Logout</span>
+            <span className="logout-label">Logout</span>
           </button>
         </div>
       </aside>

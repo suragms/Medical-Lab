@@ -1,28 +1,44 @@
 .card {
   background: var(--bg-primary);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 6px 20px rgba(0, 137, 123, 0.08);
   overflow: hidden;
-  transition: box-shadow 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-accent);
 }
 
 .card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 12px 32px rgba(0, 137, 123, 0.12);
+  transform: translateY(-3px);
+  border-color: var(--primary-light);
 }
 
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-light);
+  padding: 22px 26px;
+  border-bottom: 2px solid var(--border-accent);
+  background: linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%);
 }
 
 .card-title {
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary-dark);
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-title::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(180deg, var(--primary-medical) 0%, var(--primary-dark) 100%);
+  border-radius: 2px;
 }
 
 .card-actions {
@@ -31,7 +47,7 @@
 }
 
 .card-body {
-  padding: var(--spacing-lg);
+  padding: 24px;
 }
 
 .card-body.no-padding {
