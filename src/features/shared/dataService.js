@@ -1,5 +1,4 @@
 // LocalStorage Data Service - Acts as Backend
-import TESTS_MASTER from '../../data/seed/testsMaster';
 import PROFILES from '../../data/seed/profiles';
 
 const STORAGE_KEYS = {
@@ -15,9 +14,7 @@ const STORAGE_KEYS = {
 
 // Initialize seed data on first load
 export const initializeSeedData = () => {
-  if (!localStorage.getItem(STORAGE_KEYS.TESTS_MASTER)) {
-    localStorage.setItem(STORAGE_KEYS.TESTS_MASTER, JSON.stringify(TESTS_MASTER));
-  }
+  // No longer initialize TESTS_MASTER - profiles now contain full test objects
   if (!localStorage.getItem(STORAGE_KEYS.PROFILES)) {
     localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(PROFILES));
   }
