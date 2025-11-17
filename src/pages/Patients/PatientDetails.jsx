@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Download, Share2, Printer, Mail, User, Phone, MapPin, Calendar, Stethoscope, Edit, X, Save } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Share2, Printer, Mail, User, Phone, MapPin, Calendar, Stethoscope, Edit, X, Save, Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getProfileTemplate } from '../../features/profile-manager/profileTemplates';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
-import { getVisitById, getPatientById, getProfileById } from '../../features/shared/dataService';
+import { getVisitById, getPatientById, getProfileById, updatePatient } from '../../features/shared/dataService';
 import { getTechnicians } from '../../services/authService';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -17,6 +17,16 @@ const PatientDetails = () => {
   const [patient, setPatient] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState({
+    name: '',
+    age: '',
+    gender: '',
+    phone: '',
+    address: '',
+    referredBy: ''
+  });
   
   // Load visit data from new data service
   useEffect(() => {
@@ -45,6 +55,37 @@ const PatientDetails = () => {
     loadVisitData();
   }, [id]);
 
+  const visitStatus = visit?.status || 'tests_selected';
+  const hasResults = visitStatus === 'report_generated' && visit?.tests && visit.tests.length > 0 && visit.reportedAt;
+  const workflowSteps = [
+    {
+      id: 'tests_selected',
+      label: 'Registration',
+      description: 'Patient details & tests captured'
+    },
+    {
+      id: 'sample_times_set',
+      label: 'Sample Details',
+      description: 'Collection timings recorded'
+    },
+    {
+      id: 'results_entered',
+      label: 'Results Entry',
+      description: 'All test results entered'
+    },
+    {
+      id: 'report_generated',
+      label: 'Report Ready',
+      description: 'Report generated & shared'
+    }
+  ];
+  const currentStepIndex = Math.max(
+    0,
+    workflowSteps.findIndex((step) => step.id === visitStatus)
+  );
+  const canEditSampleTime = visitStatus !== 'report_generated';
+  const canEnterResults = ['sample_times_set', 'results_entered', 'report_generated'].includes(visitStatus);
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -64,18 +105,6 @@ const PatientDetails = () => {
       </div>
     );
   }
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editData, setEditData] = useState({
-    name: '',
-    age: '',
-    gender: '',
-    phone: '',
-    address: '',
-    referredBy: ''
-  });
-
-  const hasResults = visit.status === 'report_generated' && visit.tests && visit.tests.length > 0 && visit.reportedAt;
 
   const handleDownloadPDF = async () => {
     if (!hasResults) {
@@ -195,9 +224,6 @@ const PatientDetails = () => {
     }
 
     try {
-      // Import updatePatient from dataService
-      const { updatePatient } = require('../../features/shared/dataService');
-      
       // Update patient in database
       const updatedPatient = updatePatient(patient.patientId, {
         name: editData.name,
@@ -225,140 +251,221 @@ const PatientDetails = () => {
         </Button>
       </div>
 
-      {/* Patient Info Card */}
-      <Card 
-        title="Patient Information" 
-        className="patient-info-card"
-        actions={
-          <Button 
-            variant="outline" 
-            icon={Edit} 
-            size="small"
-            onClick={handleOpenEditModal}
-          >
-            Edit Details
-          </Button>
-        }
-      >
-        <div className="info-grid">
-          <div className="info-item">
-            <div className="info-icon">
-              <User size={20} />
-            </div>
-            <div className="info-content">
-              <span className="info-label">Full Name</span>
-              <span className="info-value">{patient.name}</span>
-            </div>
-          </div>
-
-          <div className="info-item">
-            <div className="info-icon">
-              <Calendar size={20} />
-            </div>
-            <div className="info-content">
-              <span className="info-label">Age</span>
-              <span className="info-value">{patient.age} years</span>
-            </div>
-          </div>
-
-          <div className="info-item">
-            <div className="info-icon">
-              <User size={20} />
-            </div>
-            <div className="info-content">
-              <span className="info-label">Gender</span>
-              <span className="info-value">{patient.gender}</span>
-            </div>
-          </div>
-
-          <div className="info-item">
-            <div className="info-icon">
-              <Phone size={20} />
-            </div>
-            <div className="info-content">
-              <span className="info-label">Phone Number</span>
-              <span className="info-value">{patient.phone}</span>
-            </div>
-          </div>
-
-          {patient.address && (
-            <div className="info-item full-width">
+      <div className="patient-details-grid">
+        {/* Patient Info Card */}
+        <Card 
+          title="Patient Information" 
+          className="patient-info-card"
+          actions={
+            <Button 
+              variant="outline" 
+              icon={Edit} 
+              size="small"
+              onClick={handleOpenEditModal}
+            >
+              Edit Details
+            </Button>
+          }
+        >
+          <div className="info-grid">
+            <div className="info-item">
               <div className="info-icon">
-                <MapPin size={20} />
+                <User size={20} />
               </div>
               <div className="info-content">
-                <span className="info-label">Address</span>
-                <span className="info-value">{patient.address}</span>
+                <span className="info-label">Full Name</span>
+                <span className="info-value">{patient.name}</span>
               </div>
             </div>
-          )}
 
-          <div className="info-item">
-            <div className="info-icon">
-              <Stethoscope size={20} />
+            <div className="info-item">
+              <div className="info-icon">
+                <Calendar size={20} />
+              </div>
+              <div className="info-content">
+                <span className="info-label">Age</span>
+                <span className="info-value">{patient.age} years</span>
+              </div>
             </div>
-            <div className="info-content">
-              <span className="info-label">Test Profile</span>
-              <span className="info-value profile-name">{profile?.name || 'N/A'}</span>
-            </div>
-          </div>
 
-          {patient.referredBy && (
+            <div className="info-item">
+              <div className="info-icon">
+                <User size={20} />
+              </div>
+              <div className="info-content">
+                <span className="info-label">Gender</span>
+                <span className="info-value">{patient.gender}</span>
+              </div>
+            </div>
+
+            <div className="info-item">
+              <div className="info-icon">
+                <Phone size={20} />
+              </div>
+              <div className="info-content">
+                <span className="info-label">Phone Number</span>
+                <span className="info-value">{patient.phone}</span>
+              </div>
+            </div>
+
+            {patient.address && (
+              <div className="info-item full-width">
+                <div className="info-icon">
+                  <MapPin size={20} />
+                </div>
+                <div className="info-content">
+                  <span className="info-label">Address</span>
+                  <span className="info-value">{patient.address}</span>
+                </div>
+              </div>
+            )}
+
             <div className="info-item">
               <div className="info-icon">
                 <Stethoscope size={20} />
               </div>
               <div className="info-content">
-                <span className="info-label">Referred By</span>
-                <span className="info-value">{patient.referredBy}</span>
+                <span className="info-label">Test Profile</span>
+                <span className="info-value profile-name">{profile?.name || 'N/A'}</span>
               </div>
             </div>
+
+            {patient.referredBy && (
+              <div className="info-item">
+                <div className="info-icon">
+                  <Stethoscope size={20} />
+                </div>
+                <div className="info-content">
+                  <span className="info-label">Referred By</span>
+                  <span className="info-value">{patient.referredBy}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="info-item">
+              <div className="info-icon">
+                <Calendar size={20} />
+              </div>
+              <div className="info-content">
+                <span className="info-label">Visit Date</span>
+                <span className="info-value">
+                  {new Date(visit.createdAt).toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+              </div>
+            </div>
+
+            <div className="info-item">
+              <div className="info-icon">
+                <FileText size={20} />
+              </div>
+              <div className="info-content">
+                <span className="info-label">Status</span>
+                <span className={`status-badge status-${visitStatus}`}>
+                  {visitStatus.replace(/_/g, ' ').toUpperCase()}
+                </span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <div className="patient-side-column">
+          <Card title="Workflow Progress" className="workflow-card">
+            <div className="workflow-card-heading">
+              <Activity size={18} />
+              <span>Live status of this visit</span>
+            </div>
+            <div className="workflow-steps">
+              {workflowSteps.map((step, index) => {
+                const completed = index <= currentStepIndex || visitStatus === 'report_generated';
+                const active = index === currentStepIndex || (visitStatus === 'report_generated' && index === workflowSteps.length - 1);
+                return (
+                  <div
+                    key={step.id}
+                    className={`workflow-step ${completed ? 'completed' : ''} ${active ? 'active' : ''}`}
+                  >
+                    <div className="step-marker">{index + 1}</div>
+                    <div className="step-content">
+                      <span className="step-label">{step.label}</span>
+                      <p>{step.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="quick-action-buttons">
+              <Button
+                variant="secondary"
+                fullWidth
+                icon={Calendar}
+                disabled={!canEditSampleTime}
+                onClick={() => navigate(`/sample-times/${visit.visitId}`)}
+              >
+                Update Sample Details
+              </Button>
+              <Button
+                variant="primary"
+                fullWidth
+                icon={FileText}
+                disabled={!canEnterResults}
+                onClick={() => navigate(`/results/${visit.visitId}`)}
+              >
+                Enter / Review Results
+              </Button>
+            </div>
+          </Card>
+
+          {hasResults && (
+            <Card title="Report Actions" className="actions-card">
+              <div className="action-grid">
+                <Button 
+                  onClick={handleDownloadPDF}
+                  icon={Download}
+                  variant="primary"
+                  loading={isGenerating}
+                >
+                  Download PDF
+                </Button>
+                <Button 
+                  onClick={handlePrint}
+                  icon={Printer}
+                  variant="secondary"
+                  loading={isGenerating}
+                >
+                  Print Report
+                </Button>
+                <Button 
+                  onClick={handleWhatsAppShare}
+                  icon={Share2}
+                  variant="success"
+                  loading={isGenerating}
+                >
+                  Share via WhatsApp
+                </Button>
+                <Button 
+                  onClick={() => shareViaEmail({
+                    ...visit,
+                    patient,
+                    profile,
+                    signingTechnician: visit.signing_technician_id ? 
+                      getTechnicians().find(t => t.technicianId === visit.signing_technician_id) : null
+                  }, patient.email || '')}
+                  icon={Mail}
+                  variant="secondary"
+                  loading={isGenerating}
+                >
+                  Share via Email
+                </Button>
+              </div>
+            </Card>
           )}
-
-          <div className="info-item">
-            <div className="info-icon">
-              <Calendar size={20} />
-            </div>
-            <div className="info-content">
-              <span className="info-label">Visit Date</span>
-              <span className="info-value">
-                {new Date(visit.createdAt).toLocaleString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </span>
-            </div>
-          </div>
-
-          <div className="info-item">
-            <div className="info-icon">
-              <FileText size={20} />
-            </div>
-            <div className="info-content">
-              <span className="info-label">Status</span>
-              <span className={`status-badge status-${visit.status}`}>
-                {visit.status.replace(/_/g, ' ').toUpperCase()}
-              </span>
-            </div>
-          </div>
         </div>
-
-        {(visit.status === 'tests_selected' || visit.status === 'sample_times_set') && (
-          <div className="card-actions-section">
-            <Button 
-              onClick={() => navigate(`/results/${visit.visitId}`)}
-              icon={FileText}
-              variant="primary"
-              fullWidth
-            >
-              Enter Test Results
-            </Button>
-          </div>
-        )}
-      </Card>
+      </div>
 
       {/* Edit Patient Modal */}
       {showEditModal && (
@@ -473,51 +580,6 @@ const PatientDetails = () => {
         </div>
       )}
 
-      {/* Report Actions */}
-      {hasResults && (
-        <Card title="Report Actions" className="actions-card">
-          <div className="action-grid">
-            <Button 
-              onClick={handleDownloadPDF}
-              icon={Download}
-              variant="primary"
-              loading={isGenerating}
-            >
-              Download PDF
-            </Button>
-            <Button 
-              onClick={handlePrint}
-              icon={Printer}
-              variant="secondary"
-              loading={isGenerating}
-            >
-              Print Report
-            </Button>
-            <Button 
-              onClick={handleWhatsAppShare}
-              icon={Share2}
-              variant="success"
-              loading={isGenerating}
-            >
-              Share via WhatsApp
-            </Button>
-            <Button 
-              onClick={() => shareViaEmail({
-                ...visit,
-                patient,
-                profile,
-                signingTechnician: visit.signing_technician_id ? 
-                  getTechnicians().find(t => t.technicianId === visit.signing_technician_id) : null
-              }, patient.email || '')}
-              icon={Mail}
-              variant="secondary"
-              loading={isGenerating}
-            >
-              Share via Email
-            </Button>
-          </div>
-        </Card>
-      )}
     </div>
   );
 };

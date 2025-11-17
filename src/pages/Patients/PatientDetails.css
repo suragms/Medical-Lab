@@ -1,10 +1,23 @@
 .patient-details-container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+}
+
+.patient-details-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.55fr) minmax(300px, 0.45fr);
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+.patient-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
 .page-header {
@@ -109,6 +122,83 @@
   margin-top: var(--space-6);
   padding-top: var(--space-6);
   border-top: 2px solid var(--border);
+}
+
+.workflow-card-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.workflow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.workflow-step {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+  background: var(--bg-secondary);
+  transition: var(--transition);
+}
+
+.workflow-step.active {
+  border-color: var(--primary);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.workflow-step.completed .step-marker {
+  background: var(--success);
+  color: white;
+}
+
+.step-marker {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.step-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.step-content p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.quick-action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
 /* Actions Card */
@@ -242,6 +332,14 @@
 @media (max-width: 768px) {
   .patient-details-container {
     padding: var(--space-3);
+  }
+
+  .patient-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-side-column {
+    width: 100%;
   }
 
   .info-grid {

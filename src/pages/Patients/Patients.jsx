@@ -127,7 +127,12 @@ const Patients = () => {
                           size="small" 
                           variant="outline"
                           icon={Eye}
-                          onClick={() => navigate(`/patients/${visit.visitId}`)}
+                          onClick={() => {
+                            const targetId = visit.visitId || visit.id;
+                            if (targetId) {
+                              navigate(`/patients/${targetId}`);
+                            }
+                          }}
                         >
                           View
                         </Button>

@@ -141,7 +141,7 @@ export const getVisits = () => {
 
 export const getVisitById = (visitId) => {
   const visits = getVisits();
-  return visits.find(v => v.visitId === visitId);
+  return visits.find(v => v.visitId === visitId || v.id === visitId);
 };
 
 export const getVisitsByPatientId = (patientId) => {
