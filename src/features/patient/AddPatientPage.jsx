@@ -23,9 +23,9 @@
  * @since 2025-11-17
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Phone, UserCheck, Plus, X, AlertCircle, Search, Edit3, Package, ArrowLeft } from 'lucide-react';
+import { User, Phone, UserCheck, Plus, X, AlertCircle, Search, Edit3, Package, ArrowLeft, ClipboardList, Wallet, Calendar } from 'lucide-react';
 import { addPatient, getProfiles, addProfile, getProfileById, createVisit, getProfileWithTests, searchTests, addTestToMaster, getSettings } from '../shared/dataService';
 import { useAuthStore } from '../../store';
 import { getCurrentUser } from '../../services/authService';
@@ -319,6 +319,38 @@ const AddPatientPage = () => {
     return subtotal - discountAmount;
   };
 
+  const includedTests = useMemo(() => tests.filter((t) => t.included), [tests]);
+  const subtotalAmount = useMemo(() => calculateSubtotal(), [tests, discount]);
+  const totalAmount = useMemo(() => calculateTotal(), [tests, discount]);
+  const formattedCustomPrice = Number(newTest.price || 0).toFixed(2);
+  const totalProfiles = profiles.length;
+  const heroStats = [
+    {
+      label: 'Selected Tests',
+      value: includedTests.length,
+      sublabel: `${tests.length} total loaded`,
+      icon: ClipboardList
+    },
+    {
+      label: 'Subtotal',
+      value: `₹${subtotalAmount.toFixed(2)}`,
+      sublabel: `Discount ${discount}%`,
+      icon: Wallet
+    },
+    {
+      label: 'Final Amount',
+      value: `₹${totalAmount.toFixed(2)}`,
+      sublabel: 'After discount',
+      icon: UserCheck
+    },
+    {
+      label: 'Profiles Available',
+      value: totalProfiles,
+      sublabel: 'Reusable packages',
+      icon: Calendar
+    }
+  ];
+
   const getFinalPrice = () => {
     if (customPrice !== '') {
       return parseFloat(customPrice) || 0;
@@ -393,15 +425,78 @@ const AddPatientPage = () => {
 
   return (
     <div className="add-patient-page">
-      {/* Back Button */}
-      <button 
-        type="button"
-        onClick={() => navigate(-1)} 
-        className="btn-back"
-      >
-        <ArrowLeft size={18} />
-        Back
-      </button>
+      <div className="add-patient-hero">
+        <div className="hero-text">
+          <p className="hero-eyebrow">New Patient Journey</p>
+          <h1>Register Patient & Configure Tests</h1>
+          <p>Capture patient details, choose a profile, and tailor tests before collecting samples.</p>
+          <div className="hero-cta">
+            <button 
+              type="button"
+              onClick={() => navigate(-1)} 
+              className="btn-back"
+            >
+              <ArrowLeft size={18} />
+              Back to previous
+            </button>
+            <div className="hero-total-card">
+              <span>Current Total</span>
+              <strong>₹{totalAmount.toFixed(2)}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="add-patient-stats">
+        {heroStats.map(({ label, value, sublabel, icon: Icon }) => (
+          <div key={label} className="add-stat-card">
+            <div className="stat-icon-wrap">
+              <Icon size={18} />
+            </div>
+            <div>
+              <p className="stat-label">{label}</p>
+              <strong className="stat-value">{value}</strong>
+              <p className="stat-sublabel">{sublabel}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="quick-actions-row">
+        <div className="quick-actions-left">
+          <button
+            type="button"
+            className="quick-action"
+            onClick={() => setShowQuickAdd(true)}
+          >
+            <Search size={16} />
+            Quick Add Test
+          </button>
+          <button
+            type="button"
+            className="quick-action"
+            onClick={() => setShowManualAdd(true)}
+            disabled={!canCreateCustom}
+            title={!canCreateCustom ? 'Enable manual tests in settings' : ''}
+          >
+            <Edit3 size={16} />
+            Custom Test
+          </button>
+          <button
+            type="button"
+            className="quick-action"
+            onClick={() => setShowCreateProfile(true)}
+          >
+            <Package size={16} />
+            New Profile
+          </button>
+        </div>
+        <div className="quick-actions-right">
+          <span className="active-profile-chip">
+            {selectedProfile ? `${selectedProfile.name} selected` : 'No profile selected'}
+          </span>
+        </div>
+      </div>
 
       {/* Two-Column Layout */}
       <form onSubmit={handleSubmit} className="two-column-layout">
@@ -761,19 +856,32 @@ const AddPatientPage = () => {
               </button>
             </div>
             <div className="modal-body-modern">
-              <div className="form-group-modern">
-                <label className="label-blue">Test Name *</label>
-                <input
-                  type="text"
-                  value={newTest.name}
-                  onChange={(e) => setNewTest({...newTest, name: e.target.value})}
-                  className="input-modern"
-                  placeholder="e.g., Custom Biomarker"
-                  autoFocus
-                />
+              <div className="custom-test-intro">
+                <div>
+                  <p className="custom-pill">Manual Test</p>
+                  <h4>Create a tailored investigation</h4>
+                  <p>Document the analyte, allowable range, and billable details. The patient view will mirror this information exactly.</p>
+                </div>
+                <div className="custom-test-amount">
+                  <span>Billable price</span>
+                  <strong>₹{formattedCustomPrice}</strong>
+                  <small>Update using the fields below</small>
+                </div>
               </div>
-              
-              <div className="form-row-modern">
+
+              <div className="custom-test-grid">
+                <div className="form-group-modern span-2">
+                  <label className="label-blue">Test Name *</label>
+                  <input
+                    type="text"
+                    value={newTest.name}
+                    onChange={(e) => setNewTest({...newTest, name: e.target.value})}
+                    className="input-modern"
+                    placeholder="e.g., Custom Biomarker"
+                    autoFocus
+                  />
+                </div>
+
                 <div className="form-group-modern">
                   <label className="label-blue">Test Code</label>
                   <input
@@ -794,83 +902,90 @@ const AddPatientPage = () => {
                     placeholder="e.g., mg/dL"
                   />
                 </div>
-              </div>
-              
-              <div className="form-group-modern">
-                <label className="label-blue">Input Type</label>
-                <select
-                  value={newTest.inputType}
-                  onChange={(e) => setNewTest({...newTest, inputType: e.target.value})}
-                  className="input-modern"
-                >
-                  <option value="number">Number (Numeric Input)</option>
-                  <option value="text">Text (Free Text)</option>
-                  <option value="select">Select (Dropdown)</option>
-                </select>
-              </div>
-              
-              {newTest.inputType === 'number' && (
-                <div className="form-row-modern">
-                  <div className="form-group-modern">
-                    <label className="label-blue">Reference Low</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={newTest.refLow}
-                      onChange={(e) => setNewTest({...newTest, refLow: e.target.value})}
-                      className="input-modern"
-                      placeholder="Min value"
-                    />
+
+                <div className="form-group-modern">
+                  <label className="label-blue">Input Type</label>
+                  <select
+                    value={newTest.inputType}
+                    onChange={(e) => setNewTest({...newTest, inputType: e.target.value})}
+                    className="input-modern"
+                  >
+                    <option value="number">Number (Numeric Input)</option>
+                    <option value="text">Text (Free Text)</option>
+                    <option value="select">Select (Dropdown)</option>
+                  </select>
+                </div>
+
+                <div className="form-group-modern">
+                  <label className="label-blue">Category / Department</label>
+                  <input
+                    type="text"
+                    value={newTest.category}
+                    onChange={(e) => setNewTest({...newTest, category: e.target.value})}
+                    className="input-modern"
+                    placeholder="e.g., Biochemistry, Hematology"
+                  />
+                </div>
+
+                {newTest.inputType === 'number' && (
+                  <div className="form-group-modern span-2">
+                    <label className="label-blue">Reference Range</label>
+                    <div className="ref-range-row">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newTest.refLow}
+                        onChange={(e) => setNewTest({...newTest, refLow: e.target.value})}
+                        className="input-modern"
+                        placeholder="Min value"
+                      />
+                      <span className="range-divider">to</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newTest.refHigh}
+                        onChange={(e) => setNewTest({...newTest, refHigh: e.target.value})}
+                        className="input-modern"
+                        placeholder="Max value"
+                      />
+                      <span className="unit-chip">{newTest.unit || 'unit'}</span>
+                    </div>
                   </div>
-                  <div className="form-group-modern">
-                    <label className="label-blue">Reference High</label>
+                )}
+
+                <div className="form-group-modern span-2">
+                  <label className="label-blue">Reference Notes</label>
+                  <textarea
+                    value={newTest.refText}
+                    onChange={(e) => setNewTest({...newTest, refText: e.target.value})}
+                    className="input-modern textarea-modern"
+                    rows="3"
+                    placeholder="e.g., Include normal range narration or special handling instructions"
+                  />
+                </div>
+
+                <div className="form-group-modern span-2">
+                  <label className="label-blue">Price (₹)</label>
+                  <div className="price-input-row">
+                    <span className="currency-chip">₹</span>
                     <input
                       type="number"
+                      value={newTest.price}
+                      onChange={(e) => setNewTest({...newTest, price: e.target.value})}
+                      className="input-modern price-large"
+                      placeholder="0.00"
                       step="0.01"
-                      value={newTest.refHigh}
-                      onChange={(e) => setNewTest({...newTest, refHigh: e.target.value})}
-                      className="input-modern"
-                      placeholder="Max value"
+                      min="0"
                     />
                   </div>
                 </div>
-              )}
-              
-              <div className="form-group-modern">
-                <label className="label-blue">Reference Text</label>
-                <textarea
-                  value={newTest.refText}
-                  onChange={(e) => setNewTest({...newTest, refText: e.target.value})}
-                  className="input-modern textarea-modern"
-                  rows="2"
-                  placeholder="e.g., Normal range description"
-                />
               </div>
-              
-              <div className="form-group-modern">
-                <label className="label-blue">Price (₹)</label>
-                <input
-                  type="number"
-                  value={newTest.price}
-                  onChange={(e) => setNewTest({...newTest, price: e.target.value})}
-                  className="input-modern"
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                />
+
+              <div className="custom-tags-row">
+                <span className="custom-tag">{canCreateCustom ? 'Will be stored in master catalogue' : 'Single-use test for this visit'}</span>
+                {selectedProfile && <span className="custom-tag">{selectedProfile.name} profile context</span>}
               </div>
-              
-              <div className="form-group-modern">
-                <label className="label-blue">Category</label>
-                <input
-                  type="text"
-                  value={newTest.category}
-                  onChange={(e) => setNewTest({...newTest, category: e.target.value})}
-                  className="input-modern"
-                  placeholder="e.g., Biochemistry, Hematology"
-                />
-              </div>
-              
+
               <p className="info-text-modern">
                 💡 {canCreateCustom ? 'This test will be added to the master database and available for future patients.' : 'This custom test will only be available for this patient.'}
               </p>

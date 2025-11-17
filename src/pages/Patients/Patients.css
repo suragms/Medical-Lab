@@ -1,28 +1,186 @@
 .patients-page {
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: var(--space-6) clamp(var(--space-3), 4vw, var(--space-8)) var(--space-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  background: #F8FAFC;
+  min-height: calc(100vh - 60px);
+}
+
+.patients-card {
+  border: none;
+  background: white;
+  box-shadow: 0 25px 80px rgba(15, 23, 42, 0.07);
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.patients-card .card-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+}
+
+.patients-card .card-title {
+  font-size: 1.5rem;
+}
+
+.patients-card .card-title::before {
+  height: 32px;
+}
+
+.patients-card .card-body {
+  padding: var(--space-6);
+}
+
+.patients-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: linear-gradient(120deg, #E0F2FE, #EFF6FF);
+  border-radius: 28px;
+  border: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-text h1 {
+  margin: var(--space-1) 0;
+  font-size: 1.75rem;
+  color: var(--text);
+}
+
+.hero-text p {
+  margin: 0;
+  color: var(--text-light);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.hero-stat {
+  padding: var(--space-4) var(--space-5);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 18px;
+  text-align: center;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  min-width: 150px;
+  box-shadow: 0 15px 35px rgba(59, 130, 246, 0.15);
+}
+
+.hero-stat span {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.hero-stat strong {
+  font-size: 1.75rem;
+  color: var(--text);
+}
+
+.patients-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.stat-card {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: 20px;
+  border: none;
+  background: white;
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stat-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.stat-value-row strong {
+  font-size: 1.7rem;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.stat-sublabel {
+  margin: var(--space-1) 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  margin-bottom: var(--space-6);
+  background: white;
   padding: var(--space-4);
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
 }
 
 .search-box {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4);
-  background: var(--bg-secondary);
-  border-radius: var(--radius);
-  margin-bottom: var(--space-6);
-  border: 2px solid var(--border);
+  padding: var(--space-3) var(--space-4);
+  background: #F8FAFC;
+  border-radius: var(--radius-full);
+  margin: 0;
+  border: 1px solid rgba(148, 163, 184, 0.4);
   transition: var(--transition);
+  flex: 1;
 }
 
 .search-box:focus-within {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.search-icon {
-  color: var(--text-light);
 }
 
 .search-input {
@@ -37,6 +195,21 @@
 
 .search-input::placeholder {
   color: var(--text-lighter);
+}
+
+.status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.status-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  border: none;
+  background: #F8FAFC;
 }
 
 .empty-state {
@@ -67,15 +240,17 @@
 }
 
 .patients-table {
-  overflow-x: auto;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  overflow: hidden;
+  border-radius: 28px;
+  border: none;
+  background: white;
+  box-shadow: 0 25px 80px rgba(15, 23, 42, 0.08);
 }
 
 .patients-table table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--bg);
+  background: transparent;
 }
 
 .patients-table th,
@@ -85,13 +260,13 @@
 }
 
 .patients-table th {
-  background: var(--bg-secondary);
+  background: #F8FAFC;
   font-weight: 600;
   color: var(--text);
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  border-bottom: 2px solid var(--border);
+  border-bottom: none;
 }
 
 .patients-table th svg {
@@ -101,12 +276,12 @@
 }
 
 .patients-table tbody tr {
-  border-bottom: 1px solid var(--border);
+  border-bottom: none;
   transition: var(--transition);
 }
 
 .patients-table tbody tr:hover {
-  background: var(--bg-secondary);
+  background: #F8FAFC;
 }
 
 .patients-table tbody tr:last-child {
@@ -167,22 +342,26 @@
   text-transform: capitalize;
 }
 
-.status-badge.status-registered {
+.status-badge.status-registered,
+.status-pill.status-registered {
   background: #FEF3C7;
   color: #92400E;
 }
 
-.status-badge.status-sample {
+.status-badge.status-sample,
+.status-pill.status-sample {
   background: #DBEAFE;
   color: #1E40AF;
 }
 
-.status-badge.status-results {
+.status-badge.status-results,
+.status-pill.status-results {
   background: #E0E7FF;
   color: #3730A3;
 }
 
-.status-badge.status-completed {
+.status-badge.status-completed,
+.status-pill.status-completed {
   background: #D1FAE5;
   color: #065F46;
 }
@@ -194,7 +373,29 @@
 /* Responsive */
 @media (max-width: 768px) {
   .patients-page {
-    padding: var(--space-3);
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .patients-hero {
+    padding: var(--space-4);
+  }
+
+  .hero-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .patients-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .status-legend {
+    justify-content: flex-start;
   }
 
   .patients-table {

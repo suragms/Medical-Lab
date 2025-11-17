@@ -1,6 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Eye, Calendar, Phone, User } from 'lucide-react';
+import {
+  Plus,
+  Eye,
+  Calendar,
+  Phone,
+  User,
+  Users,
+  Activity,
+  ShieldCheck,
+  Layers
+} from 'lucide-react';
 import { getVisits, getPatients, getProfileById } from '../../features/shared/dataService';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -11,6 +21,63 @@ const Patients = () => {
   const [visits, setVisits] = useState([]);
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  const statusCounts = useMemo(() => {
+    return visits.reduce(
+      (acc, visit) => {
+        if (visit.status === 'report_generated') {
+          acc.completed += 1;
+        } else if (visit.status === 'results_entered') {
+          acc.results += 1;
+        } else if (visit.status === 'sample_times_set') {
+          acc.sample += 1;
+        } else {
+          acc.registered += 1;
+        }
+        return acc;
+      },
+      { registered: 0, sample: 0, results: 0, completed: 0 }
+    );
+  }, [visits]);
+
+  const totalPatients = patients.length;
+  const totalVisits = visits.length;
+  const activeVisits = totalVisits - statusCounts.completed;
+  const profileCount = useMemo(() => {
+    const ids = new Set(
+      visits
+        .map((visit) => visit.profileId)
+        .filter((profileId) => typeof profileId !== 'undefined' && profileId !== null)
+    );
+    return ids.size;
+  }, [visits]);
+
+  const summaryCards = [
+    {
+      label: 'Total Patients',
+      value: totalPatients,
+      sublabel: `${statusCounts.registered} in registration`,
+      icon: Users
+    },
+    {
+      label: 'Active Visits',
+      value: activeVisits,
+      sublabel: `${statusCounts.sample + statusCounts.results} awaiting results`,
+      icon: Activity
+    },
+    {
+      label: 'Completed Reports',
+      value: statusCounts.completed,
+      sublabel: `${statusCounts.results} ready to finalize`,
+      icon: ShieldCheck
+    },
+    {
+      label: 'Profiles in Use',
+      value: profileCount,
+      sublabel: `${totalVisits} total visits logged`,
+      icon: Layers
+    }
+  ];
 
   // Load visits and patients from localStorage
   useEffect(() => {
@@ -35,23 +102,57 @@ const Patients = () => {
 
   return (
     <div className="patients-page">
-      <Card
-        title="All Patients"
-        actions={
-          <Button onClick={() => navigate('/patients/add-patient')} icon={Plus}>
-            Add New Patient
-          </Button>
-        }
-      >
-        <div className="search-box">
-          <Search size={20} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search by name or phone number..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
+      <Card title="All Patients" className="patients-card">
+        <div className="patients-hero">
+          <div className="hero-text">
+            <p className="eyebrow">Patient Management</p>
+            <h1>Patient Directory</h1>
+            <p>Monitor registrations, samples, and completed reports in one place.</p>
+          </div>
+          <div className="hero-actions">
+            <div className="hero-stat">
+              <span>Total Visits</span>
+              <strong>{totalVisits}</strong>
+            </div>
+            <Button onClick={() => navigate('/patients/add-patient')} icon={Plus}>
+              Add New Patient
+            </Button>
+          </div>
+        </div>
+
+        <div className="patients-stats-grid">
+          {summaryCards.map(({ label, value, sublabel, icon: Icon }) => (
+            <div key={label} className="stat-card">
+              <div className="stat-icon">
+                <Icon size={18} />
+              </div>
+              <div>
+                <p className="stat-label">{label}</p>
+                <div className="stat-value-row">
+                  <strong>{value}</strong>
+                </div>
+                <p className="stat-sublabel">{sublabel}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="filters-row">
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="Search by name or phone number..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+          </div>
+          <div className="status-legend">
+            <span className="status-pill status-registered">Registered</span>
+            <span className="status-pill status-sample">Sample Collected</span>
+            <span className="status-pill status-results">Results Entered</span>
+            <span className="status-pill status-completed">Completed</span>
+          </div>
         </div>
 
         {filteredVisits.length === 0 ? (
