@@ -10,12 +10,9 @@ import Login from './pages/Login/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Patients from './pages/Patients/Patients';
 import PatientDetails from './pages/Patients/PatientDetails';
-import Financial from './pages/Financial/Financial';
-import Settings from './pages/Settings/Settings';
 
 // NEW Rebuilt Patient Flow
 import AddPatientPage from './features/patient/AddPatientPage';
-import SelectEditTestsPage from './features/tests/SelectEditTestsPage';
 import SampleTimePage from './features/results/SampleTimePage';
 import ResultEntryPage from './features/results/ResultEntryPage';
 
@@ -101,9 +98,8 @@ function App() {
           <Route path="patients" element={<Patients />} />
           <Route path="patients/:id" element={<PatientDetails />} />
           
-          {/* NEW PATIENT FLOW - Rebuilt Workflow */}
+          {/* Patient Workflow */}
           <Route path="patients/add-patient" element={<AddPatientPage />} />
-          <Route path="tests/:patientId" element={<SelectEditTestsPage />} />
           <Route path="sample-times/:visitId" element={<SampleTimePage />} />
           <Route path="results/:visitId" element={<ResultEntryPage />} />
           
@@ -112,25 +108,7 @@ function App() {
             path="financial"
             element={
               <ProtectedRoute adminOnly>
-                <Financial />
-              </ProtectedRoute>
-            }
-          />
-          {/* NEW Financial Management Page (Latest) */}
-          <Route
-            path="admin/financial"
-            element={
-              <ProtectedRoute adminOnly>
                 <FinancialManagement />
-              </ProtectedRoute>
-            }
-          />
-          {/* NEW Admin Settings Page (Latest) */}
-          <Route
-            path="admin/settings"
-            element={
-              <ProtectedRoute adminOnly>
-                <AdminSettings />
               </ProtectedRoute>
             }
           />
@@ -138,7 +116,7 @@ function App() {
             path="settings"
             element={
               <ProtectedRoute adminOnly>
-                <Settings />
+                <AdminSettings />
               </ProtectedRoute>
             }
           />

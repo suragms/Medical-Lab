@@ -168,18 +168,23 @@
 }
 
 .status-badge.status-registered {
-  background: rgba(249, 115, 22, 0.1);
-  color: var(--warning);
+  background: #FEF3C7;
+  color: #92400E;
 }
 
-.status-badge.status-results_entered {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--primary);
+.status-badge.status-sample {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.status-badge.status-results {
+  background: #E0E7FF;
+  color: #3730A3;
 }
 
 .status-badge.status-completed {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--success);
+  background: #D1FAE5;
+  color: #065F46;
 }
 
 .text-center {

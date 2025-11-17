@@ -26,8 +26,8 @@ const Layout = () => {
     { icon: Users, label: 'Patients', path: '/patients', roles: ['admin', 'staff'] },
     { icon: TestTube, label: 'Test Master', path: '/admin/test-master', roles: ['admin'] },
     { icon: Package, label: 'Profiles', path: '/admin/profile-manager', roles: ['admin'] },
-    { icon: DollarSign, label: 'Financial', path: '/admin/financial', roles: ['admin'] },
-    { icon: SettingsIcon, label: 'Settings', path: '/admin/settings', roles: ['admin'] },
+    { icon: DollarSign, label: 'Financial', path: '/financial', roles: ['admin'] },
+    { icon: SettingsIcon, label: 'Settings', path: '/settings', roles: ['admin'] },
   ];
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(role));

@@ -432,14 +432,6 @@ const SampleTimePage = () => {
                 <span className="label-summary">Total Estimated Price</span>
                 <span className="value-price">₹{visit.finalAmount?.toLocaleString() || 0}</span>
               </div>
-              
-              <button
-                className="btn-edit-tests"
-                onClick={() => navigate(`/tests/${patient.patientId}`)}
-              >
-                <Edit size={16} />
-                Edit Tests
-              </button>
             </div>
           </div>
         </div>
@@ -449,10 +441,10 @@ const SampleTimePage = () => {
       <div className="action-bar-fixed">
         <Button 
           variant="outline" 
-          onClick={() => navigate(`/tests/${patient.patientId}`)}
+          onClick={() => navigate('/patients')}
           disabled={isSubmitting}
         >
-          Back to Test Selection
+          Back to Patients
         </Button>
         <Button 
           variant="primary" 
