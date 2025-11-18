@@ -2,6 +2,8 @@
   padding: var(--space-6);
   max-width: 1400px;
   margin: 0 auto;
+  background: #FFFFFF;
+  min-height: calc(100vh - 60px);
 }
 
 .page-header {
@@ -14,12 +16,12 @@
 .page-header h1 {
   font-size: 2rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: #0F172A;
   margin: 0;
 }
 
 .subtitle {
-  color: var(--color-text-light);
+  color: #64748B;
   margin-top: var(--space-2);
   font-size: 0.95rem;
 }
@@ -33,13 +35,13 @@
   align-items: center;
   gap: var(--space-2);
   padding: 0 var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid #E2E8F0;
   border-radius: var(--radius-md);
   background: white;
 }
 
 .search-box svg {
-  color: var(--color-text-light);
+  color: #64748B;
 }
 
 .search-box input {
@@ -63,8 +65,8 @@
 }
 
 .profile-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-lg);
+  border-color: #2563EB;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .profile-card-header {
@@ -79,21 +81,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-blue-50);
-  color: var(--color-primary);
+  background: #DBEAFE;
+  color: #2563EB;
   border-radius: var(--radius-lg);
 }
 
 .profile-info h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: #0F172A;
   margin: 0 0 var(--space-2) 0;
 }
 
 .profile-desc {
   font-size: 0.875rem;
-  color: var(--color-text-light);
+  color: #64748B;
   margin: 0;
 }
 
@@ -102,7 +104,7 @@
   grid-template-columns: repeat(2, 1fr);
   gap: var(--space-4);
   padding: var(--space-4);
-  background: var(--color-gray-50);
+  background: #F8FAFC;
   border-radius: var(--radius-md);
   margin-bottom: var(--space-4);
 }
@@ -115,7 +117,7 @@
 
 .stat-label {
   font-size: 0.75rem;
-  color: var(--color-text-light);
+  color: #64748B;
   text-transform: uppercase;
   font-weight: 500;
 }
@@ -123,7 +125,7 @@
 .stat-value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: #0F172A;
 }
 
 .profile-actions {
@@ -157,7 +159,8 @@
 }
 
 .modal-content.large {
-  max-width: 900px;
+  max-width: 95vw;
+  width: 100%;
 }
 
 .modal-header {
@@ -176,7 +179,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: var(--color-text);
+  color: #0F172A;
 }
 
 .close-btn {
@@ -184,22 +187,27 @@
   border: none;
   padding: var(--space-2);
   cursor: pointer;
-  color: var(--color-text-light);
+  color: #64748B;
   border-radius: var(--radius-sm);
   transition: all 0.2s;
 }
 
 .close-btn:hover {
-  background: var(--color-gray-100);
-  color: var(--color-text);
+  background: #F3F4F6;
+  color: #0F172A;
 }
 
 .modal-body {
   padding: var(--space-6);
+  background: #FAFBFC;
 }
 
 .form-section {
   margin-bottom: var(--space-8);
+  background: white;
+  border-radius: 12px;
+  padding: var(--space-5);
+  border: 2px solid #F1F5F9;
 }
 
 .form-section:last-child {
@@ -210,7 +218,18 @@
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 var(--space-4) 0;
-  color: var(--color-text);
+  color: #1E293B;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.form-section h3::before {
+  content: '';
+  width: 4px;
+  height: 20px;
+  background: linear-gradient(to bottom, #3B82F6, #2563EB);
+  border-radius: 2px;
 }
 
 .form-grid {
@@ -232,14 +251,14 @@
 .form-group label {
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--color-text);
+  color: #0F172A;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid #E2E8F0;
   border-radius: var(--radius-md);
   font-size: 0.95rem;
   transition: all 0.2s;
@@ -249,14 +268,154 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .readonly-input {
-  background: var(--color-gray-50);
-  color: var(--color-text-light);
+  background: #F8FAFC;
+  color: #64748B;
   cursor: not-allowed;
+}
+
+/* Tests Table */
+.tests-table-wrapper {
+  overflow-x: auto;
+  border: 2px solid #E2E8F0;
+  border-radius: 12px;
+  margin-bottom: var(--space-4);
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tests-edit-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.tests-edit-table thead {
+  background: linear-gradient(to bottom, #F8FAFC, #F1F5F9);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.tests-edit-table th {
+  padding: 14px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #1E293B;
+  border-bottom: 2px solid #CBD5E1;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  background: transparent;
+}
+
+.tests-edit-table th:first-child {
+  padding-left: 20px;
+  border-top-left-radius: 12px;
+}
+
+.tests-edit-table th:last-child {
+  border-top-right-radius: 12px;
+  padding-right: 20px;
+}
+
+.tests-edit-table tbody tr {
+  border-bottom: 1px solid #E2E8F0;
+  transition: all 0.2s ease;
+}
+
+.tests-edit-table tbody tr:hover {
+  background: #F8FAFC;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.tests-edit-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.tests-edit-table td {
+  padding: 12px;
+  vertical-align: middle;
+}
+
+.tests-edit-table td:first-child {
+  padding-left: 20px;
+}
+
+.tests-edit-table td:last-child {
+  padding-right: 20px;
+}
+
+.table-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  background: white;
+  color: #1E293B;
+  font-family: inherit;
+}
+
+.table-input.small {
+  min-width: 80px;
+  text-align: center;
+}
+
+.table-input:hover {
+  border-color: #CBD5E1;
+  background: #F8FAFC;
+}
+
+.table-input:focus {
+  outline: none;
+  border-color: #3B82F6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.table-input:disabled {
+  background: #F1F5F9;
+  color: #94A3B8;
+  cursor: not-allowed;
+  border-color: #E2E8F0;
+}
+
+.table-input::placeholder {
+  color: #CBD5E1;
+  font-size: 0.8125rem;
+}
+
+.remove-test-btn-icon {
+  padding: 8px;
+  background: white;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 6px;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-test-btn-icon:hover {
+  background: #FEE2E2;
+  color: #DC2626;
+  border-color: #FCA5A5;
+  transform: scale(1.05);
+}
+
+.remove-test-btn-icon:active {
+  transform: scale(0.95);
 }
 
 /* Selected Tests List */
@@ -299,8 +458,8 @@
 
 .test-code {
   padding: 2px 8px;
-  background: var(--color-blue-50);
-  color: var(--color-primary);
+  background: #DBEAFE;
+  color: #2563EB;
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
   font-family: monospace;
@@ -308,7 +467,7 @@
 
 .test-price {
   font-weight: 600;
-  color: var(--color-success);
+  color: #10B981;
 }
 
 .remove-test-btn {
@@ -362,10 +521,20 @@
 
 /* Test Form Section */
 .add-test-section {
-  background: #F8FAFC;
-  padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  border: 2px dashed var(--color-border);
+  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  padding: var(--space-6);
+  border-radius: 12px;
+  border: 2px dashed #CBD5E1;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.add-test-section h3 {
+  color: #1E293B;
+  margin-bottom: var(--space-4);
+}
+
+.add-test-section h3::before {
+  background: linear-gradient(to bottom, #10B981, #059669);
 }
 
 .test-form-grid {
@@ -393,8 +562,12 @@
 .empty-state,
 .no-results {
   text-align: center;
-  padding: var(--space-6);
-  color: var(--color-text-light);
+  padding: var(--space-8);
+  color: #94A3B8;
+  background: white;
+  border-radius: 8px;
+  border: 2px dashed #E2E8F0;
+  font-size: 0.9rem;
 }
 
 .modal-actions {
@@ -420,12 +593,12 @@
 
 .unauthorized-container h2 {
   font-size: 1.75rem;
-  color: var(--color-text);
+  color: #DC2626;
   margin: 0;
 }
 
 .unauthorized-container p {
-  color: var(--color-text-light);
+  color: #64748B;
   max-width: 400px;
 }
 

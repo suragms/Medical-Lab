@@ -177,6 +177,15 @@ const ProfileManager = () => {
     });
   };
 
+  const updateTestInProfile = (testId, field, value) => {
+    setFormData({
+      ...formData,
+      tests: formData.tests.map(t => 
+        t.testId === testId ? { ...t, [field]: value } : t
+      )
+    });
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -337,23 +346,134 @@ const ProfileManager = () => {
                 <h3>Tests in Profile ({formData.tests.length})</h3>
                 
                 {formData.tests.length > 0 ? (
-                  <div className="selected-tests-list">
-                    {formData.tests.map(test => (
-                      <div key={test.testId} className="selected-test-item">
-                        <div className="test-details">
-                          <strong>{test.name}</strong>
-                          <span className="test-code">{test.code || '-'}</span>
-                          <span className="test-category">{test.category}</span>
-                          <span className="test-price">₹{test.price || 0}</span>
-                        </div>
-                        <button
-                          className="remove-test-btn"
-                          onClick={() => removeTestFromProfile(test.testId)}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
+                  <div className="tests-table-wrapper">
+                    <table className="tests-edit-table">
+                      <thead>
+                        <tr>
+                          <th>Test Name</th>
+                          <th>Code</th>
+                          <th>Category</th>
+                          <th>Unit</th>
+                          <th>Ref Low (M)</th>
+                          <th>Ref High (M)</th>
+                          <th>Ref Low (F)</th>
+                          <th>Ref High (F)</th>
+                          <th>Price (₹)</th>
+                          <th>Type</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {formData.tests.map(test => (
+                          <tr key={test.testId}>
+                            <td>
+                              <input
+                                type="text"
+                                value={test.name}
+                                onChange={(e) => updateTestInProfile(test.testId, 'name', e.target.value)}
+                                className="table-input"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                value={test.code || ''}
+                                onChange={(e) => updateTestInProfile(test.testId, 'code', e.target.value)}
+                                className="table-input small"
+                              />
+                            </td>
+                            <td>
+                              <select
+                                value={test.category}
+                                onChange={(e) => updateTestInProfile(test.testId, 'category', e.target.value)}
+                                className="table-input"
+                              >
+                                <option value="General">General</option>
+                                <option value="Hematology">Hematology</option>
+                                <option value="Biochemistry">Biochemistry</option>
+                                <option value="Serology">Serology</option>
+                                <option value="Urine">Urine</option>
+                                <option value="Stool">Stool</option>
+                                <option value="Microbiology">Microbiology</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input
+                                type="text"
+                                value={test.unit || ''}
+                                onChange={(e) => updateTestInProfile(test.testId, 'unit', e.target.value)}
+                                className="table-input small"
+                                placeholder="g/dL"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={test.refLow || ''}
+                                onChange={(e) => updateTestInProfile(test.testId, 'refLow', e.target.value)}
+                                className="table-input small"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={test.refHigh || ''}
+                                onChange={(e) => updateTestInProfile(test.testId, 'refHigh', e.target.value)}
+                                className="table-input small"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={test.refLowFemale || ''}
+                                onChange={(e) => updateTestInProfile(test.testId, 'refLowFemale', e.target.value)}
+                                className="table-input small"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={test.refHighFemale || ''}
+                                onChange={(e) => updateTestInProfile(test.testId, 'refHighFemale', e.target.value)}
+                                className="table-input small"
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                value={test.price || ''}
+                                onChange={(e) => updateTestInProfile(test.testId, 'price', e.target.value)}
+                                className="table-input small"
+                              />
+                            </td>
+                            <td>
+                              <select
+                                value={test.inputType}
+                                onChange={(e) => updateTestInProfile(test.testId, 'inputType', e.target.value)}
+                                className="table-input small"
+                              >
+                                <option value="number">Number</option>
+                                <option value="text">Text</option>
+                                <option value="dropdown">Dropdown</option>
+                              </select>
+                            </td>
+                            <td>
+                              <button
+                                className="remove-test-btn-icon"
+                                onClick={() => removeTestFromProfile(test.testId)}
+                                title="Remove test"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 ) : (
                   <p className="empty-state">No tests added yet. Create tests using the form below.</p>
