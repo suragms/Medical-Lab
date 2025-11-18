@@ -358,7 +358,7 @@ export const initializeAuthData = () => {
   if (getUsers().length === 0) {
     const adminUser = {
       userId: 'USER_ADMIN_1',
-      email: 'admin@healit.com',
+      email: 'admin@thyrocare.com',
       password: 'admin123',
       fullName: 'Admin User',
       phone: '7356865161',
@@ -370,7 +370,7 @@ export const initializeAuthData = () => {
     
     const staffUser = {
       userId: 'USER_STAFF_1',
-      email: 'staff@healit.com',
+      email: 'staff@thyrocare.com',
       password: 'staff123',
       fullName: 'Staff User',
       phone: '9876543210',

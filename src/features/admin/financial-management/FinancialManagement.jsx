@@ -93,8 +93,17 @@ const FinancialManagement = () => {
   }, [analyticsRange]);
   
   const applyFilters = useCallback(() => {
-    const filtered = filterExpenses(filters);
-    setExpenses(filtered);
+    // Only apply filters if any filter is set
+    const hasFilters = filters.startDate || filters.endDate || filters.categoryId || 
+                       filters.staffId || filters.search || filters.minAmount || filters.maxAmount;
+    
+    if (hasFilters) {
+      const filtered = filterExpenses(filters);
+      setExpenses(filtered);
+    } else {
+      // No filters, load all expenses
+      setExpenses(getExpenses());
+    }
   }, [filters]);
   
   // Load data
@@ -172,7 +181,11 @@ const FinancialManagement = () => {
       setShowExpenseModal(false);
       setEditingExpense(null);
       resetExpenseForm();
-      loadData();
+      
+      // Reload summary and expenses
+      setSummary(getFinancialSummary('month'));
+      setExpenses(getExpenses());
+      setStaffExpenses(getStaffExpensesSummary());
     } catch (error) {
       toast.error('Failed to save expense');
     }
@@ -197,7 +210,11 @@ const FinancialManagement = () => {
     if (window.confirm('Are you sure you want to delete this expense?')) {
       deleteExpense(id);
       toast.success('Expense deleted');
-      loadData();
+      
+      // Reload summary and expenses
+      setSummary(getFinancialSummary('month'));
+      setExpenses(getExpenses());
+      setStaffExpenses(getStaffExpensesSummary());
     }
   };
   
