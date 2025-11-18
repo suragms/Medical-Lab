@@ -121,7 +121,7 @@ export const generateResultPDF = (patient, labInfo = {}) => {
 
     doc.autoTable({
       startY: yPos,
-      head: [['Test Name', 'Result', 'Unit', 'Reference Range']],
+      head: [['Test Name', 'Result', 'Unit', 'Bio. Ref. Internal']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], fontStyle: 'bold' },

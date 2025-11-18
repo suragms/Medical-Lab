@@ -22,36 +22,56 @@ export const generateInvoicePDF = (invoiceData) => {
   } = invoiceData;
 
   // ========== HEADER ==========
-  // HEALit Logo placeholder (left)
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 58, 138); // Dark blue
-  doc.text('[HEALit]', 15, yPos);
+  // Header border top
+  doc.setDrawColor(229, 231, 235);
+  doc.setLineWidth(0.5);
+  doc.line(15, yPos, pageWidth - 15, yPos);
+  yPos += 3;
+  
+  // Add logos - SAME AS REPORT PDF
+  const logoHeight = 24;
+  const logoY = yPos;
+  
+  // Left Logo - HEALit
+  try {
+    const healitLogo = '/images/@heal original editable file (png).png';
+    doc.addImage(healitLogo, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
+  } catch (error) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138);
+    doc.text('[HEALit]', 15, yPos + 12);
+  }
 
   // Center title
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('HEALit Med Laboratories', pageWidth / 2, yPos, { align: 'center' });
+  doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
 
-  // Thyrocare logo placeholder (right)
-  doc.setFontSize(10);
-  doc.setTextColor(30, 58, 138);
-  doc.text('[Thyrocare]', pageWidth - 25, yPos, { align: 'right' });
+  // Right Logo - Thyrocare
+  try {
+    const partnerLogo = '/images/download.jpeg.jpg';
+    doc.addImage(partnerLogo, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
+  } catch (error) {
+    doc.setFontSize(10);
+    doc.setTextColor(30, 58, 138);
+    doc.text('[Thyrocare]', pageWidth - 25, yPos + 12, { align: 'right' });
+  }
 
-  yPos += 6;
+  yPos += logoHeight + 3;
 
   // Sub-title
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(75, 85, 99);
-  doc.text('Kunnathpeedika Centre', pageWidth / 2, yPos, { align: 'center' });
+  doc.text('Kunnathpeedika – Thrissur, Kerala', pageWidth / 2, yPos, { align: 'center' });
 
-  yPos += 5;
+  yPos += 4;
 
   // Contact
   doc.setFontSize(9);
-  doc.text('Phone: 7356865161 | Email: info@healitlab.com', pageWidth / 2, yPos, { align: 'center' });
+  doc.text('Phone: 7356865161 | Email: healitlab@gmail.com', pageWidth / 2, yPos, { align: 'center' });
 
   yPos += 5;
 
@@ -60,7 +80,7 @@ export const generateInvoicePDF = (invoiceData) => {
   doc.setLineWidth(0.5);
   doc.line(15, yPos, pageWidth - 15, yPos);
 
-  yPos += 10;
+  yPos += 8;
 
   // ========== INVOICE TITLE ==========
   doc.setFontSize(16);
@@ -194,16 +214,63 @@ export const generateInvoicePDF = (invoiceData) => {
     doc.text(`₹${balance}`, pageWidth - 15, yPos, { align: 'right' });
   }
 
-  // ========== FOOTER ==========
-  const footerY = 270;
+  // ========== FOOTER WITH SIGNATURES ==========
+  const footerY = 260;
+  
+  // Thank you note
   doc.setFontSize(9);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(75, 85, 99);
-  doc.text('Thank you. Get well soon.', 15, footerY);
-
+  doc.text('Thank you for choosing HEALit Med Laboratories. Get well soon!', 15, footerY);
+  
+  yPos = footerY + 8;
+  
+  // LEFT SIGNATURE - Billing Staff
+  const leftSigX = 15;
   doc.setFont('helvetica', 'normal');
-  doc.text('Authorized Signature', pageWidth - 15, footerY, { align: 'right' });
-  doc.line(pageWidth - 55, footerY + 2, pageWidth - 15, footerY + 2);
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  doc.text('Billed By:', leftSigX, yPos);
+  
+  // Add staff signature image if available
+  try {
+    const staffSignature = '/images/signatures/rakhi-signature.png'; // PNG format
+    doc.addImage(staffSignature, 'PNG', leftSigX, yPos + 2, 30, 12);
+  } catch (error) {
+    // Fallback to JPG
+    try {
+      const staffSignature = '/images/RakiSign.jpg';
+      doc.addImage(staffSignature, 'JPEG', leftSigX, yPos + 2, 30, 12);
+    } catch (err) {
+      doc.line(leftSigX, yPos + 8, leftSigX + 40, yPos + 8);
+    }
+  }
+  
+  doc.setFontSize(8);
+  doc.text(invoiceData.invoice?.staffName || 'Staff', leftSigX, yPos + 16);
+  
+  // RIGHT SIGNATURE - Authorized Signatory
+  const rightSigX = pageWidth - 70;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('Authorized Signatory:', rightSigX, yPos);
+  
+  // Add authorized signature image
+  try {
+    const authSignature = '/images/signatures/aparna-signature.png'; // PNG format
+    doc.addImage(authSignature, 'PNG', rightSigX, yPos + 2, 30, 12);
+  } catch (error) {
+    // Fallback to JPG
+    try {
+      const authSignature = '/images/signatures/aparna-signature.jpg';
+      doc.addImage(authSignature, 'JPEG', rightSigX, yPos + 2, 30, 12);
+    } catch (err) {
+      doc.line(rightSigX, yPos + 8, rightSigX + 45, yPos + 8);
+    }
+  }
+  
+  doc.setFontSize(8);
+  doc.text('Lab In-Charge', rightSigX, yPos + 16);
 
   return doc;
 };

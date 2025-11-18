@@ -28,61 +28,62 @@ export const generateReportPDF = (visitData) => {
   let yPos = margin;
 
   // ========================================
-  // HEADER SECTION WITH LOGOS
+  // HEADER SECTION WITH LOGOS - FIXED POSITIONING
   // ========================================
   
   // Header border top
   doc.setDrawColor(COLORS.border);
   doc.setLineWidth(0.5);
   doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 4;
+  yPos += 5;
 
-  // Add logos
-  const logoHeight = 18;
+  // Add logos - BIGGER SIZE, NO OVERLAP
+  const logoHeight = 28;
+  const logoWidth = logoHeight * 1.6;
   const logoY = yPos;
   
-  // Left Logo - HEALit
+  // Left Logo - HEALit (TOP LEFT)
   try {
     const healitLogo = '/images/@heal original editable file (png).png';
-    doc.addImage(healitLogo, 'PNG', margin, logoY, logoHeight * 1.2, logoHeight);
+    doc.addImage(healitLogo, 'PNG', margin, logoY, logoWidth, logoHeight);
   } catch (error) {
     console.log('HEALit logo not loaded');
   }
   
-  // Right Logo - Partner
+  // Right Logo - Partner (TOP RIGHT)
   try {
     const partnerLogo = '/images/download.jpeg.jpg';
-    doc.addImage(partnerLogo, 'JPEG', pageWidth - margin - logoHeight * 1.2, logoY, logoHeight * 1.2, logoHeight);
+    doc.addImage(partnerLogo, 'JPEG', pageWidth - margin - logoWidth, logoY, logoWidth, logoHeight);
   } catch (error) {
     console.log('Partner logo not loaded');
   }
 
-  yPos += logoHeight + 4;
-
-  // Main Title - HEALit Med Laboratories
+  // Center Title - NO OVERLAP, positioned between logos
+  const centerY = logoY + logoHeight / 2;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
+  doc.setFontSize(22);
   doc.setTextColor(COLORS.primary);
-  doc.text('HEALit Med Laboratories', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 7;
+  doc.text('HEALit Med Laboratories', pageWidth / 2, centerY, { align: 'center' });
+  
+  yPos += logoHeight + 2;
 
   // Subtitle - Address & Contact
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.setTextColor(COLORS.text);
   doc.text('Kunnathpeedika – Thrissur, Kerala', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 5;
+  yPos += 4; // Reduced from 5
   
   doc.setFontSize(10);
   doc.setTextColor('#6B7280');
   doc.text('Phone: 7356865161 | Email: healitlab@gmail.com', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 6;
+  yPos += 5; // Reduced from 6
 
   // Bottom border
   doc.setDrawColor(COLORS.border);
   doc.setLineWidth(0.5);
   doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 10;
+  yPos += 8; // Reduced from 10
 
   // ========================================
   // PATIENT DETAILS BLOCK
@@ -167,21 +168,30 @@ export const generateReportPDF = (visitData) => {
     // TEST RESULTS TABLE
     // ========================================
     
+    // DEBUG: Log test data
+    console.log('PDF Table - Category:', category);
+    console.log('PDF Table - First Test Fields:', tests[0] ? Object.keys(tests[0]) : []);
+    console.log('PDF Table - First Test Data:', tests[0]);
+    
     const tableData = tests.map(test => {
+      // Use fallback chain for all fields
+      const testName = test.name_snapshot || test.name || test.testName || 'Test';
+      const testValue = test.value || '—';
+      const testUnit = test.unit_snapshot || test.unit || '';
       const reference = formatReference(test);
       const resultColor = getResultColor(test);
       
       return [
-        test.name_snapshot,
-        { content: test.value || '—', styles: { textColor: resultColor } },
-        test.unit_snapshot || '',
+        testName,
+        { content: testValue, styles: { textColor: resultColor } },
+        testUnit,
         reference
       ];
     });
 
     doc.autoTable({
       startY: yPos,
-      head: [['Test Description', 'Result', 'Unit', 'Reference Range']],
+      head: [['Test Description', 'Result', 'Unit', 'Bio. Ref. Internal']],
       body: tableData,
       theme: 'grid',
       styles: {
@@ -215,59 +225,62 @@ export const generateReportPDF = (visitData) => {
   });
 
   // ========================================
-  // NOTES SECTION
-  // ========================================
-  
-  if (yPos > pageHeight - 60) {
-    doc.addPage();
-    yPos = margin;
-  }
-
-  doc.setFillColor(COLORS.noteBg);
-  doc.rect(margin, yPos, blockWidth, 12, 'F');
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(9);
-  doc.setTextColor('#6B7280');
-  doc.text(
-    'Note: This laboratory report is based on the tests performed at HEALit Med Laboratories.',
-    margin + 4,
-    yPos + 7
-  );
-  yPos += 18;
-
-  // ========================================
   // FOOTER - SIGNATURE SECTION
   // ========================================
   
-  yPos = pageHeight - 40;
+  yPos = pageHeight - 45; // More space for signature images
   
-  const sigLeftX = pageWidth - margin - 70;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(COLORS.text);
   
-  doc.text('Prepared by:', sigLeftX, yPos);
-  doc.line(sigLeftX, yPos + 2, sigLeftX + 50, yPos + 2);
+  // LEFT SIGNATURE - Lab Technician with IMAGE
+  const leftSigX = margin + 10;
+  doc.text('Lab Technician:', leftSigX, yPos);
   
-  yPos += 8;
-  doc.text('Lab In-Charge:', sigLeftX, yPos);
-  doc.line(sigLeftX, yPos + 2, sigLeftX + 50, yPos + 2);
+  // Add technician signature image if available
+  try {
+    const technicianSignature = '/images/signatures/rakhi-signature.png'; // Lab Technician signature PNG
+    doc.addImage(technicianSignature, 'PNG', leftSigX, yPos + 2, 35, 15);
+  } catch (error) {
+    // Fallback to JPG if PNG not found
+    try {
+      const technicianSignature = '/images/RakiSign.jpg';
+      doc.addImage(technicianSignature, 'JPEG', leftSigX, yPos + 2, 35, 15);
+    } catch (err) {
+      doc.line(leftSigX, yPos + 8, leftSigX + 45, yPos + 8);
+    }
+  }
   
-  yPos += 12;
-  
-  // End of Report
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(COLORS.primary);
-  doc.text('** End of Report **', pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 6;
-  
-  // Copyright
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor('#9CA3AF');
-  doc.text('© HEALit Med Laboratories – Thrissur', pageWidth / 2, yPos, { align: 'center' });
+  doc.text('Name: ' + (visitData.signingTechnician?.fullName || 'Rakhi T.R'), leftSigX, yPos + 20);
+  doc.text('Qualification: DMLT', leftSigX, yPos + 24);
+  
+  // RIGHT SIGNATURE - Lab In-Charge with IMAGE
+  const rightSigX = pageWidth - margin - 60;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('Authorized Signatory:', rightSigX, yPos);
+  
+  // Add lab in-charge signature image
+  try {
+    const inchargeSignature = '/images/signatures/aparna-signature.png'; // Lab In-Charge signature PNG
+    doc.addImage(inchargeSignature, 'PNG', rightSigX, yPos + 2, 35, 15);
+  } catch (error) {
+    // Fallback to JPG if PNG not found
+    try {
+      const inchargeSignature = '/images/signatures/aparna-signature.jpg';
+      doc.addImage(inchargeSignature, 'JPEG', rightSigX, yPos + 2, 35, 15);
+    } catch (err) {
+      doc.line(rightSigX, yPos + 8, rightSigX + 50, yPos + 8);
+    }
+  }
+  
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('Name: Aparna A.T', rightSigX, yPos + 20);
+  doc.text('Lab In-Charge', rightSigX, yPos + 24);
 
   return doc;
 };
@@ -275,15 +288,22 @@ export const generateReportPDF = (visitData) => {
 /**
  * Format reference range from snapshot
  */
+/**
+ * Format reference range from snapshot - WITH FALLBACK TO bioReference
+ */
 const formatReference = (test) => {
   const parts = [];
   
+  // Try structured refLow/refHigh first
   if (test.inputType_snapshot === 'number' && test.refLow_snapshot && test.refHigh_snapshot) {
-    parts.push(`${test.refLow_snapshot} – ${test.refHigh_snapshot} ${test.unit_snapshot || ''}`);
+    parts.push(`${test.refLow_snapshot} – ${test.refHigh_snapshot}`);
   }
-  
-  if (test.refText_snapshot) {
-    parts.push(test.refText_snapshot);
+  // Fallback to bioReference string (from seed data)
+  else if (test.bioReference || test.refText_snapshot) {
+    const refText = test.bioReference || test.refText_snapshot;
+    // Clean up text: remove labels like "Adult:", "Normal:", etc.
+    const cleaned = refText.replace(/^(Adult|Normal|Pre-diabetic|Diabetic|Desirable|Borderline|Optimal|High|Low):\s*/gi, '').trim();
+    parts.push(cleaned);
   }
   
   return parts.length > 0 ? parts.join('\n') : '—';

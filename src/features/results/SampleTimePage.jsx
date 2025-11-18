@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Check, AlertCircle, Copy, Edit } from 'lucide-react';
+import { ArrowLeft, Clock, Check, AlertCircle, Copy, TestTube2, Timer, Droplet, User, FileText } from 'lucide-react';
 import { getVisitById, updateVisit, getPatientById, getProfileById } from '../shared/dataService';
 import { getCurrentUser } from '../../services/authService';
 import { useAuthStore } from '../../store';
@@ -33,6 +33,60 @@ const SampleTimePage = () => {
   
   // Permission check
   const canEdit = role === 'admin' || !visit?.reportedAt;
+  
+  // Get current local time for datetime-local input
+  const getCurrentISTTime = () => {
+    const now = new Date();
+    // Format for datetime-local: YYYY-MM-DDTHH:mm
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+  
+  const [currentISTTime, setCurrentISTTime] = useState(getCurrentISTTime());
+  
+  // Update IST time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentISTTime(getCurrentISTTime());
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(timer);
+  }, []);
+  
+  // Calculate waiting time since sample collected
+  const getWaitingTime = () => {
+    if (!collectedAt) return null;
+    
+    const collected = new Date(collectedAt);
+    const now = new Date();
+    
+    // Simple difference calculation
+    const diffMs = now - collected;
+    
+    // If negative (future time), return null
+    if (diffMs < 0) return null;
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return { hours: diffHours, minutes: diffMins, totalMs: diffMs };
+  };
+  
+  const waitingTime = getWaitingTime();
+  
+  // Alert if waiting time exceeds threshold (e.g., 24 hours)
+  useEffect(() => {
+    if (waitingTime && waitingTime.hours >= 24 && !visit?.reportedAt) {
+      toast.error(`⚠️ Patient waiting ${waitingTime.hours}h - Results pending!`, {
+        duration: 5000,
+        id: `waiting-alert-${visitId}`
+      });
+    }
+  }, [waitingTime?.hours, visit?.reportedAt, visitId]);
 
   // Load data
   useEffect(() => {
@@ -52,25 +106,36 @@ const SampleTimePage = () => {
       setProfile(profileData);
     }
 
-    // Load existing times or set defaults
+    // Load existing times or set defaults to current time
     if (visitData.collectedAt) {
-      setCollectedAt(new Date(visitData.collectedAt).toISOString().slice(0, 16));
+      const date = new Date(visitData.collectedAt);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      setCollectedAt(`${year}-${month}-${day}T${hours}:${minutes}`);
     } else {
-      // Default to now
-      const now = new Date();
-      setCollectedAt(now.toISOString().slice(0, 16));
+      // Default to current time
+      setCollectedAt(getCurrentISTTime());
     }
     
     if (visitData.receivedAt) {
-      setReceivedAt(new Date(visitData.receivedAt).toISOString().slice(0, 16));
+      const date = new Date(visitData.receivedAt);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      setReceivedAt(`${year}-${month}-${day}T${hours}:${minutes}`);
     } else {
-      // Default to now
-      const now = new Date();
-      setReceivedAt(now.toISOString().slice(0, 16));
+      // Default to current time
+      setReceivedAt(getCurrentISTTime());
     }
     
     setSampleType(visitData.sampleType || 'Venous Blood');
-    setCollectedBy(visitData.collectedBy || '');
+    // Auto-fill collected by with current user's name or existing value
+    setCollectedBy(visitData.collectedBy || currentUser?.fullName || currentUser?.username || '');
     setNotes(visitData.notes || '');
   }, [visitId, navigate]);
 
@@ -117,15 +182,23 @@ const SampleTimePage = () => {
     }
   };
 
-  // Use Now button
+  // Use Now button with toast acknowledgment
   const handleUseNow = (field) => {
-    const now = new Date().toISOString().slice(0, 16);
+    const now = getCurrentISTTime();
     if (field === 'collected') {
       setCollectedAt(now);
       setErrors({ ...errors, collectedAt: '' });
+      toast.success('✓ Collection time set to IST', {
+        icon: '🩺',
+        duration: 2000
+      });
     } else if (field === 'received') {
       setReceivedAt(now);
       setErrors({ ...errors, receivedAt: '' });
+      toast.success('✓ Lab receipt time set to IST', {
+        icon: '✅',
+        duration: 2000
+      });
     }
   };
 
@@ -133,19 +206,34 @@ const SampleTimePage = () => {
   const handleCopyFromCollected = () => {
     setReceivedAt(collectedAt);
     setErrors({ ...errors, receivedAt: '' });
-    toast.success('Copied from collected time');
+    toast.success('✓ Time copied successfully', {
+      icon: '📋',
+      duration: 2000
+    });
   };
 
-  // Validation
+  // Validation with advanced error handling
   const validate = (silent = false) => {
     const newErrors = {};
     
     if (!collectedAt) {
-      newErrors.collectedAt = 'Required field';
+      newErrors.collectedAt = 'Collection time is required';
+    } else {
+      const collectedDate = new Date(collectedAt);
+      const now = new Date();
+      if (collectedDate > now) {
+        newErrors.collectedAt = 'Collection time cannot be in the future';
+      }
     }
     
     if (!receivedAt) {
-      newErrors.receivedAt = 'Required field';
+      newErrors.receivedAt = 'Receipt time is required';
+    } else {
+      const receivedDate = new Date(receivedAt);
+      const now = new Date();
+      if (receivedDate > now) {
+        newErrors.receivedAt = 'Receipt time cannot be in the future';
+      }
     }
     
     if (collectedAt && receivedAt) {
@@ -153,7 +241,13 @@ const SampleTimePage = () => {
       const received = new Date(receivedAt);
       
       if (received < collected) {
-        newErrors.receivedAt = 'Received time must be same or later than Collected time';
+        newErrors.receivedAt = 'Receipt time must be same or after collection time';
+      }
+      
+      // Check if time difference is too large (> 7 days)
+      const diffDays = (received - collected) / (1000 * 60 * 60 * 24);
+      if (diffDays > 7) {
+        newErrors.receivedAt = 'Time difference is too large (> 7 days). Please verify.';
       }
     }
     
@@ -163,6 +257,10 @@ const SampleTimePage = () => {
     
     if (!silent) {
       setErrors(newErrors);
+      if (Object.keys(newErrors).length > 0) {
+        const firstError = Object.values(newErrors)[0];
+        toast.error(firstError, { duration: 3000 });
+      }
     }
     return Object.keys(newErrors).length === 0;
   };
@@ -206,253 +304,242 @@ const SampleTimePage = () => {
   }
 
   return (
-    <div className="sample-time-page">
-      {/* Page Header */}
-      <div className="page-header-modern">
-        <div className="header-left">
-          <Button variant="outline" onClick={() => navigate(`/tests/${patient.patientId}`)}>
-            <ArrowLeft size={18} />
-            Back to Test Selection
-          </Button>
-        </div>
-        <div className="header-center">
-          <h1>Sample & Processing Times</h1>
+    <div className="sample-time-premium">
+      {/* Compact Header */}
+      <div className="premium-header-sample">
+        <button className="back-btn-compact" onClick={() => navigate('/patients')}>
+          <ArrowLeft size={18} />
+        </button>
+        <div className="header-info-inline">
+          <h1>Sample Times</h1>
+          <span className="patient-name-inline">{patient.name}</span>
+          {waitingTime && waitingTime.hours >= 0 && (
+            <div className={`waiting-badge-inline ${
+              waitingTime.hours >= 24 ? 'urgent' : waitingTime.hours >= 12 ? 'warning' : 'normal'
+            }`}>
+              <Timer size={14} />
+              {waitingTime.hours}h {waitingTime.minutes}m waiting
+            </div>
+          )}
         </div>
       </div>
 
       {/* General Error */}
       {errors.general && (
-        <div className="error-banner">
+        <div className="error-alert-premium">
           <AlertCircle size={18} />
-          {errors.general}
+          <span>{errors.general}</span>
         </div>
       )}
 
-      {/* Two-Column Layout */}
-      <div className="two-column-layout">
-        {/* LEFT COLUMN - Time Inputs */}
-        <div className="left-column-times">
-          <div className="card-modern time-inputs-card">
-            <div className="card-header-blue">
-              <Clock size={20} />
-              <h3>Sample & Processing Times</h3>
+      {/* Main Content - Compact Grid */}
+      <div className="sample-content-compact">
+        
+        {/* Info Bar */}
+        <div className="info-bar-compact">
+          <div className="info-item">
+            <span className="label">Patient:</span>
+            <span className="value">{patient.name}, {patient.age}Y/{patient.gender}</span>
+          </div>
+          <div className="info-item" title={visit.tests?.map(t => t.name || t.name_snapshot).join(', ')}>
+            <TestTube2 size={16} className="icon-tests" />
+            <span className="label">Tests:</span>
+            <span className="value tests-hover">{visit.tests?.length || 0} • {profile?.name || 'Custom'}</span>
+          </div>
+          <div className="info-item">
+            <span className="label">Amount:</span>
+            <span className="value amount">₹{visit.finalAmount?.toLocaleString() || 0}</span>
+          </div>
+          <div className="info-item ist-time">
+            <Clock size={14} className="icon-time" />
+            <span className="value time-display">
+              {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })} IST
+            </span>
+          </div>
+          {currentUser && (
+            <div className="info-item staff-info" title={`User ID: ${currentUser.userId}`}>
+              <User size={14} className="icon-staff" />
+              <span className="value staff-name">{currentUser.fullName || currentUser.username}</span>
             </div>
-            
-            <div className="card-body">
-              {/* Autosave Status */}
-              {saveStatus && (
-                <div className={`save-status ${saveStatus}`}>
-                  {saveStatus === 'saving' && '💾 Saving...'}
-                  {saveStatus === 'saved' && '✓ Saved'}
-                </div>
-              )}
+          )}
+        </div>
 
-              {/* Sample Collected On */}
-              <div className="form-group-modern">
-                <div className="label-row">
-                  <label className="label-blue">Sample Collected On *</label>
-                  <button
-                    type="button"
-                    className="btn-use-now"
-                    onClick={() => handleUseNow('collected')}
-                    disabled={!canEdit}
-                  >
-                    Use Now
-                  </button>
-                </div>
-                <input
-                  type="datetime-local"
-                  value={collectedAt}
-                  onChange={(e) => {
-                    setCollectedAt(e.target.value);
-                    setErrors({ ...errors, collectedAt: '' });
-                  }}
-                  className={`input-modern datetime-input ${errors.collectedAt ? 'input-error' : ''}`}
-                  disabled={!canEdit}
-                />
-                <span className="helper-text">Collected from patient</span>
-                {errors.collectedAt && (
-                  <span className="error-message">
-                    <AlertCircle size={14} />
-                    {errors.collectedAt}
-                  </span>
-                )}
+        {/* Time Grid - Compact */}
+        <div className="time-grid-compact">
+          
+          {/* Sample Collected */}
+          <div className="time-field-compact">
+            <div className="field-header">
+              <Clock size={18} className="icon-blue" />
+              <label>Sample Collected</label>
+              <button
+                type="button"
+                className="btn-now-compact"
+                onClick={() => handleUseNow('collected')}
+                disabled={!canEdit}
+                title="Set to current IST time"
+              >
+                <Clock size={14} />
+                Now
+              </button>
+            </div>
+            <input
+              type="datetime-local"
+              value={collectedAt}
+              onChange={(e) => {
+                setCollectedAt(e.target.value);
+                setErrors({ ...errors, collectedAt: '' });
+                toast.success('✓ Collected time set', { duration: 1500 });
+              }}
+              className={`time-input-compact ${errors.collectedAt ? 'error' : ''}`}
+              disabled={!canEdit}
+              placeholder="Select collection time"
+            />
+            {collectedAt && !errors.collectedAt && (
+              <div className="time-display-12h">
+                {new Date(collectedAt).toLocaleString('en-IN', { 
+                  dateStyle: 'medium', 
+                  timeStyle: 'short',
+                  hour12: true 
+                })}
               </div>
+            )}
+            {errors.collectedAt && (
+              <span className="error-msg"><AlertCircle size={12} /> {errors.collectedAt}</span>
+            )}
+          </div>
 
-              {/* Sample Received On */}
-              <div className="form-group-modern">
-                <div className="label-row">
-                  <label className="label-blue">Sample Received On *</label>
-                  <div className="button-group-inline">
-                    <button
-                      type="button"
-                      className="btn-use-now"
-                      onClick={() => handleUseNow('received')}
-                      disabled={!canEdit}
-                    >
-                      Use Now
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-copy"
-                      onClick={handleCopyFromCollected}
-                      disabled={!canEdit || !collectedAt}
-                      title="Copy from Collected"
-                    >
-                      <Copy size={14} />
-                      Copy
-                    </button>
-                  </div>
-                </div>
-                <input
-                  type="datetime-local"
-                  value={receivedAt}
-                  onChange={(e) => {
-                    setReceivedAt(e.target.value);
-                    setErrors({ ...errors, receivedAt: '' });
-                  }}
-                  className={`input-modern datetime-input ${errors.receivedAt ? 'input-error' : ''}`}
+          {/* Sample Received */}
+          <div className="time-field-compact">
+            <div className="field-header">
+              <Check size={18} className="icon-green" />
+              <label>Received at Lab</label>
+              <div className="btn-group-compact">
+                <button
+                  type="button"
+                  className="btn-now-compact"
+                  onClick={() => handleUseNow('received')}
                   disabled={!canEdit}
-                />
-                <span className="helper-text">Received at HEALit Lab</span>
-                {errors.receivedAt && (
-                  <span className="error-message">
-                    <AlertCircle size={14} />
-                    {errors.receivedAt}
-                  </span>
-                )}
-              </div>
-
-              {/* Reported On (readonly) */}
-              <div className="form-group-modern">
-                <label className="label-blue">Reported On</label>
-                <input
-                  type="text"
-                  value={visit.reportedAt ? new Date(visit.reportedAt).toLocaleString() : 'Not yet generated'}
-                  className="input-modern"
-                  disabled
-                />
-                <span className="helper-text">Auto-filled when generating the result PDF</span>
-              </div>
-
-              {/* Divider */}
-              <div className="divider-modern"></div>
-
-              {/* Optional Fields */}
-              <h4 className="section-title-small">Optional Information</h4>
-
-              {/* Sample Type */}
-              <div className="form-group-modern">
-                <label className="label-blue">Sample Type</label>
-                <select
-                  value={sampleType}
-                  onChange={(e) => setSampleType(e.target.value)}
-                  className="input-modern"
-                  disabled={!canEdit}
+                  title="Set to current IST time"
                 >
-                  <option value="Venous Blood">Venous Blood</option>
-                  <option value="Finger Prick">Finger Prick</option>
-                  <option value="Urine">Urine</option>
-                  <option value="Stool">Stool</option>
-                  <option value="Saliva">Saliva</option>
-                  <option value="Other">Other</option>
-                </select>
+                  <Clock size={14} />
+                  Now
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon-compact"
+                  onClick={handleCopyFromCollected}
+                  disabled={!canEdit || !collectedAt}
+                  title="Copy from collected"
+                >
+                  <Copy size={14} />
+                </button>
               </div>
-
-              {/* Collected By */}
-              <div className="form-group-modern">
-                <label className="label-blue">Collected By</label>
-                <input
-                  type="text"
-                  value={collectedBy}
-                  onChange={(e) => setCollectedBy(e.target.value)}
-                  className="input-modern"
-                  placeholder="Technician name (optional)"
-                  disabled={!canEdit}
-                />
+            </div>
+            <input
+              type="datetime-local"
+              value={receivedAt}
+              onChange={(e) => {
+                setReceivedAt(e.target.value);
+                setErrors({ ...errors, receivedAt: '' });
+                toast.success('✓ Received time set', { duration: 1500 });
+              }}
+              className={`time-input-compact ${errors.receivedAt ? 'error' : ''}`}
+              disabled={!canEdit}
+              placeholder="Select receipt time"
+            />
+            {receivedAt && !errors.receivedAt && (
+              <div className="time-display-12h">
+                {new Date(receivedAt).toLocaleString('en-IN', { 
+                  dateStyle: 'medium', 
+                  timeStyle: 'short',
+                  hour12: true 
+                })}
               </div>
+            )}
+            {errors.receivedAt && (
+              <span className="error-msg"><AlertCircle size={12} /> {errors.receivedAt}</span>
+            )}
+          </div>
+        </div>
 
-              {/* Notes */}
-              <div className="form-group-modern">
-                <label className="label-blue">Notes</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="input-modern textarea-modern"
-                  rows="3"
-                  placeholder="Fasting status, sample condition, etc."
-                  disabled={!canEdit}
-                />
-              </div>
+        {/* Optional Fields - Inline */}
+        <div className="optional-fields-compact">
+          <div className="field-inline">
+            <Droplet size={16} className="field-icon" />
+            <label>Sample Type:</label>
+            <select
+              value={sampleType}
+              onChange={(e) => setSampleType(e.target.value)}
+              disabled={!canEdit}
+            >
+              <option value="Venous Blood">Venous Blood</option>
+              <option value="Finger Prick">Finger Prick</option>
+              <option value="Urine">Urine</option>
+              <option value="Stool">Stool</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          
+          <div className="field-inline">
+            <User size={16} className="field-icon" />
+            <label>Collected By:</label>
+            <input
+              type="text"
+              value={collectedBy}
+              onChange={(e) => setCollectedBy(e.target.value)}
+              placeholder="Technician name"
+              disabled={!canEdit}
+            />
+          </div>
+          
+          <div className="field-inline full">
+            <FileText size={16} className="field-icon" />
+            <label>Notes:</label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Fasting status, sample condition, etc."
+              disabled={!canEdit}
+            />
+          </div>
+        </div>
 
-              {!canEdit && (
-                <div className="locked-message">
-                  <AlertCircle size={16} />
-                  Times are locked after report generation. Contact admin to edit.
-                </div>
+        {/* Footer */}
+        <div className="footer-compact">
+          {saveStatus && (
+            <div className="save-status">
+              {saveStatus === 'saving' && (
+                <><div className="spinner-mini"></div>Saving...</>
+              )}
+              {saveStatus === 'saved' && (
+                <><Check size={14} />Saved</>
               )}
             </div>
+          )}
+          <div className="button-group-footer">
+            <Button
+              variant="outline"
+              onClick={() => {
+                handleAutoSave();
+                toast.success('✓ Times saved!', { duration: 2000 });
+              }}
+              disabled={!canEdit}
+              icon={Check}
+            >
+              Save Times
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleContinue}
+              disabled={isSubmitting || !canEdit}
+              icon={isSubmitting ? null : ArrowLeft}
+            >
+              {isSubmitting ? 'Saving...' : 'Continue to Results →'}
+            </Button>
           </div>
         </div>
-
-        {/* RIGHT COLUMN - Visit Summary */}
-        <div className="right-column-summary">
-          <div className="card-modern visit-summary-card">
-            <div className="card-header-blue">
-              <h3>Visit Summary</h3>
-            </div>
-            
-            <div className="card-body">
-              <div className="summary-item">
-                <span className="label-summary">Patient Name</span>
-                <span className="value-summary">{patient.name}</span>
-              </div>
-              
-              <div className="summary-item">
-                <span className="label-summary">Age / Gender</span>
-                <span className="value-summary">{patient.age}Y / {patient.gender}</span>
-              </div>
-              
-              <div className="summary-item">
-                <span className="label-summary">Phone</span>
-                <span className="value-summary">{patient.phone}</span>
-              </div>
-              
-              <div className="summary-item">
-                <span className="label-summary">Selected Profile</span>
-                <span className="profile-badge-summary">{profile?.name || 'Custom'}</span>
-              </div>
-              
-              <div className="summary-item">
-                <span className="label-summary">Number of Tests</span>
-                <span className="value-summary-highlight">{visit.tests?.length || 0} tests</span>
-              </div>
-              
-              <div className="summary-item price-row">
-                <span className="label-summary">Total Estimated Price</span>
-                <span className="value-price">₹{visit.finalAmount?.toLocaleString() || 0}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Fixed Action Bar */}
-      <div className="action-bar-fixed">
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/patients')}
-          disabled={isSubmitting}
-        >
-          Back to Patients
-        </Button>
-        <Button 
-          variant="primary" 
-          onClick={handleContinue}
-          disabled={isSubmitting || !canEdit}
-        >
-          {isSubmitting ? 'Saving...' : 'Save & Continue → Enter Results'}
-        </Button>
       </div>
     </div>
   );

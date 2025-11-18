@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, FileText, Receipt, Check, Loader, Download, Printer, Share2, Mail, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
-import { getVisitById, updateVisitResults, getSettings, updateVisit, getPatientById, getProfileById } from '../shared/dataService';
+import { ArrowLeft, Save, FileText, Receipt, Check, Loader, Download, Printer, Share2, Mail, AlertCircle, TrendingUp, TrendingDown, MessageCircle, TestTube2, Plus, Search, X } from 'lucide-react';
+import { getVisitById, updateVisitResults, getSettings, updateVisit, getPatientById, getProfileById, getTestsMaster } from '../shared/dataService';
 import { useAuthStore } from '../../store';
 import { getCurrentUser, getUsers } from '../../services/authService';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
+import { downloadInvoice } from '../../utils/invoicePdfGenerator';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 import './ResultEntry.css';
@@ -26,6 +27,8 @@ const ResultEntryPage = () => {
   const [useMySignatureDefault, setUseMySignatureDefault] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showAddTestModal, setShowAddTestModal] = useState(false);
+  const [testSearchQuery, setTestSearchQuery] = useState('');
   const saveTimeoutRef = useRef(null);
   
   const canEditReportedTime = role === 'admin' && settings.allowManualReportedTime;
@@ -77,68 +80,28 @@ const ResultEntryPage = () => {
     
     // Auto-select signing technician
     // Default to current user if they're a technician
-    if (currentUser && (currentUser.role === 'staff' || currentUser.role === 'admin')) {
-      setSelectedTechnicianId(currentUser.userId);
+    const currentUserRole = currentUser?.role;
+    const currentUserId = currentUser?.userId;
+    
+    if (currentUserRole === 'staff' || currentUserRole === 'admin') {
+      setSelectedTechnicianId(currentUserId);
     } else if (visitData.signing_technician_id) {
       setSelectedTechnicianId(visitData.signing_technician_id);
     } else if (technicians.length > 0) {
       // Fallback to first active technician
       setSelectedTechnicianId(technicians[0].userId);
     }
-  }, [visitId, navigate, currentUser]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitId]);
 
-  // Auto-save functionality
-  useEffect(() => {
-    if (!visit) return;
-    
-    // Clear existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    // Set new timeout for autosave (2 seconds after input stops)
-    saveTimeoutRef.current = setTimeout(() => {
-      handleSave();
-    }, 2000);
-    
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [results]);
-
-  // Handle result input change
-  const handleResultChange = (testId, value) => {
-    const test = visit.tests.find(t => t.testId === testId);
-    let status = 'NORMAL';
-    
-    // Auto-detect HIGH/LOW for numeric values
-    if (test.inputType_snapshot === 'number' && value !== '') {
-      const numValue = parseFloat(value);
-      if (!isNaN(numValue)) {
-        if (test.refHigh_snapshot && numValue > parseFloat(test.refHigh_snapshot)) {
-          status = 'HIGH';
-        } else if (test.refLow_snapshot && numValue < parseFloat(test.refLow_snapshot)) {
-          status = 'LOW';
-        }
-      }
-    }
-    
-    setResults(prev => ({
-      ...prev,
-      [testId]: { value, status }
-    }));
-  };
-
-  // Save results
-  const handleSave = async () => {
+  // Save results (defined before useEffect that uses it)
+  const handleSave = useCallback(async () => {
     if (!visit) return;
     
     setSaveStatus('saving');
     
     try {
-      // Update visit with results
+      // Update visit with results  
       const updatedTests = visit.tests.map(test => ({
         ...test,
         value: results[test.testId]?.value || '',
@@ -166,6 +129,142 @@ const ResultEntryPage = () => {
       toast.error('Failed to save results');
       console.error('Save error:', error);
     }
+  }, [visit, visitId, currentUser, results]);
+
+  // Auto-save functionality (only for result changes)
+  useEffect(() => {
+    if (!visit || Object.keys(results).length === 0) return;
+    
+    // Skip auto-save on initial load
+    const hasAnyValue = Object.values(results).some(r => r.value !== '');
+    if (!hasAnyValue) return;
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout for autosave (2 seconds after input stops)
+    saveTimeoutRef.current = setTimeout(() => {
+      handleSave();
+    }, 2000);
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results]);
+
+  // Handle result input change
+  const handleResultChange = (testId, value) => {
+    const test = visit.tests.find(t => t.testId === testId);
+    let status = 'NORMAL';
+    
+    // Auto-detect HIGH/LOW for numeric values
+    if (test.inputType_snapshot === 'number' && value !== '') {
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue)) {
+        if (test.refHigh_snapshot && numValue > parseFloat(test.refHigh_snapshot)) {
+          status = 'HIGH';
+        } else if (test.refLow_snapshot && numValue < parseFloat(test.refLow_snapshot)) {
+          status = 'LOW';
+        }
+      }
+    }
+    
+    setResults(prev => ({
+      ...prev,
+      [testId]: { value, status }
+    }));
+  };
+
+  // Handle price change
+  const handlePriceChange = (testIndex, newPrice) => {
+    setVisit(prev => {
+      const updatedTests = [...prev.tests];
+      updatedTests[testIndex] = {
+        ...updatedTests[testIndex],
+        price_snapshot: parseFloat(newPrice) || 0
+      };
+      return { ...prev, tests: updatedTests };
+    });
+  };
+
+  // Handle remove test
+  const handleRemoveTest = (testIndex) => {
+    if (!canEditResults) {
+      toast.error('Cannot remove tests - results are locked');
+      return;
+    }
+    
+    const test = visit.tests[testIndex];
+    const confirmed = window.confirm(`Remove "${test.name || test.name_snapshot}" from this visit?`);
+    
+    if (!confirmed) return;
+    
+    setVisit(prev => {
+      const updatedTests = prev.tests.filter((_, idx) => idx !== testIndex);
+      return { ...prev, tests: updatedTests };
+    });
+    
+    toast.success('Test removed successfully');
+  };
+
+  // Handle add test
+  const handleAddTest = (test) => {
+    if (!canEditResults) {
+      toast.error('Cannot add tests - results are locked');
+      return;
+    }
+    
+    // Check if test already exists
+    const exists = visit.tests.some(t => t.testId === test.testId);
+    if (exists) {
+      toast.error('Test already added to this visit');
+      return;
+    }
+    
+    setVisit(prev => {
+      const newTest = {
+        testId: test.testId,
+        name: test.name,
+        name_snapshot: test.name,
+        code_snapshot: test.code,
+        inputType_snapshot: test.inputType,
+        unit_snapshot: test.unit,
+        refLow_snapshot: test.refLow,
+        refHigh_snapshot: test.refHigh,
+        refText_snapshot: test.refText,
+        dropdownOptions_snapshot: test.dropdownOptions,
+        price_snapshot: test.price,
+        value: '',
+        status: 'NORMAL'
+      };
+      
+      return { ...prev, tests: [...prev.tests, newTest] };
+    });
+    
+    // Initialize result for new test
+    setResults(prev => ({
+      ...prev,
+      [test.testId]: { value: '', status: 'NORMAL' }
+    }));
+    
+    toast.success(`${test.name} added successfully`);
+    setShowAddTestModal(false);
+    setTestSearchQuery('');
+  };
+
+  // Handle discount change
+  const handleDiscountChange = (newDiscount) => {
+    const discountValue = parseFloat(newDiscount) || 0;
+    if (discountValue < 0 || discountValue > 100) {
+      toast.error('Discount must be between 0-100%');
+      return;
+    }
+    setDiscount(discountValue);
   };
 
   // Validate before generating report
@@ -262,6 +361,14 @@ const ResultEntryPage = () => {
         signingTechnician: selectedTechnician
       };
       
+      // DEBUG: Log test data to see what's being passed to PDF
+      console.log('PDF Generation - Visit Data:', {
+        testsCount: visitData.tests?.length,
+        firstTest: visitData.tests?.[0],
+        patient: visitData.patient?.name,
+        profile: visitData.profile?.name
+      });
+      
       downloadReportPDF(visitData);
       toast.success('Report PDF generated successfully!');
       setShowShareOptions(true);
@@ -283,14 +390,55 @@ const ResultEntryPage = () => {
 
   // Generate Invoice PDF
   const handleGenerateInvoice = async () => {
-    await handleSave();
-    
-    toast.success('Invoice PDF generated successfully!');
-    
-    // In real implementation:
-    // POST /api/visits/${visitId}/pdf/invoice
-    
-    console.log('Invoice PDF would be generated');
+    try {
+      // Save first
+      await handleSave();
+      
+      // Prepare invoice data
+      const invoiceData = {
+        patient: {
+          name: patient.name,
+          phone: patient.phone,
+          age: patient.age,
+          gender: patient.gender,
+          visitId: visit.visitId,
+          date: visit.createdAt,
+          paymentStatus: visit.paymentStatus || 'Paid'
+        },
+        invoice: {
+          invoiceNumber: `INV-${visit.visitId}`,
+          generatedOn: new Date().toISOString(),
+          staffName: currentUser?.fullName || currentUser?.username,
+          method: visit.paymentMethod || 'Cash'
+        },
+        items: visit.tests.map(test => ({
+          name: test.name_snapshot || test.name || 'Test',
+          price: test.price_snapshot || test.price || 0,
+          qty: 1
+        })),
+        discount: billing.discountAmount,
+        subtotal: billing.subtotal,
+        finalTotal: billing.finalAmount,
+        amountPaid: billing.finalAmount
+      };
+      
+      // Generate and download invoice PDF
+      downloadInvoice(invoiceData, `Invoice-${patient.name}-${visit.visitId}.pdf`);
+      
+      toast.success('Invoice PDF generated successfully!');
+      
+      // Log audit
+      console.log('AUDIT: GENERATE_INVOICE', {
+        userId: currentUser?.userId,
+        visitId,
+        action: 'GENERATE_INVOICE',
+        timestamp: new Date().toISOString(),
+        amount: billing.finalAmount
+      });
+    } catch (error) {
+      console.error('Invoice generation error:', error);
+      toast.error('Failed to generate invoice: ' + error.message);
+    }
   };
   
   // Print Report
@@ -434,7 +582,7 @@ const ResultEntryPage = () => {
   const calculateBilling = () => {
     if (!visit || !visit.tests) return { testCount: 0, subtotal: 0, discountAmount: 0, finalAmount: 0 };
     
-    const subtotal = visit.tests.reduce((sum, test) => sum + (test.price_snapshot || 0), 0);
+    const subtotal = visit.tests.reduce((sum, test) => sum + (test.price_snapshot || test.price || 0), 0);
     const discountAmount = (subtotal * discount) / 100;
     const finalAmount = subtotal - discountAmount;
     
@@ -461,233 +609,244 @@ const ResultEntryPage = () => {
   }
 
   return (
-    <div className="result-entry-page">
-      {/* Header */}
-      <div className="page-header-modern">
-        <Button variant="outline" onClick={() => navigate(`/sample-times/${visitId}`)}>
-          <ArrowLeft size={18} />
-          Back to Sample Times
-        </Button>
-        <div className="header-info">
-          <span className="patient-name">Patient: {patient.name} \u2014 {patient.age}Y/{patient.gender}</span>
-          <span className="profile-name">Profile: {profile?.name || 'Custom'}</span>
-        </div>
-      </div>
-
-      {/* Patient/Visit Summary Card (TOP ROW) */}
-      <div className="patient-visit-summary-card">
-        <div className="summary-left">
-          <h4>Patient Information</h4>
-          <div className="info-row">
-            <span className="label">Name:</span>
-            <span className="value">{patient.name}</span>
-          </div>
-          <div className="info-row">
-            <span className="label">Age / Gender:</span>
-            <span className="value">{patient.age}Y / {patient.gender}</span>
-          </div>
-          <div className="info-row">
-            <span className="label">Phone:</span>
-            <span className="value">{patient.phone}</span>
-          </div>
-          <div className="info-row">
-            <span className="label">Referred By:</span>
-            <span className="value">{patient.referredBy || '\u2014'}</span>
+    <div className="result-entry-premium">
+      {/* Premium Glass Header */}
+      <div className="premium-header-result">
+        <div className="header-left-result">
+          <Button variant="ghost" size="small" onClick={() => navigate(`/sample-times/${visitId}`)} icon={ArrowLeft}>
+            Back
+          </Button>
+          <div className="visit-info-compact">
+            <h1>Test Results Entry</h1>
+            <div className="meta-tags">
+              <span className="tag-patient">{patient.name}</span>
+              <span className="tag-age">{patient.age}Y/{patient.gender}</span>
+              {profile && <span className="tag-profile">{profile.name}</span>}
+            </div>
           </div>
         </div>
-        <div className="summary-right">
-          <h4>Visit Timestamps</h4>
-          <div className="info-row">
-            <span className="label">Collected On:</span>
-            <span className="value">
-              {visit.collectedAt ? new Date(visit.collectedAt).toLocaleString() : 'Not recorded'}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="label">Received On:</span>
-            <span className="value">
-              {visit.receivedAt ? new Date(visit.receivedAt).toLocaleString() : 'Not recorded'}
-            </span>
-          </div>
-          <div className="info-row">
-            <span className="label">Reported On:</span>
-            <span className={`value ${visit.reportedAt ? 'reported' : 'pending'}`}>
-              {visit.reportedAt 
-                ? new Date(visit.reportedAt).toLocaleString() 
-                : 'Will be set when generating report'}
-            </span>
-          </div>
+        
+        {/* Quick Action Icons */}
+        <div className="header-actions-result">
+          <button className="icon-btn-glass" onClick={handleShareWhatsApp} title="Share via WhatsApp">
+            <MessageCircle size={20} />
+          </button>
+          <button className="icon-btn-glass" onClick={handlePrintReport} title="Print">
+            <Printer size={20} />
+          </button>
+          <button className="icon-btn-glass" onClick={handleShareEmail} title="Email">
+            <Mail size={20} />
+          </button>
+          <Button variant="primary" onClick={handleGenerateReport} disabled={isGeneratingPDF} icon={FileText}>
+            {isGeneratingPDF ? 'Generating...' : 'PDF Report'}
+          </Button>
+          <Button variant="outline" onClick={handleGenerateInvoice} icon={Receipt}>
+            Invoice
+          </Button>
         </div>
       </div>
 
       {/* Locked Message */}
       {!canEditResults && (
-        <div className="locked-message-banner">
+        <div className="locked-message-glass">
           <AlertCircle size={18} />
-          <strong>Results Locked:</strong> Report has been generated. Only admins can edit.
+          <strong>Results Locked:</strong> Report generated. Only admins can edit.
         </div>
       )}
 
-      {/* Two-Column Layout */}
-      <div className="two-column-layout-results">
-        {/* LEFT COLUMN - Tests Table */}
-        <div className="left-column-tests">
-          <div className="card-modern tests-table-card">
-            <div className="card-header-blue">
+      {/* Full-Width Results Table */}
+      <div className="results-container-premium">
+        <div className="glass-card-results">
+          <div className="card-header-glass">
+            <div className="header-left">
+              <TestTube2 size={20} />
               <h3>Test Results</h3>
-              <div className="save-indicator">
-                {saveStatus === 'saving' && (
-                  <>
-                    <Loader size={14} className="spinning" />
-                    <span>Auto-saving...</span>
-                  </>
-                )}
-                {saveStatus === 'saved' && (
-                  <>
-                    <Check size={14} />
-                    <span>Saved \u2713</span>
-                  </>
-                )}
-                {saveStatus === 'error' && (
-                  <span className="error">Save failed</span>
-                )}
-              </div>
+              <span className="test-count">{visit.tests?.length || 0} tests</span>
+              <Button
+                variant="outline"
+                size="small"
+                onClick={() => setShowAddTestModal(true)}
+                icon={Plus}
+                disabled={!canEditResults}
+              >
+                Add Test
+              </Button>
             </div>
+            <div className="save-indicator-glass">
+              {saveStatus === 'saving' && (
+                <>
+                  <Loader size={16} className="spinning" />
+                  <span>Auto-saving...</span>
+                </>
+              )}
+              {saveStatus === 'saved' && (
+                <>
+                  <Check size={16} className="check-icon" />
+                  <span>Saved</span>
+                </>
+              )}
+              {saveStatus === 'error' && (
+                <span className="error-text">Save failed</span>
+              )}
+            </div>
+          </div>
 
-            <div className="results-table-wrapper">
-              <table className="results-table">
-                <thead>
-                  <tr>
-                    <th className="col-num">#</th>
-                    <th className="col-test-name">Test Name</th>
-                    <th className="col-result">Result Input</th>
-                    <th className="col-unit">Unit</th>
-                    <th className="col-reference">Reference</th>
-                    <th className="col-status">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visit.tests && visit.tests.length > 0 ? (
-                    visit.tests.map((test, index) => (
-                      <tr key={test.testId || index}>
-                        <td className="col-num">{index + 1}</td>
-                        <td className="col-test-name">
-                          <strong>{test.name_snapshot}</strong>
-                          {test.code_snapshot && (
-                            <span className="test-code"> ({test.code_snapshot})</span>
+          <div className="results-table-wrapper-premium">
+            <table className="results-table-premium">
+              <thead>
+                <tr>
+                  <th className="col-num">#</th>
+                  <th className="col-test-desc">Test Description</th>
+                  <th className="col-result">Value</th>
+                  <th className="col-reference">Bio Ref. Internal</th>
+                  <th className="col-unit">Unit</th>
+                  <th className="col-price">Price (₹)</th>
+                  <th className="col-status">Status</th>
+                  <th className="col-action">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visit.tests && visit.tests.length > 0 ? (
+                  visit.tests.map((test, index) => (
+                    <tr key={test.testId || index}>
+                      <td className="col-num">{index + 1}</td>
+                      <td className="col-test-desc">
+                        <strong>{test.name || test.name_snapshot || test.description || 'Test ' + (index + 1)}</strong>
+                      </td>
+                      <td className="col-result">
+                        {renderResultInput(test)}
+                      </td>
+                      <td className="col-reference">
+                        <div className="reference-display">
+                          {test.bioReference || test.refLow_snapshot && test.refHigh_snapshot ? (
+                            <span className="ref-range">
+                              {test.refLow_snapshot || test.bioReference?.split('-')[0]?.trim() || '—'} – {test.refHigh_snapshot || test.bioReference?.split('-')[1]?.trim() || '—'}
+                            </span>
+                          ) : (
+                            <span className="ref-text">{test.refText_snapshot || test.bioReference || '—'}</span>
                           )}
-                        </td>
-                        <td className="col-result">
-                          {renderResultInput(test)}
-                        </td>
-                        <td className="col-unit">{test.unit_snapshot || '\u2014'}</td>
-                        <td className="col-reference">
-                          <div className="reference-display">
-                            {test.inputType_snapshot === 'number' && test.refLow_snapshot && test.refHigh_snapshot ? (
-                              <>
-                                <div className="ref-range">
-                                  {test.refLow_snapshot} \u2013 {test.refHigh_snapshot} {test.unit_snapshot}
-                                </div>
-                                {test.refText_snapshot && (
-                                  <div className="ref-note">{test.refText_snapshot}</div>
-                                )}
-                              </>
-                            ) : test.refText_snapshot ? (
-                              <div className="ref-text">{test.refText_snapshot}</div>
-                            ) : (
-                              '\u2014'
-                            )}
-                          </div>
-                        </td>
-                        <td className="col-status">
-                          {renderStatusBadge(test.testId)}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="6" className="no-tests">No tests selected</td>
+                        </div>
+                      </td>
+                      <td className="col-unit">
+                        <span className="unit-value">{test.unit || test.unit_snapshot || '—'}</span>
+                      </td>
+                      <td className="col-price">
+                        <input
+                          type="number"
+                          value={test.price_snapshot || test.price || 0}
+                          onChange={(e) => handlePriceChange(index, e.target.value)}
+                          className="price-input"
+                          disabled={!canEditResults}
+                          step="0.01"
+                          min="0"
+                        />
+                      </td>
+                      <td className="col-status">
+                        {renderStatusBadge(test.testId)}
+                      </td>
+                      <td className="col-action">
+                        <button 
+                          className="btn-remove" 
+                          onClick={() => handleRemoveTest(index)}
+                          disabled={!canEditResults}
+                          title="Remove test"
+                        >
+                          ×
+                        </button>
+                      </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="8" className="no-tests">No tests selected</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* RIGHT COLUMN - Auto-Save Status & Action */}
-        <div className="right-column-signing">
-          {/* Auto-Save Status */}
-          <div className="card-modern status-card">
-            <div className="card-header-blue">
-              <h3>Status</h3>
+        {/* Progress & Action Footer */}
+        <div className="technician-info-glass">
+          {/* Billing Summary */}
+          <div className="billing-summary">
+            <div className="billing-row">
+              <span className="billing-label">Subtotal ({visit.tests?.length || 0} tests):</span>
+              <span className="billing-value">₹{calculateBilling().subtotal.toFixed(2)}</span>
             </div>
-            <div className="card-body">
-              <div className="status-info">
-                <div className="status-item">
-                  <span className="status-label">Signed By:</span>
-                  <span className="status-value">{currentUser?.fullName || 'Unknown'}</span>
-                </div>
-                <div className="status-item">
-                  <span className="status-label">Qualification:</span>
-                  <span className="status-value">{currentUser?.qualification || 'Lab Technician'}</span>
-                </div>
-                <div className="status-item">
-                  <span className="status-label">Auto-Save:</span>
-                  <span className={`status-badge ${saveStatus}`}>
-                    {saveStatus === 'saving' && 'Saving...'}
-                    {saveStatus === 'saved' && '✓ Saved'}
-                    {saveStatus === 'error' && '⚠ Error'}
-                    {!saveStatus && 'Ready'}
-                  </span>
-                </div>
+            <div className="billing-row">
+              <span className="billing-label">Discount:</span>
+              <div className="discount-input-group">
+                <input
+                  type="number"
+                  value={discount}
+                  onChange={(e) => handleDiscountChange(e.target.value)}
+                  className="discount-input"
+                  disabled={!canEditDiscount}
+                  min="0"
+                  max="100"
+                  step="1"
+                />
+                <span className="discount-symbol">%</span>
+                <span className="discount-amount">(-₹{calculateBilling().discountAmount.toFixed(2)})</span>
               </div>
-              <div className="helper-text-box">
-                <AlertCircle size={14} />
-                <span>Results are auto-saved as you type. Your signature will be used on PDF.</span>
-              </div>
+            </div>
+            <div className="billing-row billing-total">
+              <span className="billing-label">Total Amount:</span>
+              <span className="billing-value total">₹{calculateBilling().finalAmount.toFixed(2)}</span>
             </div>
           </div>
-
-          {/* Quick Action */}
-          <div className="card-modern actions-card">
-            <div className="card-body">
-              <Button 
-                variant="primary" 
-                onClick={handleGenerateReport} 
-                fullWidth
-                disabled={isGeneratingPDF}
-                size="large"
-              >
-                <FileText size={20} />
-                {isGeneratingPDF ? 'Generating Report...' : 'Complete & Generate Report'}
-              </Button>
-              
-              {visit.reportedAt && (
-                <>
-                  <div className="divider-modern"></div>
-                  <div className="share-actions">
-                    <Button 
-                      variant="outline" 
-                      onClick={handlePrintReport} 
-                      fullWidth
-                    >
-                      <Printer size={18} />
-                      Print Report
-                    </Button>
-                    
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowShareOptions(true)} 
-                      fullWidth
-                    >
-                      <Share2 size={18} />
-                      Share Report
-                    </Button>
-                  </div>
-                </>
+          
+          <div className="progress-section">
+            <div className="progress-info">
+              <span className="progress-label">Results Entered:</span>
+              <span className="progress-value">
+                {Object.values(results).filter(r => r.value).length} / {visit.tests?.length || 0}
+              </span>
+            </div>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${(Object.values(results).filter(r => r.value).length / (visit.tests?.length || 1)) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+          
+          <div className="action-buttons">
+            <div className="save-indicator">
+              {saveStatus === 'saving' && (
+                <><Loader size={14} className="spinning" /> Auto-saving...</>
+              )}
+              {saveStatus === 'saved' && (
+                <><Check size={14} className="check-icon" /> All saved</>
+              )}
+              {saveStatus === 'error' && (
+                <><AlertCircle size={14} /> Save failed</>
               )}
             </div>
+            
+            <Button
+              variant="outline"
+              onClick={handleSave}
+              icon={Save}
+              disabled={!canEditResults}
+            >
+              Save Results
+            </Button>
+            
+            <Button
+              variant="primary"
+              onClick={handleGenerateReport}
+              icon={FileText}
+              disabled={isGeneratingPDF || Object.values(results).filter(r => r.value).length === 0}
+            >
+              {isGeneratingPDF ? 'Generating...' : 'Generate PDF Report'}
+            </Button>
+          </div>
+          
+          <div className="helper-note">
+            <AlertCircle size={14} />  
+            <span>Signed by: {currentUser?.fullName} ({currentUser?.qualification || 'Lab Technician'})</span>
           </div>
         </div>
       </div>
@@ -695,26 +854,67 @@ const ResultEntryPage = () => {
       {/* Share Options Modal */}
       {showShareOptions && (
         <div className="share-modal-overlay" onClick={() => setShowShareOptions(false)}>
-          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="share-modal-premium" onClick={(e) => e.stopPropagation()}>
             <h3>Share Report</h3>
             <p className="help-text">Choose how to share the medical report</p>
-            <div className="share-options">
+            <div className="share-options-grid">
               <Button variant="primary" onClick={() => downloadReportPDF({...visit, patient, profile, signingTechnician: selectedTechnician})} icon={Download} fullWidth>
                 Download PDF
               </Button>
               <Button variant="outline" onClick={handlePrintReport} icon={Printer} fullWidth>
                 Print Report
               </Button>
-              <Button variant="outline" onClick={handleShareWhatsApp} icon={Share2} fullWidth>
+              <Button variant="outline" onClick={handleShareWhatsApp} icon={MessageCircle} fullWidth>
                 Share via WhatsApp
               </Button>
               <Button variant="outline" onClick={handleShareEmail} icon={Mail} fullWidth>
                 Share via Email
               </Button>
             </div>
-            <Button variant="outline" onClick={() => setShowShareOptions(false)} fullWidth>
+            <Button variant="ghost" onClick={() => setShowShareOptions(false)} fullWidth>
               Close
             </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Add Test Modal */}
+      {showAddTestModal && (
+        <div className="share-modal-overlay" onClick={() => setShowAddTestModal(false)}>
+          <div className="add-test-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Add Test</h3>
+              <button className="close-btn" onClick={() => setShowAddTestModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="search-box">
+              <Search size={18} />
+              <input
+                type="text"
+                value={testSearchQuery}
+                onChange={(e) => setTestSearchQuery(e.target.value)}
+                placeholder="Search tests by name or code..."
+                autoFocus
+              />
+            </div>
+            
+            <div className="test-list">
+              {getTestsMaster(testSearchQuery).map(test => (
+                <div
+                  key={test.testId}
+                  className="test-item"
+                  onClick={() => handleAddTest(test)}
+                >
+                  <div className="test-info">
+                    <strong>{test.name}</strong>
+                    <span className="test-code">{test.code}</span>
+                  </div>
+                  <div className="test-price">₹{test.price}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

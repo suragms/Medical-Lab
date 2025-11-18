@@ -123,7 +123,7 @@ export const generateLabReportPDF = (reportData) => {
 
     doc.autoTable({
       startY: yPos,
-      head: [['Test', 'Result', 'Unit', 'Reference Range']],
+      head: [['Test', 'Result', 'Unit', 'Bio. Ref. Internal']],
       body: tableData,
       theme: 'grid',
       headStyles: {

@@ -14,10 +14,22 @@ const STORAGE_KEYS = {
 
 // Initialize seed data on first load
 export const initializeSeedData = () => {
-  // No longer initialize TESTS_MASTER - profiles now contain full test objects
+  // Check data version - force reload if structure changed
+  const currentVersion = '2.0'; // Updated to include full test objects in profiles
+  const storedVersion = localStorage.getItem('healit_data_version');
+  
+  // If version mismatch, clear profiles to reload with new structure
+  if (storedVersion !== currentVersion) {
+    console.log('Data structure updated, reloading profiles...');
+    localStorage.removeItem(STORAGE_KEYS.PROFILES);
+    localStorage.setItem('healit_data_version', currentVersion);
+  }
+  
+  // Initialize profiles with full test data
   if (!localStorage.getItem(STORAGE_KEYS.PROFILES)) {
     localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(PROFILES));
   }
+  
   if (!localStorage.getItem(STORAGE_KEYS.SETTINGS)) {
     const defaultSettings = {
       allowStaffInlineCreate: false,
