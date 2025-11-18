@@ -114,6 +114,7 @@ function App() {
           
           {/* Patient Workflow */}
           <Route path="patients/add-patient" element={<AddPatientPage />} />
+          {/* Removed SimpleAddPatientPage route since component doesn't exist */}
           <Route path="sample-times/:visitId" element={<SampleTimePage />} />
           <Route path="results/:visitId" element={<ResultEntryPage />} />
           
