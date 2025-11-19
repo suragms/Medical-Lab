@@ -85,6 +85,19 @@ export const generateLabReportPDF = (reportData) => {
     doc.text(line, leftCol, yPos);
     yPos += 5;
   });
+  
+  // Address - Handle multiline
+  const address = patient.address || 'Not provided';
+  doc.setFont('helvetica', 'bold');
+  doc.text('Address:', leftCol, yPos);
+  doc.setFont('helvetica', 'normal');
+  
+  const addressLines = doc.splitTextToSize(address, 80);
+  addressLines.forEach((line, idx) => {
+    doc.text(line, leftCol + 18, yPos + (idx * 4));
+  });
+  yPos += 4 + (addressLines.length - 1) * 4;
+  yPos += 5;
 
   yPos -= 25;
   rightDetails.forEach(line => {
@@ -127,21 +140,24 @@ export const generateLabReportPDF = (reportData) => {
       body: tableData,
       theme: 'grid',
       headStyles: {
-        fillColor: [243, 244, 246],
-        textColor: [0, 0, 0],
+        fillColor: [30, 58, 138],
+        textColor: [255, 255, 255],
         fontStyle: 'bold',
-        fontSize: 9
+        fontSize: 10,
+        halign: 'center',
+        cellPadding: 5
       },
       bodyStyles: {
-        fontSize: 9,
-        textColor: [0, 0, 0]
+        fontSize: 10,
+        textColor: [0, 0, 0],
+        cellPadding: 4
       },
       alternateRowStyles: {
         fillColor: [249, 250, 251]
       },
       columnStyles: {
-        0: { cellWidth: 70 },
-        1: { cellWidth: 30, halign: 'center' },
+        0: { cellWidth: 70, halign: 'left', fontStyle: 'bold' },
+        1: { cellWidth: 30, halign: 'center', fontStyle: 'bold', fontSize: 11 },
         2: { cellWidth: 25, halign: 'center' },
         3: { cellWidth: 50, halign: 'center' }
       },

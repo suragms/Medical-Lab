@@ -401,35 +401,35 @@
 }
 
 /* Status Badges */
-.status-badge-results {
+.status-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 6px 12px;
   border-radius: 12px;
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.status-badge-results.normal {
+.status-badge.normal {
   background: #ECFDF5;
   color: #059669;
   border: 1px solid #BBF7D0;
 }
 
-.status-badge-results.high {
+.status-badge.high {
   background: #FEF3C7;
   color: #D97706;
   border: 1px solid #FDE68A;
 }
 
-.status-badge-results.low {
+.status-badge.low {
   background: #EFF6FF;
   color: #2563EB;
   border: 1px solid #BFDBFE;
 }
 
-.status-badge-results.pending {
+.status-badge.pending {
   background: #F1F5F9;
   color: #64748B;
   border: 1px solid #CBD5E1;

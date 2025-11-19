@@ -111,14 +111,30 @@ export const generateInvoicePDF = (invoiceData) => {
     `Phone: ${patient.phone || '-'}`,
     `Age/Gender: ${patient.age || '-'}Y / ${patient.gender || '-'}`,
     `Visit ID: ${patient.visitId || '-'}`,
-    `Date: ${patient.date ? format(new Date(patient.date), 'dd-MMM-yyyy') : '-'}`,
-    `Payment: ${patient.paymentStatus || 'Unpaid'}`
+    `Date: ${patient.date ? format(new Date(patient.date), 'dd-MMM-yyyy') : '-'}`
   ];
 
   patientLines.forEach(line => {
     doc.text(line, leftCol, yPos);
     yPos += 5;
   });
+  
+  // Address - Handle multiline
+  const address = patient.address || 'Not provided';
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('Address:', leftCol, yPos);
+  doc.setFont('helvetica', 'normal');
+  
+  const addressLines = doc.splitTextToSize(address, 85);
+  addressLines.forEach((line, idx) => {
+    doc.text(line, leftCol + 18, yPos + (idx * 4));
+  });
+  yPos += 4 + (addressLines.length - 1) * 4;
+  
+  yPos += 5;
+  doc.text(`Payment: ${patient.paymentStatus || 'Unpaid'}`, leftCol, yPos);
+  yPos += 5;
 
   // Right: Invoice details
   yPos -= 30;
@@ -163,7 +179,8 @@ export const generateInvoicePDF = (invoiceData) => {
       fontStyle: 'bold',
       fontSize: 10,
       halign: 'center',
-      valign: 'middle'
+      valign: 'middle',
+      cellPadding: 5
     },
     bodyStyles: {
       fontSize: 10,
@@ -174,8 +191,8 @@ export const generateInvoicePDF = (invoiceData) => {
       fillColor: [249, 250, 251]
     },
     columnStyles: {
-      0: { cellWidth: 15, halign: 'center', valign: 'middle' },
-      1: { cellWidth: 85, halign: 'left', valign: 'middle' },
+      0: { cellWidth: 15, halign: 'center', valign: 'middle', fontStyle: 'bold' },
+      1: { cellWidth: 85, halign: 'left', valign: 'middle', fontStyle: 'bold' },
       2: { cellWidth: 30, halign: 'right', valign: 'middle' },
       3: { cellWidth: 15, halign: 'center', valign: 'middle' },
       4: { cellWidth: 35, halign: 'right', valign: 'middle', fontStyle: 'bold' }
@@ -189,7 +206,7 @@ export const generateInvoicePDF = (invoiceData) => {
   });
 
   // ========== SUMMARY SECTION ==========
-  yPos = doc.lastAutoTable.finalY + 8;
+  yPos = doc.lastAutoTable.finalY + 10;
   
   // Calculate totals correctly - ENSURE NUMBERS
   const calculatedSubtotal = items.reduce((sum, item) => {
@@ -202,31 +219,37 @@ export const generateInvoicePDF = (invoiceData) => {
   const actualPaid = parseFloat(amountPaid) || calculatedTotal;
   const balance = calculatedTotal - actualPaid;
   
-  // Create summary box on right side - WIDER BOX
-  const summaryX = 95;
-  const summaryWidth = pageWidth - 15 - summaryX;
+  // Create summary box on right side - Professional Layout
+  const summaryX = pageWidth - 105;
+  const summaryWidth = 90;
   
   doc.setDrawColor(30, 58, 138);
-  doc.setLineWidth(0.8);
-  doc.rect(summaryX, yPos, summaryWidth, 50);
+  doc.setLineWidth(1);
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(summaryX, yPos, summaryWidth, 56, 3, 3, 'FD');
   
   // Summary content
-  let summaryY = yPos + 8;
-  const labelX = summaryX + 5;
+  let summaryY = yPos + 9;
+  const labelX = summaryX + 6;
   const valueX = pageWidth - 18;
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(100, 116, 139);
   
   // Subtotal
   doc.text('Subtotal:', labelX, summaryY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
   doc.text('Rs. ' + calculatedSubtotal.toFixed(2), valueX, summaryY, { align: 'right' });
   summaryY += 8;
   
   // Discount
   if (actualDiscount > 0) {
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
     doc.text('Discount:', labelX, summaryY);
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(220, 38, 38);
     doc.text('- Rs. ' + actualDiscount.toFixed(2), valueX, summaryY, { align: 'right' });
     doc.setTextColor(0, 0, 0);
@@ -234,24 +257,36 @@ export const generateInvoicePDF = (invoiceData) => {
   }
   
   // Tax/GST
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
   doc.text('Tax/GST:', labelX, summaryY);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
   doc.text('Rs. 0.00', valueX, summaryY, { align: 'right' });
   summaryY += 8;
   
+  // Divider
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.5);
+  doc.line(labelX, summaryY - 2, valueX, summaryY - 2);
+  summaryY += 3;
+  
   // Grand Total - Highlighted
-  doc.setFillColor(240, 245, 255);
-  doc.rect(summaryX + 1, summaryY - 6, summaryWidth - 2, 10, 'F');
+  doc.setFillColor(239, 246, 255);
+  doc.roundedRect(summaryX + 3, summaryY - 5, summaryWidth - 6, 11, 2, 2, 'F');
+  
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(13);
   doc.setTextColor(30, 58, 138);
   doc.text('Grand Total:', labelX, summaryY);
+  doc.setFontSize(14);
   doc.text('Rs. ' + calculatedTotal.toFixed(2), valueX, summaryY, { align: 'right' });
-  summaryY += 10;
+  summaryY += 11;
   
   // Amount Paid
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(100, 116, 139);
   doc.text('Amount Paid:', labelX, summaryY);
   doc.setTextColor(22, 163, 74);
   doc.setFont('helvetica', 'bold');
@@ -261,15 +296,16 @@ export const generateInvoicePDF = (invoiceData) => {
   // Balance Due
   doc.setFont('helvetica', 'normal');
   if (balance > 0) {
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(100, 116, 139);
     doc.text('Balance Due:', labelX, summaryY);
     doc.setTextColor(220, 38, 38);
     doc.setFont('helvetica', 'bold');
     doc.text('Rs. ' + balance.toFixed(2), valueX, summaryY, { align: 'right' });
   } else {
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(100, 116, 139);
     doc.text('Balance Due:', labelX, summaryY);
     doc.setTextColor(22, 163, 74);
+    doc.setFont('helvetica', 'bold');
     doc.text('Rs. 0.00', valueX, summaryY, { align: 'right' });
   }
 
