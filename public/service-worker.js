@@ -4,8 +4,7 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/icon.svg'
 ];
 
 // Install event - cache essential files
@@ -39,6 +38,11 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -47,7 +51,10 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
 
-        return fetch(event.request).then(
+        // Clone the request to ensure it's used only once
+        const fetchRequest = event.request.clone();
+
+        return fetch(fetchRequest).then(
           (response) => {
             // Check if valid response
             if (!response || response.status !== 200 || response.type !== 'basic') {
@@ -64,7 +71,14 @@ self.addEventListener('fetch', (event) => {
 
             return response;
           }
-        );
+        ).catch(() => {
+          // Return a fallback response for critical assets
+          if (event.request.url.includes('icon') || event.request.url.includes('manifest.json')) {
+            // For icons and manifest, return a basic response
+            return new Response('', { status: 200, statusText: 'OK' });
+          }
+          return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+        });
       })
   );
 });
@@ -85,8 +99,8 @@ async function syncData() {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : 'New notification from HEALit Lab',
-    icon: '/icon-192.png',
-    badge: '/icon-72.png',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
     vibrate: [200, 100, 200],
     tag: 'healit-notification',
     requireInteraction: true

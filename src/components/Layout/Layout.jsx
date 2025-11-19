@@ -279,8 +279,11 @@ const Layout = () => {
             <button className="nav-icon-btn" onClick={() => navigate(role === 'admin' ? '/settings' : '/settings/staff')} title="Settings">
               <SettingsIcon size={18} />
             </button>
-            <button className="nav-icon-btn" title="Profile">
+            <button className="nav-icon-btn" title={`Profile: ${user?.fullName || user?.username || 'User'}`}>
               <UserCircle size={18} />
+              <span className="username-display">
+                {user?.fullName || user?.username || 'User'}
+              </span>
             </button>
             <button className="nav-icon-btn logout" onClick={handleLogout} title="Logout">
               <LogOut size={18} />

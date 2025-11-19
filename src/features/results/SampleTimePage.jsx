@@ -366,7 +366,7 @@ const SampleTimePage = () => {
             </span>
           </div>
           {currentUser && (
-            <div className="info-item staff-info" title={`User ID: ${currentUser.userId}`}>
+            <div className="info-item staff-info" title={`User: ${currentUser.fullName || currentUser.username} (${currentUser.userId})`}>
               <User size={14} className="icon-staff" />
               <span className="value staff-name">{currentUser.fullName || currentUser.username}</span>
             </div>

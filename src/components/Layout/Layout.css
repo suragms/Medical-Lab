@@ -122,11 +122,38 @@
   transition: all 0.2s ease;
 }
 
+.nav-icon-btn .username-display {
+  position: absolute;
+  left: calc(100% + 8px);
+  background: #000000;
+  color: #FFFFFF;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.nav-icon-btn:hover .username-display {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 .nav-icon-btn:hover {
   background: #FFFFFF;
   color: #000000;
   border-color: #FFFFFF;
   transform: translateY(-1px) scale(1.1);
+}
+
+.nav-icon-btn:hover .username-display {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .nav-icon-btn.logout:hover {
