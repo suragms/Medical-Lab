@@ -1,0 +1,178 @@
+[
+  {
+    "patient": {
+      "name": "Rajesh Kumar",
+      "age": 45,
+      "gender": "Male",
+      "phone": "9876543210",
+      "address": "123 Main Street, Thrissur, Kerala",
+      "referredBy": "Dr. Sharma"
+    },
+    "tests": [
+      { "name": "Blood Urea Nitrogen (BUN)", "value": "25.5", "unit": "mg/dL", "bioReference": "7.94 - 20.07", "notes": "Above normal - HIGH" },
+      { "name": "Creatinine", "value": "1.2", "unit": "mg/dL", "bioReference": "0.72 - 1.18", "notes": "At boundary - BOUNDARY" },
+      { "name": "Hemoglobin", "value": "14.5", "unit": "g/dL", "bioReference": "13.0 - 17.0", "notes": "Normal range" },
+      { "name": "Total Cholesterol", "value": "180", "unit": "mg/dL", "bioReference": "< 200", "notes": "Normal - less than format" }
+    ]
+  },
+  {
+    "patient": {
+      "name": "Priya Menon",
+      "age": 32,
+      "gender": "Female",
+      "phone": "9123456789",
+      "address": "456 Park Avenue, Kochi, Kerala",
+      "referredBy": "Self"
+    },
+    "tests": [
+      { "name": "Hemoglobin", "value": "11.8", "unit": "g/dL", "bioReference": "12.0 - 15.0", "notes": "Below normal - LOW" },
+      { "name": "Blood Sugar Fasting", "value": "70", "unit": "mg/dL", "bioReference": "70 - 100", "notes": "At minimum boundary - BOUNDARY" },
+      { "name": "TSH", "value": "2.5", "unit": "µIU/mL", "bioReference": "0.4 - 4.0", "notes": "Normal range" },
+      { "name": "Vitamin D", "value": "15", "unit": "ng/mL", "bioReference": "30 - 100", "notes": "Below normal - LOW" }
+    ]
+  },
+  {
+    "patient": {
+      "name": "Ahmed Ali",
+      "age": 58,
+      "gender": "Male",
+      "phone": "9988776655",
+      "address": "789 Beach Road, Kozhikode, Kerala",
+      "referredBy": "Dr. Nair"
+    },
+    "tests": [
+      { "name": "SGPT (ALT)", "value": "125", "unit": "U/L", "bioReference": "< 40", "notes": "Significantly high - HIGH" },
+      { "name": "SGOT (AST)", "value": "95", "unit": "U/L", "bioReference": "< 35", "notes": "Significantly high - HIGH" },
+      { "name": "HbA1c", "value": "7.8", "unit": "%", "bioReference": "< 5.7", "notes": "Diabetic range - HIGH" },
+      { "name": "Triglycerides", "value": "220", "unit": "mg/dL", "bioReference": "< 150", "notes": "High - HIGH" }
+    ]
+  },
+  {
+    "patient": {
+      "name": "Lakshmi Iyer",
+      "age": 28,
+      "gender": "Female",
+      "phone": "9876501234",
+      "address": "321 Temple Street, Palakkad, Kerala",
+      "referredBy": "Dr. Reddy"
+    },
+    "tests": [
+      { "name": "WBC Count", "value": "9000", "unit": "cells/µL", "bioReference": "4000 - 11000", "notes": "Normal range" },
+      { "name": "Platelet Count", "value": "150000", "unit": "/µL", "bioReference": "150000 - 400000", "notes": "At minimum boundary - BOUNDARY" },
+      { "name": "RBC Count", "value": "4.8", "unit": "M/µL", "bioReference": "4.2 - 5.4", "notes": "Normal range" },
+      { "name": "ESR", "value": "12", "unit": "mm/hr", "bioReference": "0 - 20", "notes": "Normal range" }
+    ]
+  },
+  {
+    "patient": {
+      "name": "Suresh Nair",
+      "age": 65,
+      "gender": "Male",
+      "phone": "9123498765",
+      "address": "654 Hill View, Kannur, Kerala",
+      "referredBy": "Dr. Joseph"
+    },
+    "tests": [
+      { "name": "Sodium", "value": "128", "unit": "mmol/L", "bioReference": "135 - 145", "notes": "Low - hyponatremia - LOW" },
+      { "name": "Potassium", "value": "5.8", "unit": "mmol/L", "bioReference": "3.5 - 5.0", "notes": "High - hyperkalemia - HIGH" },
+      { "name": "Calcium", "value": "8.9", "unit": "mg/dL", "bioReference": "8.5 - 10.5", "notes": "Normal range" },
+      { "name": "Uric Acid", "value": "8.5", "unit": "mg/dL", "bioReference": "3.5 - 7.2", "notes": "High - HIGH" }
+    ]
+  },
+  {
+    "patient": {
+      "name": "Meera Pillai",
+      "age": 40,
+      "gender": "Female",
+      "phone": "9988112233",
+      "address": "987 River Side, Alappuzha, Kerala",
+      "referredBy": "Self"
+    },
+    "tests": [
+      { "name": "Total Bilirubin", "value": "1.8", "unit": "mg/dL", "bioReference": "0.3 - 1.2", "notes": "High - HIGH" },
+      { "name": "Direct Bilirubin", "value": "0.5", "unit": "mg/dL", "bioReference": "< 0.3", "notes": "High - HIGH" },
+      { "name": "Albumin", "value": "3.8", "unit": "g/dL", "bioReference": "3.5 - 5.0", "notes": "Normal range" },
+      { "name": "Globulin", "value": "2.8", "unit": "g/dL", "bioReference": "2.0 - 3.5", "notes": "Normal range" }
+    ]
+  },
+  {
+    "patient": {
+      "name": "Vinod Thomas",
+      "age": 50,
+      "gender": "Male",
+      "phone": "9876509876",
+      "address": "135 Church Road, Kollam, Kerala",
+      "referredBy": "Dr. Kumar"
+    },
+    "tests": [
+      { "name": "Urine Protein", "value": "Trace", "unit": "", "bioReference": "Negative", "notes": "Non-numeric - qualitative result" },
+      { "name": "Urine Glucose", "value": "Negative", "unit": "", "bioReference": "Negative", "notes": "Normal - qualitative" },
+      { "name": "Urine pH", "value": "6.2", "unit": "", "bioReference": "5.0 - 8.0", "notes": "Normal range" },
+      { "name": "Specific Gravity", "value": "1.025", "unit": "", "bioReference": "1.005 - 1.030", "notes": "Normal range" }
+    ]
+  },
+  {
+    "patient": {
+      "name": "Anjali Menon",
+      "age": 35,
+      "gender": "Female",
+      "phone": "9123487654",
+      "address": "246 Market Street, Wayanad, Kerala - Long address to test multi-line wrapping and display formatting in PDF reports",
+      "referredBy": "Dr. Sebastian"
+    },
+    "tests": [
+      { "name": "T3 Total", "value": "1.8", "unit": "nmol/L", "bioReference": "Adult: 1.2 - 2.8 nmol/L\nChildren: 1.5 - 3.2 nmol/L\nElderly: 0.8 - 2.0 nmol/L", "notes": "Multi-line bio reference - normal" },
+      { "name": "T4 Total", "value": "145", "unit": "nmol/L", "bioReference": "Adult: 66 - 181 nmol/L\nPregnant: 90 - 200 nmol/L", "notes": "Multi-line bio reference - normal" },
+      { "name": "Free T3", "value": "3.2", "unit": "pmol/L", "bioReference": "2.3 - 4.2", "notes": "Normal range" },
+      { "name": "Free T4", "value": "18", "unit": "pmol/L", "bioReference": "10 - 23", "notes": "Normal range" }
+    ]
+  },
+  {
+    "patient": {
+      "name": "Ravi Krishnan",
+      "age": 72,
+      "gender": "Male",
+      "phone": "9988334455",
+      "address": "753 Station Road, Thiruvananthapuram, Kerala",
+      "referredBy": "Dr. Menon"
+    },
+    "tests": [
+      { "name": "PSA Total", "value": "12.5", "unit": "ng/mL", "bioReference": "< 4.0", "notes": "Significantly elevated - HIGH" },
+      { "name": "Vitamin B12", "value": "185", "unit": "pg/mL", "bioReference": "200 - 900", "notes": "Below normal - LOW" },
+      { "name": "Folate", "value": "3.2", "unit": "ng/mL", "bioReference": "> 3.0", "notes": "At boundary - BOUNDARY" },
+      { "name": "Ferritin", "value": "450", "unit": "ng/mL", "bioReference": "20 - 250", "notes": "High - HIGH" }
+    ]
+  },
+  {
+    "patient": {
+      "name": "Divya Nambiar",
+      "age": 25,
+      "gender": "Female",
+      "phone": "9876598765",
+      "address": "852 College Avenue, Malappuram, Kerala",
+      "referredBy": "Self"
+    },
+    "tests": [
+      { "name": "Hemoglobin", "value": "12.0", "unit": "g/dL", "bioReference": "Male: 13.0 - 17.0 g/dL\nFemale: 12.0 - 15.0 g/dL\nPregnant: 11.0 - 14.0 g/dL", "notes": "At minimum boundary - BOUNDARY - multi-line ref" },
+      { "name": "MCV", "value": "92", "unit": "fL", "bioReference": "80 - 100", "notes": "Normal range" },
+      { "name": "MCH", "value": "28", "unit": "pg", "bioReference": "27 - 32", "notes": "Normal range" },
+      { "name": "MCHC", "value": "34", "unit": "g/dL", "bioReference": "32 - 36", "notes": "Normal range" },
+      { "name": "RDW", "value": "14.2", "unit": "%", "bioReference": "11.5 - 14.5", "notes": "Normal range" },
+      { "name": "Neutrophils", "value": "68", "unit": "%", "bioReference": "40 - 70", "notes": "Normal range" },
+      { "name": "Lymphocytes", "value": "25", "unit": "%", "bioReference": "20 - 40", "notes": "Normal range" },
+      { "name": "Monocytes", "value": "5", "unit": "%", "bioReference": "2 - 8", "notes": "Normal range" },
+      { "name": "Eosinophils", "value": "1.5", "unit": "%", "bioReference": "1 - 4", "notes": "Normal range" },
+      { "name": "Basophils", "value": "0.5", "unit": "%", "bioReference": "0.5 - 1.0", "notes": "At minimum boundary - BOUNDARY" },
+      { "name": "Absolute Neutrophils", "value": "6100", "unit": "cells/µL", "bioReference": "2000 - 7500", "notes": "Normal range" },
+      { "name": "Absolute Lymphocytes", "value": "2250", "unit": "cells/µL", "bioReference": "1000 - 4800", "notes": "Normal range" },
+      { "name": "Absolute Monocytes", "value": "450", "unit": "cells/µL", "bioReference": "200 - 1000", "notes": "Normal range" },
+      { "name": "Absolute Eosinophils", "value": "135", "unit": "cells/µL", "bioReference": "20 - 500", "notes": "Normal range" },
+      { "name": "Absolute Basophils", "value": "45", "unit": "cells/µL", "bioReference": "20 - 100", "notes": "Normal range" },
+      { "name": "Immature Granulocytes", "value": "0.2", "unit": "%", "bioReference": "< 1.0", "notes": "Normal range" },
+      { "name": "Blood Sugar (PP)", "value": "155", "unit": "mg/dL", "bioReference": "< 140", "notes": "Slightly elevated - HIGH" },
+      { "name": "Cholesterol HDL", "value": "55", "unit": "mg/dL", "bioReference": "> 40", "notes": "Normal range" },
+      { "name": "Cholesterol LDL", "value": "125", "unit": "mg/dL", "bioReference": "< 130", "notes": "Normal range" },
+      { "name": "VLDL", "value": "28", "unit": "mg/dL", "bioReference": "< 30", "notes": "Normal range" }
+  ]
+  }
+]

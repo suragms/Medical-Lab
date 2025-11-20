@@ -19,7 +19,7 @@ import {
   Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getVisits, getPatients, getProfileById, markPDFGenerated, markInvoiceGenerated, getVisitById, deletePatient } from '../../features/shared/dataService';
+import { getVisits, getPatients, getProfileById, markPDFGenerated, markInvoiceGenerated, getVisitById, deletePatient, subscribeToPatients, subscribeToVisits } from '../../services/firestoreService';
 import { downloadReportPDF } from '../../utils/pdfGenerator';
 import { getTechnicians } from '../../services/authService';
 import Card from '../../components/ui/Card';
@@ -92,22 +92,28 @@ const Patients = () => {
     }
   ];
 
-  // Load visits and patients from localStorage
+  // Load visits and patients from Firestore with real-time sync
   useEffect(() => {
     loadData();
     
-    // Listen for real-time data updates
-    const handleDataUpdate = () => {
-      loadData();
-    };
+    // Subscribe to real-time updates
+    const unsubscribePatients = subscribeToPatients((updatedPatients) => {
+      setPatients(updatedPatients);
+    });
     
-    window.addEventListener('healit-data-update', handleDataUpdate);
-    return () => window.removeEventListener('healit-data-update', handleDataUpdate);
+    const unsubscribeVisits = subscribeToVisits((updatedVisits) => {
+      setVisits(updatedVisits);
+    });
+    
+    return () => {
+      unsubscribePatients();
+      unsubscribeVisits();
+    };
   }, []);
 
-  const loadData = () => {
-    const allVisits = getVisits();
-    const allPatients = getPatients();
+  const loadData = async () => {
+    const allVisits = await getVisits();
+    const allPatients = await getPatients();
     setVisits(allVisits);
     setPatients(allPatients);
   };

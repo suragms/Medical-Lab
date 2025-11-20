@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Check, AlertCircle, Copy, TestTube2, Timer, Droplet, User, FileText } from 'lucide-react';
-import { getVisitById, updateVisit, getPatientById, getProfileById } from '../shared/dataService';
+import { getVisitById, updateVisit, getPatientById, getProfileById } from '../../services/firestoreService';
 import { getCurrentUser } from '../../services/authService';
 import { useAuthStore } from '../../store';
 import Button from '../../components/ui/Button';

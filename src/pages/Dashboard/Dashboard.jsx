@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store';
 import { getAdminDashboardData, getStaffDashboardData } from '../../services/dashboardService';
-import { getVisits } from '../../features/shared/dataService';
+import { getVisits } from '../../services/firestoreService';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import './Dashboard.css';
@@ -32,7 +32,7 @@ const Dashboard = () => {
     return () => window.removeEventListener('healit-data-update', handleDataUpdate);
   }, [role, user]);
 
-  const loadDashboardData = () => {
+  const loadDashboardData = async () => {
     setLoading(true);
     try {
       if (role === 'admin') {
@@ -40,7 +40,7 @@ const Dashboard = () => {
         setDashboardData(data);
         
         // Load alerts for admin - FIXED LOGIC
-        const allVisits = getVisits();
+        const allVisits = await getVisits();
         // WAITING = Sample collected, waiting for results entry (sample_times_set)
         const waitingPatients = allVisits.filter(v => v.status === 'sample_times_set');
         // UNPAID = Payment not received yet (check for undefined too)

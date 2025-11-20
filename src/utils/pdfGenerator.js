@@ -1,5 +1,7 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { LOGO_PATHS, SIGNATURE_PATHS, imageToBase64 } from './assetPath';
+import { parseRange, checkRangeStatus, getStatusColor, getStatusBgColor, shouldBeBold } from './rangeParser';
 
 // HEALit Brand Colors - Simplified for Professional Reports
 const COLORS = {
@@ -21,7 +23,7 @@ const COLORS = {
  * @param {Object} visitData - Visit with patient, profile, and test snapshots
  * @returns {jsPDF} PDF document
  */
-export const generateReportPDF = (visitData) => {
+export const generateReportPDF = async (visitData) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -42,12 +44,12 @@ export const generateReportPDF = (visitData) => {
   const logoHeight = 24;
   const logoY = yPos;
   
-  // Left Logo - HEALit
+  // Left Logo - HEALit (convert to base64)
   try {
-    const healitLogo = '/images/@heal original editable file (png).png';
-    doc.addImage(healitLogo, 'PNG', margin, logoY, logoHeight * 1.5, logoHeight);
+    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
+    doc.addImage(healitBase64, 'PNG', margin, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
-    console.log('HEALit logo not loaded');
+    console.error('HEALit logo not loaded:', error);
   }
   
   // Center title - Lab Name
@@ -56,12 +58,12 @@ export const generateReportPDF = (visitData) => {
   doc.setTextColor(0, 0, 0);
   doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
   
-  // Right Logo - Thyrocare
+  // Right Logo - Thyrocare (convert to base64)
   try {
-    const partnerLogo = '/images/download.jpeg.jpg';
-    doc.addImage(partnerLogo, 'JPEG', pageWidth - margin - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
+    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
+    doc.addImage(partnerBase64, 'JPEG', pageWidth - margin - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
-    console.log('Partner logo not loaded');
+    console.error('Partner logo not loaded:', error);
   }
 
   yPos += logoHeight + 3;
@@ -138,22 +140,11 @@ export const generateReportPDF = (visitData) => {
   
   const groupedTests = groupTestsByCategory(visitData.tests);
   
-  Object.keys(groupedTests).forEach((category) => {
+  Object.keys(groupedTests).forEach((category, categoryIndex) => {
     const tests = groupedTests[category];
     
-    // Category Header (if multiple categories)
-    if (Object.keys(groupedTests).length > 1 && category !== 'General') {
-      doc.setFillColor(COLORS.headerBg);
-      doc.roundedRect(margin, yPos, blockWidth, 8, 2, 2, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.setTextColor('#FFFFFF');
-      doc.text(category.toUpperCase(), pageWidth / 2, yPos + 5.5, { align: 'center' });
-      yPos += 12;
-    }
-
     // ========================================
-    // TEST RESULTS TABLE
+    // TEST RESULTS TABLE - COLORFUL STRIPED
     // ========================================
     
     // DEBUG: Log test data
@@ -175,39 +166,9 @@ export const generateReportPDF = (visitData) => {
       const testValue = test.value || '—';
       const testUnit = test.unit_snapshot || test.unit || '';
       const reference = formatReference(test);
-      
-      // Enhanced status detection with boundary values
-      const numValue = parseFloat(testValue);
-      let isBold = false;
-      let resultColor = [17, 17, 17]; // Default black
-      
-      if (!isNaN(numValue) && test.inputType_snapshot === 'number') {
-        // Check if value is at boundary (equal to min or max)
-        if (test.refLow_snapshot !== null && test.refLow_snapshot !== undefined) {
-          const refLow = parseFloat(test.refLow_snapshot);
-          if (!isNaN(refLow) && numValue === refLow) {
-            isBold = true;
-            resultColor = [59, 130, 246]; // Blue for boundary
-          }
-        }
-        
-        if (test.refHigh_snapshot !== null && test.refHigh_snapshot !== undefined) {
-          const refHigh = parseFloat(test.refHigh_snapshot);
-          if (!isNaN(refHigh) && numValue === refHigh) {
-            isBold = true;
-            resultColor = [239, 68, 68]; // Red for boundary
-          }
-        }
-        
-        // Check if value is abnormal (outside range)
-        if (!isBold) {
-          const isAbnormal = isValueAbnormal(test);
-          if (isAbnormal) {
-            isBold = true;
-            resultColor = getResultColor(test);
-          }
-        }
-      }
+      const resultColor = getResultColor(test);
+      const resultBgColor = getResultBgColor(test);
+      const isAbnormal = isValueAbnormal(test);
       
       return [
         testName,
@@ -215,8 +176,10 @@ export const generateReportPDF = (visitData) => {
           content: testValue, 
           styles: { 
             textColor: resultColor,
-            fontStyle: isBold ? 'bold' : 'normal',
-            fontSize: isBold ? (useCompactMode ? 10 : 11) : (useCompactMode ? 9 : 10)
+            fillColor: resultBgColor || [255, 255, 255],
+            fontStyle: isAbnormal ? 'bold' : 'normal',
+            fontSize: isAbnormal ? 10.5 : 10,
+            halign: 'center'
           } 
         },
         testUnit,
@@ -224,51 +187,43 @@ export const generateReportPDF = (visitData) => {
       ];
     });
 
-    // If not enough space and more than 3 rows, start new page
-    if (spaceLeft < estimatedTableHeight && tests.length > 3) {
-      doc.addPage();
-      yPos = margin + 10;
-    }
-
     doc.autoTable({
       startY: yPos,
       head: [['Test Description', 'Result', 'Unit', 'Bio. Ref. Internal']],
       body: tableData,
-      theme: 'grid',
+      theme: 'striped',
       styles: {
         font: 'helvetica',
-        fontSize: useCompactMode ? 9 : 10,
-        cellPadding: useCompactMode ? 3 : 4,
+        fontSize: 10,
+        cellPadding: 4,
         textColor: '#111',
         lineColor: [30, 58, 138],
-        lineWidth: 0.1,
-        overflow: 'linebreak'
+        lineWidth: 0.2,
+        overflow: 'linebreak',
+        valign: 'middle'
       },
       headStyles: {
         fillColor: [30, 58, 138],
-        textColor: '#FFFFFF',
+        textColor: [255, 255, 255],
         fontStyle: 'bold',
         fontSize: useCompactMode ? 9 : 10,
         halign: 'center',
         valign: 'middle',
-        cellPadding: useCompactMode ? 4 : 5
+        cellPadding: 5
       },
       columnStyles: {
-        0: { cellWidth: 85, halign: 'left', fontStyle: 'bold' }, // 45% width
-        1: { cellWidth: 22, halign: 'center', fontStyle: 'normal' }, // 12% width
-        2: { cellWidth: 22, halign: 'center', textColor: '#666' }, // 12% width
-        3: { cellWidth: 55, halign: 'left', textColor: '#666', cellPadding: useCompactMode ? 2 : 3 } // 31% width with proper padding
+        0: { cellWidth: 70, halign: 'left', fontStyle: 'bold', fontSize: 10 },
+        1: { cellWidth: 30, halign: 'center', fontStyle: 'normal' },
+        2: { cellWidth: 25, halign: 'center', fontSize: 9 },
+        3: { cellWidth: 55, halign: 'left', fontSize: 8.5, whiteSpace: 'pre-wrap' }
       },
       alternateRowStyles: {
-        fillColor: [249, 250, 251]
+        fillColor: [240, 248, 255] // Light blue striped rows
       },
       margin: { left: margin, right: margin },
-      pageBreak: 'avoid',
+      pageBreak: 'auto',
       rowPageBreak: 'avoid',
-      tableWidth: 'auto',
-      styles: {
-        cellWidth: 'wrap'
-      }
+      tableWidth: 'auto'
     });
 
     yPos = doc.lastAutoTable.finalY + 5;
@@ -308,17 +263,13 @@ export const generateReportPDF = (visitData) => {
   doc.setTextColor('#111'); // COLORS.text
   doc.text('Billed By:', leftSigX, yPos);
   
-  // Add technician signature image
+  // Add technician signature image (convert to base64)
   try {
-    const technicianSignature = '/images/signatures/rakhi-signature.png';
-    doc.addImage(technicianSignature, 'PNG', leftSigX, yPos + 2, 30, 12);
+    const technicianSignatureBase64 = await imageToBase64(SIGNATURE_PATHS.rakhi);
+    doc.addImage(technicianSignatureBase64, 'JPEG', leftSigX, yPos + 2, 30, 12);
   } catch (error) {
-    try {
-      const technicianSignature = '/images/RakiSign.jpg';
-      doc.addImage(technicianSignature, 'JPEG', leftSigX, yPos + 2, 30, 12);
-    } catch (err) {
-      doc.line(leftSigX, yPos + 8, leftSigX + 40, yPos + 8);
-    }
+    console.error('Technician signature failed:', error);
+    doc.line(leftSigX, yPos + 8, leftSigX + 40, yPos + 8);
   }
   
   // Name
@@ -335,17 +286,13 @@ export const generateReportPDF = (visitData) => {
   doc.setTextColor('#111'); // COLORS.text
   doc.text('Authorized Signatory:', rightSigX, yPos);
   
-  // Add authorized signature image
+  // Add authorized signature image (convert to base64)
   try {
-    const authSignature = '/images/signatures/aparna-signature.png';
-    doc.addImage(authSignature, 'PNG', rightSigX, yPos + 2, 30, 12);
+    const authSignatureBase64 = await imageToBase64(SIGNATURE_PATHS.aparna);
+    doc.addImage(authSignatureBase64, 'PNG', rightSigX, yPos + 2, 30, 12);
   } catch (error) {
-    try {
-      const authSignature = '/images/signatures/aparna-signature.jpg';
-      doc.addImage(authSignature, 'JPEG', rightSigX, yPos + 2, 30, 12);
-    } catch (err) {
-      doc.line(rightSigX, yPos + 8, rightSigX + 45, yPos + 8);
-    }
+    console.error('Auth signature failed:', error);
+    doc.line(rightSigX, yPos + 8, rightSigX + 45, yPos + 8);
   }
   
   doc.setFontSize(8);
@@ -378,24 +325,34 @@ export const generateReportPDF = (visitData) => {
 
 /**
  * Check if value is abnormal (outside reference range)
+ * Enhanced with robust range parsing
  */
 const isValueAbnormal = (test) => {
-  if (!test.value || test.inputType_snapshot !== 'number') {
-    return false;
-  }
+  if (!test.value) return false;
   
   const numValue = parseFloat(test.value);
   if (isNaN(numValue)) return false;
   
-  if (test.refHigh_snapshot && numValue > parseFloat(test.refHigh_snapshot)) {
-    return true; // HIGH
+  // Try numeric ref ranges first
+  if (test.refHigh_snapshot !== null && test.refHigh_snapshot !== undefined) {
+    const refHigh = parseFloat(test.refHigh_snapshot);
+    if (!isNaN(refHigh) && numValue > refHigh) return true;
   }
   
-  if (test.refLow_snapshot && numValue < parseFloat(test.refLow_snapshot)) {
-    return true; // LOW
+  if (test.refLow_snapshot !== null && test.refLow_snapshot !== undefined) {
+    const refLow = parseFloat(test.refLow_snapshot);
+    if (!isNaN(refLow) && numValue < refLow) return true;
   }
   
-  return false; // NORMAL
+  // Parse bioReference or refText if numeric refs not available
+  const rangeStr = test.bioReference_snapshot || test.bioReference || test.refText_snapshot || test.refText;
+  if (rangeStr) {
+    const range = parseRange(rangeStr);
+    const status = checkRangeStatus(numValue, range);
+    return status === 'HIGH' || status === 'LOW';
+  }
+  
+  return false;
 };
 
 /**
@@ -426,26 +383,74 @@ const formatReference = (test) => {
 };
 
 /**
- * Get result color based on HIGH/LOW/NORMAL status
+ * Get result color based on HIGH/LOW/BOUNDARY/NORMAL status
+ * Enhanced with robust range parsing
  * Returns RGB array for jsPDF compatibility
  */
 const getResultColor = (test) => {
-  if (!test.value || test.inputType_snapshot !== 'number') {
-    return [17, 17, 17]; // Black for NORMAL
-  }
+  if (!test.value) return [17, 17, 17];
   
   const numValue = parseFloat(test.value);
-  if (isNaN(numValue)) return [17, 17, 17]; // Black
+  if (isNaN(numValue)) return [17, 17, 17];
   
-  if (test.refHigh_snapshot && numValue > parseFloat(test.refHigh_snapshot)) {
-    return [239, 68, 68]; // RED for HIGH
+  // Try numeric ref ranges first
+  let status = 'NORMAL';
+  
+  if (test.refHigh_snapshot !== null && test.refHigh_snapshot !== undefined &&
+      test.refLow_snapshot !== null && test.refLow_snapshot !== undefined) {
+    const refHigh = parseFloat(test.refHigh_snapshot);
+    const refLow = parseFloat(test.refLow_snapshot);
+    
+    if (!isNaN(refHigh) && !isNaN(refLow)) {
+      if (numValue > refHigh) status = 'HIGH';
+      else if (numValue < refLow) status = 'LOW';
+      else if (numValue === refHigh || numValue === refLow) status = 'BOUNDARY';
+    }
+  } else {
+    // Parse bioReference or refText
+    const rangeStr = test.bioReference_snapshot || test.bioReference || test.refText_snapshot || test.refText;
+    if (rangeStr) {
+      const range = parseRange(rangeStr);
+      status = checkRangeStatus(numValue, range);
+    }
   }
   
-  if (test.refLow_snapshot && numValue < parseFloat(test.refLow_snapshot)) {
-    return [59, 130, 246]; // BLUE for LOW
+  return getStatusColor(status);
+};
+
+/**
+ * Get background color for result cells based on status
+ * Returns RGB array for jsPDF compatibility
+ */
+const getResultBgColor = (test) => {
+  if (!test.value) return [255, 255, 255]; // White
+  
+  const numValue = parseFloat(test.value);
+  if (isNaN(numValue)) return [255, 255, 255]; // White
+  
+  // Try numeric ref ranges first
+  let status = 'NORMAL';
+  
+  if (test.refHigh_snapshot !== null && test.refHigh_snapshot !== undefined &&
+      test.refLow_snapshot !== null && test.refLow_snapshot !== undefined) {
+    const refHigh = parseFloat(test.refHigh_snapshot);
+    const refLow = parseFloat(test.refLow_snapshot);
+    
+    if (!isNaN(refHigh) && !isNaN(refLow)) {
+      if (numValue > refHigh) status = 'HIGH';
+      else if (numValue < refLow) status = 'LOW';
+    }
+  } else {
+    // Parse bioReference or refText
+    const rangeStr = test.bioReference_snapshot || test.bioReference || test.refText_snapshot || test.refText;
+    if (rangeStr) {
+      const range = parseRange(rangeStr);
+      status = checkRangeStatus(numValue, range);
+    }
   }
   
-  return [17, 17, 17]; // BLACK for NORMAL
+  const bgColor = getStatusBgColor(status);
+  return bgColor || [255, 255, 255]; // Default to white if null
 };
 
 /**
@@ -485,8 +490,8 @@ const formatDateTime = (isoString) => {
 /**
  * Download PDF
  */
-export const downloadReportPDF = (visitData) => {
-  const doc = generateReportPDF(visitData);
+export const downloadReportPDF = async (visitData) => {
+  const doc = await generateReportPDF(visitData);
   const fileName = `HEALit_Report_${visitData.patient.name.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
   doc.save(fileName);
 };
@@ -494,8 +499,8 @@ export const downloadReportPDF = (visitData) => {
 /**
  * Print PDF
  */
-export const printReportPDF = (visitData) => {
-  const doc = generateReportPDF(visitData);
+export const printReportPDF = async (visitData) => {
+  const doc = await generateReportPDF(visitData);
   doc.autoPrint();
   window.open(doc.output('bloburl'), '_blank');
 };
@@ -503,8 +508,8 @@ export const printReportPDF = (visitData) => {
 /**
  * Get PDF as Base64 for sharing
  */
-export const getReportPDFBase64 = (visitData) => {
-  const doc = generateReportPDF(visitData);
+export const getReportPDFBase64 = async (visitData) => {
+  const doc = await generateReportPDF(visitData);
   return doc.output('dataurlstring');
 };
 

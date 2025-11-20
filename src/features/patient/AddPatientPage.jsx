@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Plus, X, Edit2, Trash2, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getProfiles, addPatient, createVisit, getSettings } from '../shared/dataService';
+import { getProfiles, addPatient, createVisit, getSettings } from '../../services/firestoreService';
 import { getCurrentUser } from '../../services/authService';
 import { useAuthStore } from '../../store';
 import Button from '../../components/ui/Button';
@@ -12,7 +12,7 @@ const AddPatientPage = () => {
   const navigate = useNavigate();
   const { role } = useAuthStore();
   const currentUser = getCurrentUser();
-  const settings = getSettings();
+  const [settings, setSettings] = useState({});
   
   // Patient form state
   const [patientData, setPatientData] = useState({
@@ -25,7 +25,7 @@ const AddPatientPage = () => {
   });
   
   // Profile and test state
-  const [profiles] = useState(getProfiles());
+  const [profiles, setProfiles] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [tests, setTests] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,6 +33,27 @@ const AddPatientPage = () => {
   const [discountType, setDiscountType] = useState('amount');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [loading, setLoading] = useState(true);
+  
+  // Load profiles and settings on mount
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const [profilesData, settingsData] = await Promise.all([
+          getProfiles(),
+          getSettings()
+        ]);
+        setProfiles(profilesData);
+        setSettings(settingsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast.error('Failed to load profiles');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInitialData();
+  }, []);
   
   // Get all unique tests from all profiles for autocomplete
   const allTestsFromProfiles = profiles.reduce((acc, profile) => {

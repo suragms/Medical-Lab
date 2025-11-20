@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus } from 'lucide-react';
-import { searchTests } from '../../../features/shared/dataService';
+import { getTestsMaster } from '../../../services/firestoreService';
 import './SearchAddTest.css';
 
 const SearchAddTest = ({ onAddTest, onAddManual }) => {
@@ -29,7 +29,7 @@ const SearchAddTest = ({ onAddTest, onAddManual }) => {
     // Debounce 250ms
     debounceRef.current = setTimeout(async () => {
       try {
-        const searchResults = await searchTests(searchTerm);
+        const searchResults = await getTestsMaster(searchTerm);
         setResults(searchResults);
         setIsOpen(true);
       } catch (error) {

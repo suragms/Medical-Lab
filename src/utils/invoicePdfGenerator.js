@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { LOGO_PATHS, SIGNATURE_PATHS, imageToBase64 } from './assetPath';
 
 /**
  * Format date/time for display - matches report format: "20 Nov 2025, 10:23 am"
@@ -35,7 +36,7 @@ const formatDate = (isoString) => {
  * Generate Invoice/Bill PDF for HEALit Med Laboratories
  * Clean A4 format with professional layout
  */
-export const generateInvoicePDF = (invoiceData) => {
+export const generateInvoicePDF = async (invoiceData) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 15;
@@ -61,11 +62,12 @@ export const generateInvoicePDF = (invoiceData) => {
   const logoHeight = 24;
   const logoY = yPos;
   
-  // Left Logo - HEALit
+  // Left Logo - HEALit (convert to base64)
   try {
-    const healitLogo = '/images/@heal original editable file (png).png';
-    doc.addImage(healitLogo, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
+    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
+    doc.addImage(healitBase64, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
+    console.error('HEALit logo failed:', error);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 58, 138);
@@ -78,11 +80,12 @@ export const generateInvoicePDF = (invoiceData) => {
   doc.setTextColor(0, 0, 0);
   doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
 
-  // Right Logo - Thyrocare
+  // Right Logo - Thyrocare (convert to base64)
   try {
-    const partnerLogo = '/images/download.jpeg.jpg';
-    doc.addImage(partnerLogo, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
+    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
+    doc.addImage(partnerBase64, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
+    console.error('Partner logo failed:', error);
     doc.setFontSize(10);
     doc.setTextColor(30, 58, 138);
     doc.text('[Thyrocare]', pageWidth - 25, yPos + 12, { align: 'right' });
@@ -167,24 +170,21 @@ export const generateInvoicePDF = (invoiceData) => {
 
   // Right: Invoice details
   yPos -= 30;
+  
+  // Add test times if available (from visit data)
+  const times = invoiceData.times || {};
+  
   const invoiceLines = [
     `Invoice No: ${invoice.invoiceNumber || 'INV-' + Date.now()}`,
     `Generated: ${invoice.generatedOn ? formatDateTime(invoice.generatedOn) : formatDateTime(new Date())}`,
     `Staff: ${invoice.staffName || '-'}`,
     `Method: ${invoice.method || 'Cash'}`
   ];
-
-  // Add test times if available (from visit data)
-  const times = invoiceData.times || {};
-  if (times.collected) {
-    invoiceLines.push(`Collected On: ${formatDateTime(times.collected)}`);
-  }
-  if (times.received) {
-    invoiceLines.push(`Received On: ${formatDateTime(times.received)}`);
-  }
-  if (times.reported) {
-    invoiceLines.push(`Reported On: ${formatDateTime(times.reported)}`);
-  }
+  
+  // Always add time fields (show "—" if not available)
+  invoiceLines.push(`Collected On: ${times.collected ? formatDateTime(times.collected) : '—'}`);
+  invoiceLines.push(`Received On: ${times.received ? formatDateTime(times.received) : '—'}`);
+  invoiceLines.push(`Reported On: ${times.reported ? formatDateTime(times.reported) : '—'}`);
 
   invoiceLines.forEach(line => {
     doc.text(line, rightCol, yPos);
@@ -267,7 +267,7 @@ export const generateInvoicePDF = (invoiceData) => {
   doc.setDrawColor(30, 58, 138);
   doc.setLineWidth(1);
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(summaryX, yPos, summaryWidth, 56, 3, 3, 'FD');
+  doc.roundedRect(summaryX, yPos, summaryWidth, 45, 3, 3, 'FD');
   
   // Summary content
   let summaryY = yPos + 9;
@@ -311,18 +311,6 @@ export const generateInvoicePDF = (invoiceData) => {
   doc.setLineWidth(0.5);
   doc.line(labelX, summaryY - 2, valueX, summaryY - 2);
   summaryY += 3;
-  
-  // Grand Total - Highlighted
-  doc.setFillColor(239, 246, 255);
-  doc.roundedRect(summaryX + 3, summaryY - 5, summaryWidth - 6, 11, 2, 2, 'F');
-  
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(30, 58, 138);
-  doc.text('Grand Total:', labelX, summaryY);
-  doc.setFontSize(14);
-  doc.text('Rs. ' + calculatedTotal.toFixed(2), valueX, summaryY, { align: 'right' });
-  summaryY += 11;
   
   // Amount Paid
   doc.setFont('helvetica', 'normal');
@@ -368,18 +356,13 @@ export const generateInvoicePDF = (invoiceData) => {
   doc.setTextColor(0, 0, 0);
   doc.text('Billed By:', leftSigX, yPos);
   
-  // Add staff signature image if available
+  // Add staff signature image (convert to base64)
   try {
-    const staffSignature = '/images/signatures/rakhi-signature.png'; // PNG format
-    doc.addImage(staffSignature, 'PNG', leftSigX, yPos + 2, 30, 12);
+    const staffSignatureBase64 = await imageToBase64(SIGNATURE_PATHS.rakhi);
+    doc.addImage(staffSignatureBase64, 'JPEG', leftSigX, yPos + 2, 30, 12);
   } catch (error) {
-    // Fallback to JPG
-    try {
-      const staffSignature = '/images/RakiSign.jpg';
-      doc.addImage(staffSignature, 'JPEG', leftSigX, yPos + 2, 30, 12);
-    } catch (err) {
-      doc.line(leftSigX, yPos + 8, leftSigX + 40, yPos + 8);
-    }
+    console.error('Staff signature failed:', error);
+    doc.line(leftSigX, yPos + 8, leftSigX + 40, yPos + 8);
   }
   
   doc.setFontSize(8);
@@ -391,18 +374,13 @@ export const generateInvoicePDF = (invoiceData) => {
   doc.setFontSize(9);
   doc.text('Authorized Signatory:', rightSigX, yPos);
   
-  // Add authorized signature image
+  // Add authorized signature image (convert to base64)
   try {
-    const authSignature = '/images/signatures/aparna-signature.png'; // PNG format
-    doc.addImage(authSignature, 'PNG', rightSigX, yPos + 2, 30, 12);
+    const authSignatureBase64 = await imageToBase64(SIGNATURE_PATHS.aparna);
+    doc.addImage(authSignatureBase64, 'PNG', rightSigX, yPos + 2, 30, 12);
   } catch (error) {
-    // Fallback to JPG
-    try {
-      const authSignature = '/images/signatures/aparna-signature.jpg';
-      doc.addImage(authSignature, 'JPEG', rightSigX, yPos + 2, 30, 12);
-    } catch (err) {
-      doc.line(rightSigX, yPos + 8, rightSigX + 45, yPos + 8);
-    }
+    console.error('Auth signature failed:', error);
+    doc.line(rightSigX, yPos + 8, rightSigX + 45, yPos + 8);
   }
   
   doc.setFontSize(8);
@@ -414,8 +392,8 @@ export const generateInvoicePDF = (invoiceData) => {
 /**
  * Download invoice PDF
  */
-export const downloadInvoice = (invoiceData, fileName) => {
-  const doc = generateInvoicePDF(invoiceData);
+export const downloadInvoice = async (invoiceData, fileName) => {
+  const doc = await generateInvoicePDF(invoiceData);
   const name = fileName || `Bill-${invoiceData.patient?.visitId || Date.now()}.pdf`;
   doc.save(name);
 };
@@ -423,8 +401,8 @@ export const downloadInvoice = (invoiceData, fileName) => {
 /**
  * Print invoice PDF
  */
-export const printInvoice = (invoiceData) => {
-  const doc = generateInvoicePDF(invoiceData);
+export const printInvoice = async (invoiceData) => {
+  const doc = await generateInvoicePDF(invoiceData);
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
   const iframe = document.createElement('iframe');
@@ -439,7 +417,7 @@ export const printInvoice = (invoiceData) => {
 /**
  * Get invoice PDF as blob for sharing
  */
-export const getInvoiceBlob = (invoiceData) => {
-  const doc = generateInvoicePDF(invoiceData);
+export const getInvoiceBlob = async (invoiceData) => {
+  const doc = await generateInvoicePDF(invoiceData);
   return doc.output('blob');
 };

@@ -434,9 +434,9 @@ const ProfileManager = () => {
                                 value={test.bioReference || ''}
                                 onChange={(e) => updateTestInProfile(test.testId, 'bioReference', e.target.value)}
                                 className="table-textarea"
-                                placeholder="13-17 g/dL (M), 12-15 g/dL (F)\nAdd multiple lines for complex ranges..."
-                                rows="3"
-                                style={{ minHeight: '80px', resize: 'vertical' }}
+                                placeholder="13-17 g/dL (M), 12-15 g/dL (F)&#10;Add multiple lines for complex ranges...&#10;e.g., Adult Male: 13-17&#10;Adult Female: 12-15&#10;Pediatric: 11-16"
+                                rows="4"
+                                style={{ minHeight: '100px', resize: 'vertical', whiteSpace: 'pre-wrap', wordWrap: 'break-word', lineHeight: '1.5' }}
                               />
                             </td>
                             <td>
@@ -492,13 +492,13 @@ const ProfileManager = () => {
                   </div>
 
                   <div className="form-group full-width">
-                    <label>Bio.Ref.Internal</label>
+                    <label>Bio.Ref.Internal (Reference Range)</label>
                     <textarea
                       value={newTest.bioReference}
                       onChange={(e) => setNewTest({ ...newTest, bioReference: e.target.value })}
-                      placeholder="e.g., Adult: 13-17 g/dL (Male), 12-15 g/dL (Female)&#10;Normal: 70-100 mg/dL&#10;Pre-diabetic: 100-125 mg/dL"
-                      rows="4"
-                      style={{ minHeight: '100px', resize: 'vertical' }}
+                      placeholder="e.g., Adult: 13-17 g/dL (Male), 12-15 g/dL (Female)&#10;Normal: 70-100 mg/dL&#10;Pre-diabetic: 100-125 mg/dL&#10;&#10;You can add multiple lines and detailed conditions here."
+                      rows="5"
+                      style={{ minHeight: '120px', resize: 'vertical', whiteSpace: 'pre-wrap', wordWrap: 'break-word', lineHeight: '1.6' }}
                     />
                   </div>
 

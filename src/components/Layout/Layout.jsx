@@ -18,7 +18,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuthStore } from '../../store';
-import { getVisits, getPatients } from '../../features/shared/dataService';
+import { getVisits, getPatients } from '../../services/firestoreService';
+import { LOGO_PATHS } from '../../utils/assetPath';
 import './Layout.css';
 
 const Layout = () => {
@@ -29,12 +30,13 @@ const Layout = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [alerts, setAlerts] = useState({ waiting: [], unpaid: [], pendingResults: [] });
+  const [logoError, setLogoError] = useState(false);
 
   // Load alerts
-  const loadAlerts = useCallback(() => {
+  const loadAlerts = useCallback(async () => {
     if (role === 'admin' || role === 'staff') {
-      const allPatients = getPatients();
-      const allVisits = getVisits();
+      const allPatients = await getPatients();
+      const allVisits = await getVisits();
       
       // Helper to calculate waiting time
       const calculateWaitingTime = (timestamp) => {
@@ -138,7 +140,16 @@ const Layout = () => {
           {/* Left: Logo + App Name + Quick Nav */}
           <div className="nav-left">
             <div className="nav-logo">
-              <img src="/images/@heal original editable file (png).png" alt="HEALit Logo" className="logo-image" />
+              {!logoError ? (
+                <img 
+                  src={LOGO_PATHS.healit} 
+                  alt="HEALit Logo" 
+                  className="logo-image"
+                  onError={() => setLogoError(true)}
+                />
+              ) : (
+                <span className="logo-fallback" style={{ color: '#FFFFFF', fontSize: '1.5rem', fontWeight: 'bold' }}>🏥</span>
+              )}
               <span className="app-name">HEALit Med Lab</span>
             </div>
             

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, FileText, Receipt, Check, Loader, Download, Printer, Share2, Mail, AlertCircle, TrendingUp, TrendingDown, MessageCircle, TestTube2, Plus, Search, X, Home } from 'lucide-react';
-import { getVisitById, updateVisitResults, getSettings, updateVisit, getPatientById, getProfileById, getTestsMaster } from '../shared/dataService';
+import { getVisitById, updateVisitResults, getSettings, updateVisit, getPatientById, getProfileById, getTestsMaster } from '../../services/firestoreService';
 import { useAuthStore } from '../../store';
 import { getCurrentUser, getUsers } from '../../services/authService';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';

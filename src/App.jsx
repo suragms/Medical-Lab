@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store';
-import { initializeSeedData } from './features/shared/dataService';
+import { initializeFirestoreData } from './services/firestoreService';
 import { initializeAuthData } from './services/authService';
+import { preloadCriticalImages } from './utils/assetPath';
 
 // Pages
 import Login from './pages/Login/Login';
@@ -53,15 +54,45 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 };
 
 function App() {
-  // Initialize seed data on app load
+  const [isInitializing, setIsInitializing] = useState(true);
+  
+  // Initialize Firestore data on app load
   useEffect(() => {
-    try {
-      initializeSeedData();
-      initializeAuthData();
-    } catch (error) {
-      console.error('Error initializing seed data:', error);
-    }
+    const initializeApp = async () => {
+      try {
+        console.log('Initializing Firebase Firestore...');
+        await initializeFirestoreData();
+        initializeAuthData();
+        // Preload critical images for PDFs and UI
+        preloadCriticalImages();
+        console.log('App initialization complete');
+      } catch (error) {
+        console.error('Error initializing app:', error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+    
+    initializeApp();
   }, []);
+  
+  if (isInitializing) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        fontSize: '18px',
+        color: '#2e7d32'
+      }}>
+        <div>
+          <div style={{ marginBottom: '10px' }}>🔄 Initializing HEALit Lab System...</div>
+          <div style={{ fontSize: '14px', color: '#666' }}>Syncing data from cloud database</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>

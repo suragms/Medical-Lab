@@ -4,7 +4,7 @@ import { ArrowLeft, FileText, Download, Share2, Printer, Mail, User, Phone, MapP
 import toast from 'react-hot-toast';
 import { getProfileTemplate } from '../../features/profile-manager/profileTemplates';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
-import { getVisitById, getPatientById, getProfileById, updatePatient, markPDFGenerated, markInvoiceGenerated } from '../../features/shared/dataService';
+import { getVisitById, getPatientById, getProfileById, updatePatient, markPDFGenerated, markInvoiceGenerated } from '../../services/firestoreService';
 import { getTechnicians } from '../../services/authService';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
