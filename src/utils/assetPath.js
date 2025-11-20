@@ -17,6 +17,40 @@ export const getImagePath = (imagePath) => {
 };
 
 /**
+ * Convert image to base64 data URL for PDF generation
+ * This works in both dev and production (Netlify)
+ */
+export const imageToBase64 = async (imagePath) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        const dataURL = canvas.toDataURL('image/png');
+        resolve(dataURL);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    img.onerror = (error) => {
+      console.error('Failed to load image:', imagePath);
+      reject(error);
+    };
+    
+    img.src = imagePath;
+  });
+};
+
+/**
  * Get logo paths
  */
 export const LOGO_PATHS = {
@@ -52,6 +86,7 @@ export const preloadCriticalImages = () => {
 
 export default {
   getImagePath,
+  imageToBase64,
   LOGO_PATHS,
   SIGNATURE_PATHS,
   preloadCriticalImages

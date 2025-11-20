@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { LOGO_PATHS } from './assetPath';
+import { LOGO_PATHS, imageToBase64 } from './assetPath';
 
 /**
  * Format date/time for display - matches report format: "20 Nov 2025, 10:23 am"
@@ -36,7 +36,7 @@ const formatDate = (isoString) => {
  * Generate Invoice/Bill PDF for HEALit Med Laboratories
  * Clean A4 format with professional layout
  */
-export const generateInvoicePDF = (invoiceData) => {
+export const generateInvoicePDF = async (invoiceData) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   let yPos = 15;
@@ -62,10 +62,12 @@ export const generateInvoicePDF = (invoiceData) => {
   const logoHeight = 24;
   const logoY = yPos;
   
-  // Left Logo - HEALit
+  // Left Logo - HEALit (convert to base64)
   try {
-    doc.addImage(LOGO_PATHS.healit, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
+    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
+    doc.addImage(healitBase64, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
+    console.error('HEALit logo failed:', error);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 58, 138);
@@ -78,10 +80,12 @@ export const generateInvoicePDF = (invoiceData) => {
   doc.setTextColor(0, 0, 0);
   doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
 
-  // Right Logo - Thyrocare
+  // Right Logo - Thyrocare (convert to base64)
   try {
-    doc.addImage(LOGO_PATHS.partner, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
+    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
+    doc.addImage(partnerBase64, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
+    console.error('Partner logo failed:', error);
     doc.setFontSize(10);
     doc.setTextColor(30, 58, 138);
     doc.text('[Thyrocare]', pageWidth - 25, yPos + 12, { align: 'right' });
@@ -398,8 +402,8 @@ export const generateInvoicePDF = (invoiceData) => {
 /**
  * Download invoice PDF
  */
-export const downloadInvoice = (invoiceData, fileName) => {
-  const doc = generateInvoicePDF(invoiceData);
+export const downloadInvoice = async (invoiceData, fileName) => {
+  const doc = await generateInvoicePDF(invoiceData);
   const name = fileName || `Bill-${invoiceData.patient?.visitId || Date.now()}.pdf`;
   doc.save(name);
 };
@@ -407,8 +411,8 @@ export const downloadInvoice = (invoiceData, fileName) => {
 /**
  * Print invoice PDF
  */
-export const printInvoice = (invoiceData) => {
-  const doc = generateInvoicePDF(invoiceData);
+export const printInvoice = async (invoiceData) => {
+  const doc = await generateInvoicePDF(invoiceData);
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
   const iframe = document.createElement('iframe');
@@ -423,7 +427,7 @@ export const printInvoice = (invoiceData) => {
 /**
  * Get invoice PDF as blob for sharing
  */
-export const getInvoiceBlob = (invoiceData) => {
-  const doc = generateInvoicePDF(invoiceData);
+export const getInvoiceBlob = async (invoiceData) => {
+  const doc = await generateInvoicePDF(invoiceData);
   return doc.output('blob');
 };

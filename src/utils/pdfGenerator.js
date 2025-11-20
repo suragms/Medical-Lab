@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { LOGO_PATHS } from './assetPath';
+import { LOGO_PATHS, imageToBase64 } from './assetPath';
 
 // HEALit Brand Colors - Simplified for Professional Reports
 const COLORS = {
@@ -22,7 +22,7 @@ const COLORS = {
  * @param {Object} visitData - Visit with patient, profile, and test snapshots
  * @returns {jsPDF} PDF document
  */
-export const generateReportPDF = (visitData) => {
+export const generateReportPDF = async (visitData) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -43,11 +43,12 @@ export const generateReportPDF = (visitData) => {
   const logoHeight = 24;
   const logoY = yPos;
   
-  // Left Logo - HEALit
+  // Left Logo - HEALit (convert to base64)
   try {
-    doc.addImage(LOGO_PATHS.healit, 'PNG', margin, logoY, logoHeight * 1.5, logoHeight);
+    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
+    doc.addImage(healitBase64, 'PNG', margin, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
-    console.log('HEALit logo not loaded');
+    console.error('HEALit logo not loaded:', error);
   }
   
   // Center title - Lab Name
@@ -56,11 +57,12 @@ export const generateReportPDF = (visitData) => {
   doc.setTextColor(0, 0, 0);
   doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
   
-  // Right Logo - Thyrocare
+  // Right Logo - Thyrocare (convert to base64)
   try {
-    doc.addImage(LOGO_PATHS.partner, 'JPEG', pageWidth - margin - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
+    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
+    doc.addImage(partnerBase64, 'JPEG', pageWidth - margin - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
-    console.log('Partner logo not loaded');
+    console.error('Partner logo not loaded:', error);
   }
 
   yPos += logoHeight + 3;
@@ -437,8 +439,8 @@ const formatDateTime = (isoString) => {
 /**
  * Download PDF
  */
-export const downloadReportPDF = (visitData) => {
-  const doc = generateReportPDF(visitData);
+export const downloadReportPDF = async (visitData) => {
+  const doc = await generateReportPDF(visitData);
   const fileName = `HEALit_Report_${visitData.patient.name.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
   doc.save(fileName);
 };
@@ -446,8 +448,8 @@ export const downloadReportPDF = (visitData) => {
 /**
  * Print PDF
  */
-export const printReportPDF = (visitData) => {
-  const doc = generateReportPDF(visitData);
+export const printReportPDF = async (visitData) => {
+  const doc = await generateReportPDF(visitData);
   doc.autoPrint();
   window.open(doc.output('bloburl'), '_blank');
 };
@@ -455,8 +457,8 @@ export const printReportPDF = (visitData) => {
 /**
  * Get PDF as Base64 for sharing
  */
-export const getReportPDFBase64 = (visitData) => {
-  const doc = generateReportPDF(visitData);
+export const getReportPDFBase64 = async (visitData) => {
+  const doc = await generateReportPDF(visitData);
   return doc.output('dataurlstring');
 };
 
