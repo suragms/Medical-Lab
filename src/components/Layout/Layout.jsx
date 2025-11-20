@@ -30,6 +30,7 @@ const Layout = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [alerts, setAlerts] = useState({ waiting: [], unpaid: [], pendingResults: [] });
+  const [logoError, setLogoError] = useState(false);
 
   // Load alerts
   const loadAlerts = useCallback(async () => {
@@ -139,7 +140,16 @@ const Layout = () => {
           {/* Left: Logo + App Name + Quick Nav */}
           <div className="nav-left">
             <div className="nav-logo">
-              <img src={LOGO_PATHS.healit} alt="HEALit Logo" className="logo-image" />
+              {!logoError ? (
+                <img 
+                  src={LOGO_PATHS.healit} 
+                  alt="HEALit Logo" 
+                  className="logo-image"
+                  onError={() => setLogoError(true)}
+                />
+              ) : (
+                <span className="logo-fallback" style={{ color: '#FFFFFF', fontSize: '1.5rem', fontWeight: 'bold' }}>🏥</span>
+              )}
               <span className="app-name">HEALit Med Lab</span>
             </div>
             
