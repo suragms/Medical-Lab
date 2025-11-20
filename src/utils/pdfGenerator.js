@@ -161,14 +161,53 @@ export const generateReportPDF = (visitData) => {
     console.log('PDF Table - First Test Fields:', tests[0] ? Object.keys(tests[0]) : []);
     console.log('PDF Table - First Test Data:', tests[0]);
     
+    // Smart pagination: Calculate if table fits on current page
+    const estimatedTableHeight = (tests.length * 7) + 20; // Rough estimate (7mm per row + header)
+    const spaceLeft = pageHeight - yPos - 60; // Reserve 60mm for footer/signatures
+    
+    // Strategy: Try to fit entire report on one page if ≤20 tests (compact mode)
+    // Otherwise allow multi-page with clean breaks
+    const useCompactMode = tests.length <= 20;
+    
     const tableData = tests.map(test => {
       // Use fallback chain for all fields
       const testName = test.name_snapshot || test.name || test.testName || 'Test';
       const testValue = test.value || '—';
       const testUnit = test.unit_snapshot || test.unit || '';
       const reference = formatReference(test);
-      const resultColor = getResultColor(test);
-      const isAbnormal = isValueAbnormal(test);
+      
+      // Enhanced status detection with boundary values
+      const numValue = parseFloat(testValue);
+      let isBold = false;
+      let resultColor = [17, 17, 17]; // Default black
+      
+      if (!isNaN(numValue) && test.inputType_snapshot === 'number') {
+        // Check if value is at boundary (equal to min or max)
+        if (test.refLow_snapshot !== null && test.refLow_snapshot !== undefined) {
+          const refLow = parseFloat(test.refLow_snapshot);
+          if (!isNaN(refLow) && numValue === refLow) {
+            isBold = true;
+            resultColor = [59, 130, 246]; // Blue for boundary
+          }
+        }
+        
+        if (test.refHigh_snapshot !== null && test.refHigh_snapshot !== undefined) {
+          const refHigh = parseFloat(test.refHigh_snapshot);
+          if (!isNaN(refHigh) && numValue === refHigh) {
+            isBold = true;
+            resultColor = [239, 68, 68]; // Red for boundary
+          }
+        }
+        
+        // Check if value is abnormal (outside range)
+        if (!isBold) {
+          const isAbnormal = isValueAbnormal(test);
+          if (isAbnormal) {
+            isBold = true;
+            resultColor = getResultColor(test);
+          }
+        }
+      }
       
       return [
         testName,
@@ -176,14 +215,20 @@ export const generateReportPDF = (visitData) => {
           content: testValue, 
           styles: { 
             textColor: resultColor,
-            fontStyle: isAbnormal ? 'bold' : 'normal',
-            fontSize: isAbnormal ? 11 : 10
+            fontStyle: isBold ? 'bold' : 'normal',
+            fontSize: isBold ? (useCompactMode ? 10 : 11) : (useCompactMode ? 9 : 10)
           } 
         },
         testUnit,
         reference
       ];
     });
+
+    // If not enough space and more than 3 rows, start new page
+    if (spaceLeft < estimatedTableHeight && tests.length > 3) {
+      doc.addPage();
+      yPos = margin + 10;
+    }
 
     doc.autoTable({
       startY: yPos,
@@ -192,8 +237,8 @@ export const generateReportPDF = (visitData) => {
       theme: 'grid',
       styles: {
         font: 'helvetica',
-        fontSize: 10,
-        cellPadding: 4,
+        fontSize: useCompactMode ? 9 : 10,
+        cellPadding: useCompactMode ? 3 : 4,
         textColor: '#111',
         lineColor: [30, 58, 138],
         lineWidth: 0.1,
@@ -203,24 +248,27 @@ export const generateReportPDF = (visitData) => {
         fillColor: [30, 58, 138],
         textColor: '#FFFFFF',
         fontStyle: 'bold',
-        fontSize: 10,
+        fontSize: useCompactMode ? 9 : 10,
         halign: 'center',
         valign: 'middle',
-        cellPadding: 5
+        cellPadding: useCompactMode ? 4 : 5
       },
       columnStyles: {
-        0: { cellWidth: 70, halign: 'left', fontStyle: 'bold' },
-        1: { cellWidth: 35, halign: 'center', fontStyle: 'normal' },
-        2: { cellWidth: 25, halign: 'center', textColor: '#666' },
-        3: { cellWidth: 'auto', halign: 'center', textColor: '#666' }
+        0: { cellWidth: 85, halign: 'left', fontStyle: 'bold' }, // 45% width
+        1: { cellWidth: 22, halign: 'center', fontStyle: 'normal' }, // 12% width
+        2: { cellWidth: 22, halign: 'center', textColor: '#666' }, // 12% width
+        3: { cellWidth: 55, halign: 'left', textColor: '#666', cellPadding: useCompactMode ? 2 : 3 } // 31% width with proper padding
       },
       alternateRowStyles: {
         fillColor: [249, 250, 251]
       },
       margin: { left: margin, right: margin },
-      pageBreak: 'auto',
+      pageBreak: 'avoid',
       rowPageBreak: 'avoid',
-      tableWidth: 'auto'
+      tableWidth: 'auto',
+      styles: {
+        cellWidth: 'wrap'
+      }
     });
 
     yPos = doc.lastAutoTable.finalY + 5;
@@ -357,21 +405,24 @@ const isValueAbnormal = (test) => {
  * Format reference range from snapshot - WITH FALLBACK TO bioReference
  */
 const formatReference = (test) => {
-  const parts = [];
+  // Priority 1: Use bioReference field (from Profile Manager)
+  if (test.bioReference_snapshot || test.bioReference) {
+    const refText = test.bioReference_snapshot || test.bioReference;
+    // Return as-is to preserve multi-line formatting
+    return refText.trim();
+  }
   
-  // Try structured refLow/refHigh first
+  // Priority 2: Try structured refLow/refHigh
   if (test.inputType_snapshot === 'number' && test.refLow_snapshot && test.refHigh_snapshot) {
-    parts.push(`${test.refLow_snapshot} – ${test.refHigh_snapshot}`);
-  }
-  // Fallback to bioReference string (from seed data)
-  else if (test.bioReference || test.refText_snapshot) {
-    const refText = test.bioReference || test.refText_snapshot;
-    // Clean up text: remove labels like "Adult:", "Normal:", etc.
-    const cleaned = refText.replace(/^(Adult|Normal|Pre-diabetic|Diabetic|Desirable|Borderline|Optimal|High|Low):\s*/gi, '').trim();
-    parts.push(cleaned);
+    return `${test.refLow_snapshot} – ${test.refHigh_snapshot}`;
   }
   
-  return parts.length > 0 ? parts.join('\n') : '—';
+  // Priority 3: Fallback to refText
+  if (test.refText_snapshot) {
+    return test.refText_snapshot.trim();
+  }
+  
+  return '—';
 };
 
 /**

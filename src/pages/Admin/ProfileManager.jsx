@@ -434,8 +434,9 @@ const ProfileManager = () => {
                                 value={test.bioReference || ''}
                                 onChange={(e) => updateTestInProfile(test.testId, 'bioReference', e.target.value)}
                                 className="table-textarea"
-                                placeholder="13-17 g/dL (M), 12-15 g/dL (F)"
-                                rows="2"
+                                placeholder="13-17 g/dL (M), 12-15 g/dL (F)\nAdd multiple lines for complex ranges..."
+                                rows="3"
+                                style={{ minHeight: '80px', resize: 'vertical' }}
                               />
                             </td>
                             <td>
@@ -496,7 +497,8 @@ const ProfileManager = () => {
                       value={newTest.bioReference}
                       onChange={(e) => setNewTest({ ...newTest, bioReference: e.target.value })}
                       placeholder="e.g., Adult: 13-17 g/dL (Male), 12-15 g/dL (Female)&#10;Normal: 70-100 mg/dL&#10;Pre-diabetic: 100-125 mg/dL"
-                      rows="3"
+                      rows="4"
+                      style={{ minHeight: '100px', resize: 'vertical' }}
                     />
                   </div>
 
