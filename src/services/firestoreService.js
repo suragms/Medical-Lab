@@ -206,6 +206,45 @@ export const addProfile = async (profileData) => {
   }
 };
 
+export const updateProfile = async (profileId, updates) => {
+  try {
+    const profilesRef = collection(db, COLLECTIONS.PROFILES);
+    const q = query(profilesRef, where('profileId', '==', profileId));
+    const snapshot = await getDocs(q);
+    
+    if (!snapshot.empty) {
+      const docRef = snapshot.docs[0].ref;
+      await updateDoc(docRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+      });
+      return { id: docRef.id, profileId, ...updates };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    throw error;
+  }
+};
+
+export const deleteProfile = async (profileId) => {
+  try {
+    const profilesRef = collection(db, COLLECTIONS.PROFILES);
+    const q = query(profilesRef, where('profileId', '==', profileId));
+    const snapshot = await getDocs(q);
+    
+    if (!snapshot.empty) {
+      const docRef = snapshot.docs[0].ref;
+      await deleteDoc(docRef);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error deleting profile:', error);
+    throw error;
+  }
+};
+
 // Patient Operations
 export const getPatients = async () => {
   try {

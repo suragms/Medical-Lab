@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, AlertCircle, Save, X, Package } from 'lucide-react';
 import { useAuthStore } from '../../store';
 import { getCurrentUser } from '../../services/authService';
-import { getProfiles, addProfile } from '../../services/firestoreService';
+import { getProfiles, addProfile, updateProfile, deleteProfile } from '../../services/firestoreService';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import toast from 'react-hot-toast';
@@ -38,8 +38,14 @@ const ProfileManager = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    setProfiles(getProfiles());
+  const loadData = async () => {
+    try {
+      const profilesData = await getProfiles();
+      setProfiles(profilesData);
+    } catch (error) {
+      console.error('Error loading profiles:', error);
+      toast.error('Failed to load profiles');
+    }
   };
 
   const filteredProfiles = profiles.filter(p =>
@@ -77,7 +83,7 @@ const ProfileManager = () => {
     toast.success('Test added to profile');
   };
 
-  const handleAddProfile = () => {
+  const handleAddProfile = async () => {
     if (!formData.name || formData.tests.length === 0) {
       toast.error('Profile name and at least one test are required');
       return;
@@ -96,28 +102,22 @@ const ProfileManager = () => {
       };
 
       if (editingProfile) {
-        // Update existing profile
-        const allProfiles = JSON.parse(localStorage.getItem('healit_profiles') || '[]');
-        const index = allProfiles.findIndex(p => p.profileId === editingProfile.profileId);
-        if (index !== -1) {
-          allProfiles[index] = { 
-            ...allProfiles[index], 
-            ...profileData,
-            updatedBy: currentUser?.userId || 'unknown',
-            updatedByName: currentUser?.fullName || 'Unknown User',
-            updatedAt: new Date().toISOString()
-          };
-          localStorage.setItem('healit_profiles', JSON.stringify(allProfiles));
-          toast.success('Profile updated successfully');
-        }
+        // Update existing profile in Firebase
+        await updateProfile(editingProfile.profileId, {
+          ...profileData,
+          updatedBy: currentUser?.userId || 'unknown',
+          updatedByName: currentUser?.fullName || 'Unknown User',
+          updatedAt: new Date().toISOString()
+        });
+        toast.success('Profile updated successfully');
       } else {
-        // Add new profile
-        addProfile(profileData);
+        // Add new profile to Firebase
+        await addProfile(profileData);
         toast.success('Profile added successfully');
       }
 
       resetForm();
-      loadData();
+      await loadData();
       setShowAddModal(false);
     } catch (error) {
       toast.error('Failed to save profile');
@@ -136,22 +136,21 @@ const ProfileManager = () => {
     setShowAddModal(true);
   };
 
-  const handleDeleteProfile = (profileId) => {
+  const handleDeleteProfile = async (profileId) => {
     if (!confirm('Are you sure you want to DELETE this profile permanently? This cannot be undone.')) return;
 
     try {
-      const allProfiles = JSON.parse(localStorage.getItem('healit_profiles') || '[]');
-      const updatedProfiles = allProfiles.filter(p => p.profileId !== profileId);
-      localStorage.setItem('healit_profiles', JSON.stringify(updatedProfiles));
+      await deleteProfile(profileId);
       toast.success('Profile deleted successfully');
-      loadData();
+      await loadData();
       setSelectedProfiles([]);
     } catch (error) {
       toast.error('Failed to delete profile');
+      console.error(error);
     }
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (selectedProfiles.length === 0) {
       toast.error('No profiles selected');
       return;
@@ -160,14 +159,15 @@ const ProfileManager = () => {
     if (!confirm(`Delete ${selectedProfiles.length} selected profile(s)? This cannot be undone.`)) return;
 
     try {
-      const allProfiles = JSON.parse(localStorage.getItem('healit_profiles') || '[]');
-      const updatedProfiles = allProfiles.filter(p => !selectedProfiles.includes(p.profileId));
-      localStorage.setItem('healit_profiles', JSON.stringify(updatedProfiles));
+      // Delete all selected profiles
+      await Promise.all(selectedProfiles.map(profileId => deleteProfile(profileId)));
+      
       toast.success(`${selectedProfiles.length} profile(s) deleted successfully`);
       setSelectedProfiles([]);
-      loadData();
+      await loadData();
     } catch (error) {
       toast.error('Failed to delete profiles');
+      console.error(error);
     }
   };
 
@@ -434,8 +434,9 @@ const ProfileManager = () => {
                                 value={test.bioReference || ''}
                                 onChange={(e) => updateTestInProfile(test.testId, 'bioReference', e.target.value)}
                                 className="table-textarea"
-                                placeholder="13-17 g/dL (M), 12-15 g/dL (F)"
-                                rows="2"
+                                placeholder="13-17 g/dL (M), 12-15 g/dL (F)&#10;Add multiple conditions..."
+                                rows="3"
+                                style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
                               />
                             </td>
                             <td>
@@ -491,12 +492,13 @@ const ProfileManager = () => {
                   </div>
 
                   <div className="form-group full-width">
-                    <label>Bio.Ref.Internal</label>
+                    <label>Bio.Ref.Internal (Reference Range)</label>
                     <textarea
                       value={newTest.bioReference}
                       onChange={(e) => setNewTest({ ...newTest, bioReference: e.target.value })}
-                      placeholder="e.g., Adult: 13-17 g/dL (Male), 12-15 g/dL (Female)&#10;Normal: 70-100 mg/dL&#10;Pre-diabetic: 100-125 mg/dL"
-                      rows="3"
+                      placeholder="e.g., Adult: 13-17 g/dL (Male), 12-15 g/dL (Female)&#10;Normal: 70-100 mg/dL&#10;Pre-diabetic: 100-125 mg/dL&#10;&#10;You can add multiple lines and conditions here."
+                      rows="5"
+                      style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', lineHeight: '1.5' }}
                     />
                   </div>
 

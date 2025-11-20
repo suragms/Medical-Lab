@@ -166,24 +166,21 @@ export const generateInvoicePDF = (invoiceData) => {
 
   // Right: Invoice details
   yPos -= 30;
+  
+  // Add test times if available (from visit data)
+  const times = invoiceData.times || {};
+  
   const invoiceLines = [
     `Invoice No: ${invoice.invoiceNumber || 'INV-' + Date.now()}`,
     `Generated: ${invoice.generatedOn ? formatDateTime(invoice.generatedOn) : formatDateTime(new Date())}`,
     `Staff: ${invoice.staffName || '-'}`,
     `Method: ${invoice.method || 'Cash'}`
   ];
-
-  // Add test times if available (from visit data)
-  const times = invoiceData.times || {};
-  if (times.collected) {
-    invoiceLines.push(`Collected On: ${formatDateTime(times.collected)}`);
-  }
-  if (times.received) {
-    invoiceLines.push(`Received On: ${formatDateTime(times.received)}`);
-  }
-  if (times.reported) {
-    invoiceLines.push(`Reported On: ${formatDateTime(times.reported)}`);
-  }
+  
+  // Always add time fields (show "—" if not available)
+  invoiceLines.push(`Collected On: ${times.collected ? formatDateTime(times.collected) : '—'}`);
+  invoiceLines.push(`Received On: ${times.received ? formatDateTime(times.received) : '—'}`);
+  invoiceLines.push(`Reported On: ${times.reported ? formatDateTime(times.reported) : '—'}`);
 
   invoiceLines.forEach(line => {
     doc.text(line, rightCol, yPos);
@@ -266,7 +263,7 @@ export const generateInvoicePDF = (invoiceData) => {
   doc.setDrawColor(30, 58, 138);
   doc.setLineWidth(1);
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(summaryX, yPos, summaryWidth, 56, 3, 3, 'FD');
+  doc.roundedRect(summaryX, yPos, summaryWidth, 45, 3, 3, 'FD');
   
   // Summary content
   let summaryY = yPos + 9;
@@ -310,18 +307,6 @@ export const generateInvoicePDF = (invoiceData) => {
   doc.setLineWidth(0.5);
   doc.line(labelX, summaryY - 2, valueX, summaryY - 2);
   summaryY += 3;
-  
-  // Grand Total - Highlighted
-  doc.setFillColor(239, 246, 255);
-  doc.roundedRect(summaryX + 3, summaryY - 5, summaryWidth - 6, 11, 2, 2, 'F');
-  
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(30, 58, 138);
-  doc.text('Grand Total:', labelX, summaryY);
-  doc.setFontSize(14);
-  doc.text('Rs. ' + calculatedTotal.toFixed(2), valueX, summaryY, { align: 'right' });
-  summaryY += 11;
   
   // Amount Paid
   doc.setFont('helvetica', 'normal');

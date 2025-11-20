@@ -97,6 +97,7 @@ export class TestMaster {
     this.refLow = data.refLow || null;
     this.refHigh = data.refHigh || null;
     this.refText = data.refText || '';
+    this.bioReference = data.bioReference || ''; // Multi-line bio reference range
     this.inputType = data.inputType || 'number'; // number, text, select
     this.dropdownOptions = data.dropdownOptions || [];
     this.price = data.price || 0;
@@ -118,6 +119,7 @@ export class TestSnapshot {
     this.refLow_snapshot = data.refLow_snapshot !== undefined ? data.refLow_snapshot : data.refLow;
     this.refHigh_snapshot = data.refHigh_snapshot !== undefined ? data.refHigh_snapshot : data.refHigh;
     this.refText_snapshot = data.refText_snapshot || data.refText || '';
+    this.bioReference_snapshot = data.bioReference_snapshot || data.bioReference || ''; // Multi-line bio reference
     this.inputType_snapshot = data.inputType_snapshot || data.inputType || 'number';
     this.dropdownOptions_snapshot = data.dropdownOptions_snapshot || data.dropdownOptions || [];
     this.price_snapshot = data.price_snapshot !== undefined ? data.price_snapshot : data.price || 0;

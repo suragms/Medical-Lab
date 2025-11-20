@@ -21,10 +21,12 @@ const formatDateTime = (isoString) => {
 /**
  * Generate Lab Report PDF for HEALit Med Laboratories
  * Professional medical format with test results
+ * Features: Colorful table, bold abnormal values, smart pagination, no subtotal
  */
 export const generateLabReportPDF = (reportData) => {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   let yPos = 15;
 
   const {
@@ -124,37 +126,104 @@ export const generateLabReportPDF = (reportData) => {
   yPos += 10;
 
   // ========== TEST RESULTS ==========
-  testGroups.forEach((group, groupIndex) => {
-    if (groupIndex > 0) yPos += 8;
+  // Flatten all tests for single table display
+  const allTests = testGroups.flatMap(group => group.tests || []);
+  
+  // Prepare table data with proper formatting
+  const tableData = allTests.map(test => {
+    const value = test.value !== undefined && test.value !== '' ? String(test.value) : '-';
+    const status = getTestStatus(test);
+    const bioRef = test.bioReference || test.referenceRange || test.ref || test.refText_snapshot || '-';
+    
+    // Determine if value should be bold (abnormal)
+    const isBold = status !== 'NORMAL' && value !== '-';
+    
+    return [
+      { content: test.name || '-', styles: { fontStyle: 'bold' } },
+      { 
+        content: value, 
+        styles: { 
+          textColor: getStatusColor(status), 
+          fontStyle: isBold ? 'bold' : 'normal',
+          fontSize: isBold ? 11 : 10
+        } 
+      },
+      test.unit || test.unit_snapshot || '-',
+      { content: bioRef, styles: { fontSize: 8.5 } }
+    ];
+  });
 
-    // Group Title
-    doc.setFillColor(30, 58, 138);
-    doc.rect(15, yPos - 5, pageWidth - 30, 8, 'F');
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text(group.groupName || 'Tests', pageWidth / 2, yPos, { align: 'center' });
-
-    yPos += 8;
-
-    // Table data
-    const tableData = (group.tests || []).map(test => {
-      const value = test.value !== undefined ? String(test.value) : '-';
-      const status = getTestStatus(test);
+  // Smart pagination: Calculate if table fits on current page
+  const estimatedTableHeight = (allTests.length + 1) * 8; // Rough estimate
+  const footerHeight = 25;
+  const availableSpace = pageHeight - yPos - footerHeight;
+  
+  // Check if we need pagination
+  if (estimatedTableHeight > availableSpace && allTests.length > 15) {
+    // Split into multiple pages
+    const testsPerPage = Math.floor(availableSpace / 8) - 1;
+    let currentPage = 0;
+    
+    while (currentPage * testsPerPage < allTests.length) {
+      if (currentPage > 0) {
+        doc.addPage();
+        yPos = 15;
+      }
       
-      return [
-        test.name || '-',
-        { content: value, styles: { textColor: getStatusColor(status), fontStyle: 'bold' } },
-        test.unit || '-',
-        test.referenceRange || test.ref || '-'
-      ];
-    });
-
+      const startIdx = currentPage * testsPerPage;
+      const endIdx = Math.min(startIdx + testsPerPage, allTests.length);
+      const pageTests = tableData.slice(startIdx, endIdx);
+      
+      doc.autoTable({
+        startY: yPos,
+        head: [['Test', 'Result', 'Unit', 'Bio. Ref. Internal']],
+        body: pageTests,
+        theme: 'striped',
+        headStyles: {
+          fillColor: [30, 58, 138],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 10,
+          halign: 'center',
+          cellPadding: 5
+        },
+        bodyStyles: {
+          fontSize: 10,
+          textColor: [0, 0, 0],
+          cellPadding: 5,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1
+        },
+        alternateRowStyles: {
+          fillColor: [240, 248, 255] // Light blue for alternating rows
+        },
+        columnStyles: {
+          0: { cellWidth: 65, halign: 'left', fontStyle: 'bold' },
+          1: { cellWidth: 35, halign: 'center' },
+          2: { cellWidth: 30, halign: 'center' },
+          3: { cellWidth: 50, halign: 'left', fontSize: 8.5 }
+        },
+        margin: { left: 15, right: 15 },
+        didParseCell: function(data) {
+          // Add subtle borders
+          if (data.section === 'body') {
+            data.cell.styles.lineColor = [220, 220, 220];
+            data.cell.styles.lineWidth = 0.1;
+          }
+        }
+      });
+      
+      currentPage++;
+    }
+    
+    yPos = doc.lastAutoTable.finalY + 5;
+  } else {
+    // Single page table - all tests fit
     doc.autoTable({
       startY: yPos,
       head: [['Test', 'Result', 'Unit', 'Bio. Ref. Internal']],
       body: tableData,
-      theme: 'grid',
+      theme: 'striped',
       headStyles: {
         fillColor: [30, 58, 138],
         textColor: [255, 255, 255],
@@ -166,30 +235,41 @@ export const generateLabReportPDF = (reportData) => {
       bodyStyles: {
         fontSize: 10,
         textColor: [0, 0, 0],
-        cellPadding: 4
+        cellPadding: 5,
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1
       },
       alternateRowStyles: {
-        fillColor: [249, 250, 251]
+        fillColor: [240, 248, 255] // Light blue for alternating rows
       },
       columnStyles: {
-        0: { cellWidth: 70, halign: 'left', fontStyle: 'bold' },
-        1: { cellWidth: 30, halign: 'center', fontStyle: 'bold', fontSize: 11 },
-        2: { cellWidth: 25, halign: 'center' },
-        3: { cellWidth: 50, halign: 'center' }
+        0: { cellWidth: 65, halign: 'left', fontStyle: 'bold' },
+        1: { cellWidth: 35, halign: 'center' },
+        2: { cellWidth: 30, halign: 'center' },
+        3: { cellWidth: 50, halign: 'left', fontSize: 8.5 }
       },
-      margin: { left: 15, right: 15 }
+      margin: { left: 15, right: 15 },
+      didParseCell: function(data) {
+        // Add subtle borders
+        if (data.section === 'body') {
+          data.cell.styles.lineColor = [220, 220, 220];
+          data.cell.styles.lineWidth = 0.1;
+        }
+      }
     });
 
     yPos = doc.lastAutoTable.finalY + 5;
-  });
+  }
 
-  // End of report
+  // End of report marker
   doc.setFontSize(8);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(107, 114, 128);
   doc.text('*End of Report*', pageWidth / 2, yPos + 5, { align: 'center' });
 
-  // ========== FOOTER ==========
+  // ========== FOOTER (on last page only) ==========
+  const currentPageCount = doc.internal.getNumberOfPages();
+  doc.setPage(currentPageCount); // Go to last page
   const footerY = 280;
   doc.setDrawColor(229, 231, 235);
   doc.line(15, footerY - 5, pageWidth - 15, footerY - 5);

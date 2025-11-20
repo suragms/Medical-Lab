@@ -137,22 +137,11 @@ export const generateReportPDF = (visitData) => {
   
   const groupedTests = groupTestsByCategory(visitData.tests);
   
-  Object.keys(groupedTests).forEach((category) => {
+  Object.keys(groupedTests).forEach((category, categoryIndex) => {
     const tests = groupedTests[category];
     
-    // Category Header (if multiple categories)
-    if (Object.keys(groupedTests).length > 1 && category !== 'General') {
-      doc.setFillColor(COLORS.headerBg);
-      doc.roundedRect(margin, yPos, blockWidth, 8, 2, 2, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.setTextColor('#FFFFFF');
-      doc.text(category.toUpperCase(), pageWidth / 2, yPos + 5.5, { align: 'center' });
-      yPos += 12;
-    }
-
     // ========================================
-    // TEST RESULTS TABLE
+    // TEST RESULTS TABLE - COLORFUL STRIPED
     // ========================================
     
     // DEBUG: Log test data
@@ -184,42 +173,54 @@ export const generateReportPDF = (visitData) => {
       ];
     });
 
+    // Smart pagination: Calculate if table fits on current page
+    const estimatedTableHeight = (tests.length * 8) + 20; // Rough estimate
+    const spaceLeft = pageHeight - yPos - 60; // Reserve space for footer
+    
+    // If not enough space and more than 3 rows, start new page
+    if (spaceLeft < estimatedTableHeight && tests.length > 3 && categoryIndex > 0) {
+      doc.addPage();
+      yPos = margin + 10;
+    }
+
     doc.autoTable({
       startY: yPos,
       head: [['Test Description', 'Result', 'Unit', 'Bio. Ref. Internal']],
       body: tableData,
-      theme: 'grid',
+      theme: 'striped',
       styles: {
         font: 'helvetica',
         fontSize: 10,
-        cellPadding: 4,
-        textColor: '#111',
+        cellPadding: 5,
+        textColor: [17, 17, 17],
         lineColor: [30, 58, 138],
-        lineWidth: 0.1,
-        overflow: 'linebreak'
+        lineWidth: 0.2,
+        overflow: 'linebreak',
+        valign: 'middle'
       },
       headStyles: {
         fillColor: [30, 58, 138],
-        textColor: '#FFFFFF',
+        textColor: [255, 255, 255],
         fontStyle: 'bold',
         fontSize: 10,
         halign: 'center',
         valign: 'middle',
-        cellPadding: 5
+        cellPadding: 6
       },
       columnStyles: {
         0: { cellWidth: 70, halign: 'left', fontStyle: 'bold' },
-        1: { cellWidth: 35, halign: 'center', fontStyle: 'normal' },
-        2: { cellWidth: 25, halign: 'center', textColor: '#666' },
-        3: { cellWidth: 'auto', halign: 'center', textColor: '#666' }
+        1: { cellWidth: 30, halign: 'center' },
+        2: { cellWidth: 25, halign: 'center', textColor: [100, 100, 100] },
+        3: { cellWidth: 'auto', halign: 'left', textColor: [100, 100, 100] }
       },
       alternateRowStyles: {
-        fillColor: [249, 250, 251]
+        fillColor: [240, 248, 255] // Light blue striped rows
       },
       margin: { left: margin, right: margin },
-      pageBreak: 'auto',
+      pageBreak: 'avoid', // Try to keep table on one page
       rowPageBreak: 'avoid',
-      tableWidth: 'auto'
+      tableWidth: 'auto',
+      showHead: 'firstPage'
     });
 
     yPos = doc.lastAutoTable.finalY + 5;
@@ -356,21 +357,24 @@ const isValueAbnormal = (test) => {
  * Format reference range from snapshot - WITH FALLBACK TO bioReference
  */
 const formatReference = (test) => {
-  const parts = [];
+  // Priority 1: Use bioReference field (from Profile Manager)
+  if (test.bioReference_snapshot || test.bioReference) {
+    const refText = test.bioReference_snapshot || test.bioReference;
+    // Return as-is to preserve multi-line formatting
+    return refText.trim();
+  }
   
-  // Try structured refLow/refHigh first
+  // Priority 2: Try structured refLow/refHigh
   if (test.inputType_snapshot === 'number' && test.refLow_snapshot && test.refHigh_snapshot) {
-    parts.push(`${test.refLow_snapshot} – ${test.refHigh_snapshot}`);
-  }
-  // Fallback to bioReference string (from seed data)
-  else if (test.bioReference || test.refText_snapshot) {
-    const refText = test.bioReference || test.refText_snapshot;
-    // Clean up text: remove labels like "Adult:", "Normal:", etc.
-    const cleaned = refText.replace(/^(Adult|Normal|Pre-diabetic|Diabetic|Desirable|Borderline|Optimal|High|Low):\s*/gi, '').trim();
-    parts.push(cleaned);
+    return `${test.refLow_snapshot} – ${test.refHigh_snapshot}`;
   }
   
-  return parts.length > 0 ? parts.join('\n') : '—';
+  // Priority 3: Fallback to refText
+  if (test.refText_snapshot) {
+    return test.refText_snapshot.trim();
+  }
+  
+  return '—';
 };
 
 /**
