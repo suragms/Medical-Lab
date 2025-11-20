@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { LOGO_PATHS } from './assetPath';
 
 // HEALit Brand Colors - Simplified for Professional Reports
 const COLORS = {
@@ -44,8 +45,7 @@ export const generateReportPDF = (visitData) => {
   
   // Left Logo - HEALit
   try {
-    const healitLogo = '/images/@heal original editable file (png).png';
-    doc.addImage(healitLogo, 'PNG', margin, logoY, logoHeight * 1.5, logoHeight);
+    doc.addImage(LOGO_PATHS.healit, 'PNG', margin, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
     console.log('HEALit logo not loaded');
   }
@@ -58,8 +58,7 @@ export const generateReportPDF = (visitData) => {
   
   // Right Logo - Thyrocare
   try {
-    const partnerLogo = '/images/download.jpeg.jpg';
-    doc.addImage(partnerLogo, 'JPEG', pageWidth - margin - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
+    doc.addImage(LOGO_PATHS.partner, 'JPEG', pageWidth - margin - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
   } catch (error) {
     console.log('Partner logo not loaded');
   }

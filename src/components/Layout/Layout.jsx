@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store';
 import { getVisits, getPatients } from '../../features/shared/dataService';
+import { LOGO_PATHS } from '../../utils/assetPath';
 import './Layout.css';
 
 const Layout = () => {
@@ -138,7 +139,7 @@ const Layout = () => {
           {/* Left: Logo + App Name + Quick Nav */}
           <div className="nav-left">
             <div className="nav-logo">
-              <img src="/images/@heal original editable file (png).png" alt="HEALit Logo" className="logo-image" />
+              <img src={LOGO_PATHS.healit} alt="HEALit Logo" className="logo-image" />
               <span className="app-name">HEALit Med Lab</span>
             </div>
             

@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store';
 import { initializeSeedData } from './features/shared/dataService';
 import { initializeAuthData } from './services/authService';
+import { preloadCriticalImages } from './utils/assetPath';
 
 // Pages
 import Login from './pages/Login/Login';
@@ -58,6 +59,8 @@ function App() {
     try {
       initializeSeedData();
       initializeAuthData();
+      // Preload critical images for PDFs and UI
+      preloadCriticalImages();
     } catch (error) {
       console.error('Error initializing seed data:', error);
     }
