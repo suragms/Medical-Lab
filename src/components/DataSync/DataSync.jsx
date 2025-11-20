@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Download, Upload, Database, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
-import { downloadDataBackup, uploadDataBackup } from '../../../utils/storageService';
+import { downloadDataBackup, uploadDataBackup } from '../../utils/storageService';
 import toast from 'react-hot-toast';
 import './DataSync.css';
 
