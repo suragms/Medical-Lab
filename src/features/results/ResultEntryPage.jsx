@@ -556,6 +556,10 @@ const ResultEntryPage = () => {
         } 
       }));
       
+      // Also trigger storage event for cross-tab sync
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('dataUpdated'));
+      
       // Audit log
       console.log('AUDIT: GENERATE_BOTH', {
         userId: currentUser?.userId,
@@ -690,6 +694,13 @@ const ResultEntryPage = () => {
       
       // Update local state
       setVisit(updatedVisit);
+      
+      // Trigger all data update events
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('dataUpdated'));
+      window.dispatchEvent(new CustomEvent('healit-data-update', { 
+        detail: { type: 'invoice_generated', visitId } 
+      }));
       
       // Log audit
       console.log('AUDIT: GENERATE_INVOICE', {
@@ -967,7 +978,6 @@ const ResultEntryPage = () => {
                   <th className="col-result">Value</th>
                   <th className="col-reference">Bio Ref. Internal</th>
                   <th className="col-unit">Unit</th>
-                  <th className="col-price">Price (₹)</th>
                   <th className="col-status">Status</th>
                   <th className="col-action">Action</th>
                 </tr>
@@ -985,28 +995,21 @@ const ResultEntryPage = () => {
                       </td>
                       <td className="col-reference">
                         <div className="reference-display">
-                          {test.bioReference || test.refLow_snapshot && test.refHigh_snapshot ? (
+                          {test.bioReference_snapshot || test.bioReference ? (
+                            <span className="ref-text" style={{ whiteSpace: 'pre-wrap' }}>
+                              {test.bioReference_snapshot || test.bioReference}
+                            </span>
+                          ) : test.refLow_snapshot && test.refHigh_snapshot ? (
                             <span className="ref-range">
-                              {test.refLow_snapshot || test.bioReference?.split('-')[0]?.trim() || '—'} – {test.refHigh_snapshot || test.bioReference?.split('-')[1]?.trim() || '—'}
+                              {test.refLow_snapshot} – {test.refHigh_snapshot}
                             </span>
                           ) : (
-                            <span className="ref-text">{test.refText_snapshot || test.bioReference || '—'}</span>
+                            <span className="ref-text">{test.refText_snapshot || '—'}</span>
                           )}
                         </div>
                       </td>
                       <td className="col-unit">
                         <span className="unit-value">{test.unit || test.unit_snapshot || '—'}</span>
-                      </td>
-                      <td className="col-price">
-                        <input
-                          type="number"
-                          value={test.price_snapshot || test.price || 0}
-                          onChange={(e) => handlePriceChange(index, e.target.value)}
-                          className="price-input"
-                          disabled={!canEditResults}
-                          step="0.01"
-                          min="0"
-                        />
                       </td>
                       <td className="col-status">
                         {renderStatusBadge(test.testId)}
@@ -1025,7 +1028,7 @@ const ResultEntryPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="no-tests">No tests selected</td>
+                    <td colSpan="7" className="no-tests">No tests selected</td>
                   </tr>
                 )}
               </tbody>

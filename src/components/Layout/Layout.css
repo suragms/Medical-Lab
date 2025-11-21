@@ -15,16 +15,16 @@
   width: 100%;
 }
 
-/* Compact Top Navigation Header - BLACK & WHITE */
+/* Compact Top Navigation Header - MODERN BLUE THEME */
 .top-nav {
-  height: 50px;
-  background: #000000;
-  border-bottom: 2px solid #1a1a1a;
-  padding: 0 16px;
+  height: 60px;
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  border-bottom: 3px solid #1e3a8a;
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(30, 64, 175, 0.25);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -71,30 +71,33 @@
 .quick-nav-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 20px;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
   cursor: pointer;
-  color: #CCCCCC;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
 }
 
 .quick-nav-btn:hover {
-  background: #1a1a1a;
+  background: rgba(255, 255, 255, 0.25);
   color: #FFFFFF;
-  border-color: #333333;
-  transform: scale(1.05);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .quick-nav-btn.active {
   background: #FFFFFF;
-  color: #000000;
+  color: #1e40af;
   border-color: #FFFFFF;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
 
 .quick-nav-btn svg {
@@ -112,31 +115,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: #1a1a1a;
-  border: 1px solid #333333;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
   cursor: pointer;
   color: #FFFFFF;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
 }
 
 .nav-icon-btn .username-display {
   position: absolute;
-  left: calc(100% + 8px);
-  background: #000000;
+  left: calc(100% + 12px);
+  background: #1e3a8a;
   color: #FFFFFF;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
   white-space: nowrap;
   opacity: 0;
   transform: translateX(-10px);
   transition: all 0.3s ease;
   pointer-events: none;
   z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .nav-icon-btn:hover .username-display {
@@ -146,9 +151,10 @@
 
 .nav-icon-btn:hover {
   background: #FFFFFF;
-  color: #000000;
+  color: #1e40af;
   border-color: #FFFFFF;
-  transform: translateY(-1px) scale(1.1);
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
 .nav-icon-btn:hover .username-display {
@@ -157,8 +163,9 @@
 }
 
 .nav-icon-btn.logout:hover {
-  background: var(--error);
-  border-color: var(--error);
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #FFFFFF;
 }
 
 .notification-badge {
@@ -191,22 +198,22 @@
 
 .notification-dropdown {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 12px);
   right: 0;
-  width: 380px;
+  width: 400px;
   max-height: 500px;
   background: #FFFFFF;
-  border: 2px solid #000000;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(30, 64, 175, 0.2);
   z-index: 100;
   overflow: hidden;
 }
 
 .notification-header {
-  padding: 16px;
-  background: #000000;
-  border-bottom: 1px solid #1a1a1a;
+  padding: 20px;
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  border-bottom: none;
   display: flex;
   justify-content: space-between;
   align-items: center;

@@ -182,6 +182,10 @@ const Patients = () => {
       if (!visit.pdfGenerated) {
         markPDFGenerated(visitId);
         toast.success('✅ PDF generated successfully!');
+        
+        // Trigger data updates
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('dataUpdated'));
       } else {
         toast.success('🖨️ PDF re-printed successfully!');
       }
@@ -319,6 +323,10 @@ const Patients = () => {
       if (!visit.invoiceGenerated) {
         markInvoiceGenerated(visitId);
         toast.success('✅ Invoice generated & marked as PAID!');
+        
+        // Trigger data updates
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('dataUpdated'));
       } else {
         toast.success('🖨️ Invoice re-printed!');
       }

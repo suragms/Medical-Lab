@@ -3,19 +3,19 @@ import 'jspdf-autotable';
 import { LOGO_PATHS, SIGNATURE_PATHS, imageToBase64 } from './assetPath';
 import { parseRange, checkRangeStatus, getStatusColor, getStatusBgColor, shouldBeBold } from './rangeParser';
 
-// HEALit Brand Colors - Simplified for Professional Reports
+// HEALit Brand Colors - Blue, Green, Red Theme
 const COLORS = {
-  primary: '#0b64a0',      // HEALit Blue (--accent from HTML)
-  accent: '#0b64a0',       // Same as primary
-  border: '#e6e6e6',       // Light Gray border
-  text: '#111',            // Dark Black text
-  muted: '#666',           // Muted text
-  high: '#EF4444',         // Red for HIGH
-  low: '#3B82F6',          // Blue for LOW
-  normal: '#111',          // Black for NORMAL
-  headerBg: '#e6e6e6',     // Table header background (subtle)
-  rowAlt: '#ffffff',       // No alternating (white)
-  noteBg: '#F3F4F6'        // Light background
+  primary: '#1e40af',      // Deep Blue
+  accent: '#059669',       // Green
+  border: '#e5e7eb',       // Light Gray border
+  text: '#111827',         // Dark text
+  muted: '#6b7280',        // Muted text
+  high: '#dc2626',         // Red for HIGH
+  low: '#2563eb',          // Blue for LOW
+  normal: '#111827',       // Dark for NORMAL
+  headerBg: '#1e40af',     // Blue header background
+  rowAlt: '#f0f9ff',       // Light blue alternating
+  noteBg: '#f3f4f6'        // Light background
 };
 
 /**
@@ -206,15 +206,15 @@ export const generateReportPDF = async (visitData) => {
         font: 'helvetica',
         fontSize: 9,
         cellPadding: 3,
-        textColor: '#111',
-        lineColor: [30, 58, 138],
+        textColor: '#111827',
+        lineColor: [30, 64, 175],
         lineWidth: 0.2,
         overflow: 'linebreak',
         valign: 'middle',
         minCellHeight: 5.5
       },
       headStyles: {
-        fillColor: [30, 58, 138],
+        fillColor: [30, 64, 175],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         fontSize: 9,
@@ -223,13 +223,13 @@ export const generateReportPDF = async (visitData) => {
         cellPadding: 3.5
       },
       columnStyles: {
-        0: { cellWidth: 70, halign: 'left', fontStyle: 'bold', fontSize: 9 },
+        0: { cellWidth: 60, halign: 'left', fontStyle: 'bold', fontSize: 9 },
         1: { cellWidth: 30, halign: 'center', fontStyle: 'normal', fontSize: 9 },
         2: { cellWidth: 25, halign: 'center', fontSize: 8.5 },
-        3: { cellWidth: 55, halign: 'left', fontSize: 8, whiteSpace: 'pre-wrap' }
+        3: { cellWidth: 65, halign: 'left', fontSize: 8, cellPadding: 2, overflow: 'linebreak', whiteSpace: 'normal' }
       },
       alternateRowStyles: {
-        fillColor: [240, 248, 255]
+        fillColor: [240, 249, 255]
       },
       margin: { left: margin, right: margin },
       pageBreak: 'auto',
@@ -252,10 +252,11 @@ export const generateReportPDF = async (visitData) => {
   // FOOTER - SIGNATURE SECTION (DYNAMIC POSITIONING)
   // ========================================
   
-  // Calculate if we need a new page for signatures
+  // Calculate if we need a new page for signatures and acknowledgement
   const signatureHeight = 45;
-  const footerNoteHeight = 15;
-  const requiredSpace = signatureHeight + footerNoteHeight;
+  const acknowledgementHeight = 40;
+  const footerNoteHeight = 10;
+  const requiredSpace = signatureHeight + acknowledgementHeight + footerNoteHeight;
   
   // If less than required space, ALWAYS add new page
   if (yPos > pageHeight - requiredSpace - 20) {
@@ -345,6 +346,48 @@ export const generateReportPDF = async (visitData) => {
   doc.text('Incharge', rightSigX, yPos + 21);
   
   yPos += 28;
+  
+  // ========================================
+  // PATIENT ACKNOWLEDGEMENT SECTION
+  // ========================================
+  
+  // Add spacing before acknowledgement
+  yPos += 8;
+  
+  // Acknowledgement box
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.5);
+  doc.rect(margin, yPos, pageWidth - 2 * margin, 35, 'S');
+  
+  // Acknowledgement title
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(17, 17, 17);
+  doc.text('Patient Acknowledgement', margin + 5, yPos + 7);
+  
+  // Acknowledgement text
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(75, 85, 99);
+  const ackText = 'I acknowledge that I have received and reviewed my test results. I understand the findings and have been informed about any necessary follow-up actions.';
+  const ackLines = doc.splitTextToSize(ackText, pageWidth - 2 * margin - 10);
+  doc.text(ackLines, margin + 5, yPos + 13);
+  
+  // Signature line and date
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(102, 102, 102);
+  
+  // Signature line
+  doc.setDrawColor(150, 150, 150);
+  doc.line(margin + 10, yPos + 28, margin + 70, yPos + 28);
+  doc.text('Patient Signature', margin + 10, yPos + 32);
+  
+  // Date line
+  doc.line(pageWidth - margin - 60, yPos + 28, pageWidth - margin - 10, yPos + 28);
+  doc.text('Date', pageWidth - margin - 60, yPos + 32);
+  
+  yPos += 40;
   
   // ========================================
   // FOOTER NOTE - Source Reference

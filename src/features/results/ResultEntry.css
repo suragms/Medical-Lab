@@ -267,10 +267,6 @@
   font-size: 0.8125rem;
 }
 
-.col-price {
-  width: 10%;
-}
-
 .col-status {
   width: 10%;
 }
@@ -293,31 +289,6 @@
   color: #64748B;
   font-size: 0.8125rem;
   font-weight: 500;
-}
-
-/* Price Input */
-.price-input {
-  width: 100%;
-  padding: 6px 8px;
-  border: 1.5px solid #E2E8F0;
-  border-radius: 4px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #059669;
-  background: white;
-  text-align: right;
-  font-family: 'Courier New', monospace;
-}
-
-.price-input:focus {
-  outline: none;
-  border-color: #059669;
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
-}
-
-.price-input:disabled {
-  background: #F8FAFC;
-  cursor: not-allowed;
 }
 
 /* Remove Button */
@@ -378,6 +349,18 @@
 /* Reference Display */
 .reference-display {
   font-size: 0.9375rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-width: 100%;
+  line-height: 1.4;
+}
+
+.col-reference {
+  min-width: 180px;
+  max-width: 220px;
+  white-space: normal !important;
+  word-wrap: break-word;
+  padding: 8px 12px !important;
 }
 
 .ref-range {
