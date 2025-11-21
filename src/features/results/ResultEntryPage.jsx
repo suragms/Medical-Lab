@@ -573,7 +573,7 @@ const ResultEntryPage = () => {
         }
       });
       
-      // Generate PDF Report - Open in new tab for printing
+      // Generate PDF Report - Download AND Open in new tab for printing
       const visitData = {
         ...updatedVisit,
         patient,
@@ -581,8 +581,15 @@ const ResultEntryPage = () => {
         signingTechnician: selectedTechnician
       };
       
-      printReportPDF(visitData);
-      toast.success('✅ PDF Report opened for printing!');
+      // Download the PDF report
+      await downloadReportPDF(visitData);
+      toast.success('✅ PDF Report download started!');
+      
+      // Also open in new tab for viewing/printing (slight delay to ensure download starts)
+      setTimeout(() => {
+        printReportPDF(visitData);
+        toast.success('✅ PDF Report opened in new tab!');
+      }, 500);
       
       // Wait 1 second then generate invoice
       setTimeout(() => {

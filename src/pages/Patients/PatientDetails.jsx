@@ -91,14 +91,19 @@ const PatientDetails = () => {
         signingTechnician
       };
       
-      // Use EXISTING advanced template
-      downloadReportPDF(visitData);
+      // Download the PDF report
+      await downloadReportPDF(visitData);
+      
+      // Also open in new tab for viewing/printing (slight delay to ensure download starts)
+      setTimeout(() => {
+        printReportPDF(visitData);
+      }, 500);
       
       if (!visit.pdfGenerated) {
         markPDFGenerated(id);
-        toast.success('✅ PDF generated successfully!');
+        toast.success('✅ PDF downloaded & opened in new tab!');
       } else {
-        toast.success('🖨️ PDF re-printed successfully!');
+        toast.success('🖨️ PDF re-downloaded & re-opened successfully!');
       }
       
       loadVisitData();

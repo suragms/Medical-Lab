@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getVisits, getPatients, getProfileById, markPDFGenerated, markInvoiceGenerated, getVisitById, deletePatient } from '../../features/shared/dataService';
-import { downloadReportPDF } from '../../utils/pdfGenerator';
+import { downloadReportPDF, printReportPDF } from '../../utils/pdfGenerator';
 import { getTechnicians } from '../../services/authService';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -176,18 +176,23 @@ const Patients = () => {
         signingTechnician
       };
       
-      // Use existing advanced template
-      downloadReportPDF(visitData);
+      // Download the PDF report
+      await downloadReportPDF(visitData);
+      
+      // Also open in new tab for viewing/printing (slight delay to ensure download starts)
+      setTimeout(() => {
+        printReportPDF(visitData);
+      }, 500);
       
       if (!visit.pdfGenerated) {
         markPDFGenerated(visitId);
-        toast.success('✅ PDF generated successfully!');
+        toast.success('✅ PDF downloaded & opened in new tab!');
         
         // Trigger data updates
         window.dispatchEvent(new Event('storage'));
         window.dispatchEvent(new Event('dataUpdated'));
       } else {
-        toast.success('🖨️ PDF re-printed successfully!');
+        toast.success('🖨️ PDF re-downloaded & re-opened successfully!');
       }
       
       loadData();

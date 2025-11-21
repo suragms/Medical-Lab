@@ -5,6 +5,7 @@ import { useAuthStore } from './store';
 import { initializeSeedData } from './features/shared/dataService';
 import { initializeAuthData } from './services/authService';
 import { preloadCriticalImages } from './utils/assetPath';
+import { initializeAutoClear } from './utils/browserCacheManager';
 
 // Pages
 import Login from './pages/Login/Login';
@@ -65,6 +66,8 @@ function App() {
         initializeAuthData();
         // Preload critical images for PDFs and UI
         preloadCriticalImages();
+        // Initialize automatic browser cache clearing
+        await initializeAutoClear();
         console.log('App initialization complete');
       } catch (error) {
         console.error('Error initializing app:', error);

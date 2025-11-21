@@ -8,8 +8,11 @@
  * @param {string} rangeStr - Reference range string
  * @returns {Object|null} - { min, max, type, value, text } or null if invalid
  */
-export const parseRange = (rangeStr) => {
+export const parseRange = (rangeStr, depth = 0) => {
   if (!rangeStr || typeof rangeStr !== 'string') return null;
+  
+  // Prevent infinite recursion - max depth of 3
+  if (depth > 3) return null;
   
   const s = rangeStr.toString().trim();
   
@@ -54,11 +57,16 @@ export const parseRange = (rangeStr) => {
   }
   
   // Handle multi-line bio references - extract first numeric range
-  const lines = s.split(/[\r\n]+/);
-  for (const line of lines) {
-    const parsed = parseRange(line);
-    if (parsed && (parsed.type === 'range' || parsed.type === 'lt' || parsed.type === 'gt')) {
-      return parsed;
+  // Only process if depth allows to prevent infinite recursion
+  if (depth < 2) {
+    const lines = s.split(/[\r\n]+/);
+    for (const line of lines) {
+      if (line.trim() && line.trim() !== s) { // Avoid parsing the same string
+        const parsed = parseRange(line, depth + 1);
+        if (parsed && (parsed.type === 'range' || parsed.type === 'lt' || parsed.type === 'gt')) {
+          return parsed;
+        }
+      }
     }
   }
   

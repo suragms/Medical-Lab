@@ -10,6 +10,7 @@ import { getCurrentUser, getUsers, addUser, updateUser, deleteUser, adminResetPa
 import { getSettings, updateSettings } from '../../../services/settingsService';
 import Button from '../../../components/ui/Button';
 import DataSync from '../../../components/DataSync/DataSync';
+import { clearBrowserStorage, clearCacheOnly, getStorageInfo } from '../../../utils/browserCacheManager';
 import toast from 'react-hot-toast';
 import './AdminSettings.css';
 
@@ -25,6 +26,7 @@ const AdminSettings = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
+  const [storageInfo, setStorageInfo] = useState(null);
   
   // Staff form
   const [staffForm, setStaffForm] = useState({
@@ -40,11 +42,17 @@ const AdminSettings = () => {
   // Load data
   useEffect(() => {
     loadData();
+    loadStorageInfo();
   }, []);
   
   const loadData = () => {
     setUsers(getUsers());
     setSettings(getSettings());
+  };
+  
+  const loadStorageInfo = async () => {
+    const info = await getStorageInfo();
+    setStorageInfo(info);
   };
   
   // Permission check - Admin only (AFTER all hooks)
@@ -158,6 +166,38 @@ const AdminSettings = () => {
   // Clear all data handler (DISABLED for Firestore - use Firebase Console)
   const handleClearAllData = () => {
     toast.error('⚠️ Data clearing is disabled in cloud mode. Please use Firebase Console to manage data.');
+  };
+  
+  // Clear browser cache handler
+  const handleClearCache = async () => {
+    if (window.confirm('This will clear browser cache and temporary data. User data will be preserved. Continue?')) {
+      toast.loading('Clearing cache...');
+      const result = await clearCacheOnly();
+      if (result.success) {
+        toast.success('Cache cleared successfully!');
+        await loadStorageInfo();
+      } else {
+        toast.error('Failed to clear cache');
+      }
+    }
+  };
+  
+  // Clear all browser storage (including user data)
+  const handleClearBrowserStorage = async () => {
+    if (window.confirm('⚠️ WARNING: This will clear ALL browser data except authentication. You will need to re-import data. Continue?')) {
+      if (window.confirm('Are you absolutely sure? This cannot be undone!')) {
+        toast.loading('Clearing all browser storage...');
+        const result = await clearBrowserStorage({
+          preserveProtected: true
+        });
+        if (result.success) {
+          toast.success('Browser storage cleared! Please refresh the page.');
+          setTimeout(() => window.location.reload(), 2000);
+        } else {
+          toast.error('Failed to clear storage');
+        }
+      }
+    }
   };
   
   if (!settings) {
@@ -732,9 +772,58 @@ const AdminSettings = () => {
             <div className="tab-panel">
               <DataSync />
               
+              {/* Browser Cache Management */}
+              <div className="card-settings" style={{marginTop: '32px'}}>
+                <h3>Browser Cache Management</h3>
+                <p className="help-text">Manage browser storage and cache to optimize performance</p>
+                
+                {storageInfo && (
+                  <div className="storage-stats" style={{marginBottom: '20px'}}>
+                    <div className="stat-item">
+                      <strong>LocalStorage:</strong> {storageInfo.localStorage.itemCount} items, ~{Math.round(storageInfo.localStorage.estimatedSize / 1024)} KB
+                    </div>
+                    <div className="stat-item">
+                      <strong>SessionStorage:</strong> {storageInfo.sessionStorage.itemCount} items
+                    </div>
+                    <div className="stat-item">
+                      <strong>IndexedDB:</strong> {storageInfo.indexedDB.databases.length} database(s)
+                    </div>
+                    <div className="stat-item">
+                      <strong>Cache API:</strong> {storageInfo.cache.caches.length} cache(s)
+                    </div>
+                  </div>
+                )}
+                
+                <div className="button-grid" style={{gap: '12px'}}>
+                  <Button variant="outline" onClick={handleClearCache}>
+                    <Database size={18} />
+                    Clear Cache Only
+                  </Button>
+                  <Button variant="outline" onClick={loadStorageInfo}>
+                    Refresh Storage Info
+                  </Button>
+                </div>
+              </div>
+              
               {/* Danger Zone - Keep Clear All Data */}
               <div className="card-settings" style={{marginTop: '32px'}}>
                 <h3 style={{color: '#DC2626'}}>Danger Zone</h3>
+                <div className="alert-box-danger">
+                  <AlertCircle size={20} />
+                  <div>
+                    <strong>Clear Browser Storage</strong>
+                    <p>Clear all browser data including localStorage, sessionStorage, IndexedDB, and cache. Authentication will be preserved. You'll need to re-import data afterwards.</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="primary" 
+                  onClick={handleClearBrowserStorage}
+                  style={{background: '#DC2626', borderColor: '#DC2626', marginBottom: '16px'}}
+                >
+                  <Trash2 size={18} />
+                  Clear All Browser Storage
+                </Button>
+                
                 <div className="alert-box-danger">
                   <AlertCircle size={20} />
                   <div>
