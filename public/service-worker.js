@@ -1,5 +1,6 @@
-// Service Worker for HEALit Lab PWA
-const CACHE_NAME = 'healit-lab-v1';
+// Service Worker for HEALit Lab PWA - Force update on deployment
+const CACHE_VERSION = Date.now(); // Timestamp ensures new cache on every deployment
+const CACHE_NAME = `healit-lab-v${CACHE_VERSION}`;
 const urlsToCache = [
   '/',
   '/index.html',
@@ -9,34 +10,41 @@ const urlsToCache = [
 
 // Install event - cache essential files
 self.addEventListener('install', (event) => {
+  console.log('[ServiceWorker] Installing new version:', CACHE_NAME);
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Opened cache');
+        console.log('[ServiceWorker] Caching app shell');
         return cache.addAll(urlsToCache);
       })
   );
+  // Force immediate activation
   self.skipWaiting();
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  console.log('[ServiceWorker] Activating new version:', CACHE_NAME);
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
+          // Delete ALL old caches to force fresh content
           if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
+            console.log('[ServiceWorker] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      console.log('[ServiceWorker] New version activated successfully');
+      // Take control of all pages immediately
+      return self.clients.claim();
     })
   );
-  self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - NETWORK FIRST strategy for fresh content
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
@@ -44,41 +52,42 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request)
+    // Try network first to get latest content
+    fetch(event.request)
       .then((response) => {
-        // Cache hit - return response
-        if (response) {
+        // Check if valid response
+        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
 
-        // Clone the request to ensure it's used only once
-        const fetchRequest = event.request.clone();
+        // Clone the response
+        const responseToCache = response.clone();
 
-        return fetch(fetchRequest).then(
-          (response) => {
-            // Check if valid response
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
+        // Update cache with new content
+        caches.open(CACHE_NAME)
+          .then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+
+        return response;
+      })
+      .catch(() => {
+        // Network failed, try cache as fallback
+        return caches.match(event.request)
+          .then((cachedResponse) => {
+            if (cachedResponse) {
+              console.log('[ServiceWorker] Serving from cache (offline):', event.request.url);
+              return cachedResponse;
             }
-
-            // Clone the response
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        ).catch(() => {
-          // Return a fallback response for critical assets
-          if (event.request.url.includes('icon') || event.request.url.includes('manifest.json')) {
-            // For icons and manifest, return a basic response
-            return new Response('', { status: 200, statusText: 'OK' });
-          }
-          return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
-        });
+            // Return offline message for non-critical assets
+            if (event.request.url.includes('icon') || event.request.url.includes('manifest.json')) {
+              return new Response('', { status: 200, statusText: 'OK' });
+            }
+            return new Response('Offline - Please check your connection', { 
+              status: 503, 
+              statusText: 'Service Unavailable' 
+            });
+          });
       })
   );
 });

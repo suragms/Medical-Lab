@@ -33,16 +33,19 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    // Force cache busting with timestamps
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        entryFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
+        chunkFileNames: `assets/[name]-[hash]-${Date.now()}.js`,
         assetFileNames: (assetInfo) => {
-          // Keep images in their original structure
+          // Keep images in their original structure with hash
           if (/\.(png|jpe?g|svg|gif|webp)$/.test(assetInfo.name)) {
-            return 'assets/images/[name]-[hash][extname]';
+            return `assets/images/[name]-[hash]-${Date.now()}[extname]`;
           }
-          return 'assets/[name]-[hash][extname]';
-        }
+          return `assets/[name]-[hash]-${Date.now()}[extname]`;
+        },
+        manualChunks: undefined
       }
     },
     commonjsOptions: {
