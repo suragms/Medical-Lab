@@ -887,7 +887,9 @@ const ResultEntryPage = () => {
       // Ctrl+Enter to generate report
       if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
-        if (hasResults) {
+        // Check if any results entered
+        const hasAnyResults = Object.values(results).some(r => r.value !== '');
+        if (hasAnyResults) {
           handleGenerateReport();
         } else {
           toast.error('Please enter test results first');
@@ -897,7 +899,7 @@ const ResultEntryPage = () => {
     
     window.addEventListener('keydown', handleGlobalKeyboard);
     return () => window.removeEventListener('keydown', handleGlobalKeyboard);
-  }, [hasResults]); // eslint-disable-line
+  }, [results, handleSave]); // eslint-disable-line
 
   // Render result input based on type
   const renderResultInput = (test) => {
