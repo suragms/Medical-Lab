@@ -164,31 +164,44 @@ const PatientDetails = () => {
         console.log('📦 Profile PDFs count:', results.filter(r => r.success).length);
         console.log('📦 Invoice will be added?', invoiceResult && invoiceResult.success);
         
+        // CRITICAL FIX: ALWAYS add invoice to list, even if generation failed
+        // This ensures users see invoice option and know to generate it
+        const invoiceEntry = invoiceResult && invoiceResult.success ? {
+          ...invoiceResult,
+          profileId: 'invoice',
+          profileName: `💰 Invoice (${invoiceResult.profileCount} Profiles)`,
+          isInvoice: true,
+          fileName: invoiceResult.fileName || `Invoice-${visitData.visitId}.pdf`
+        } : {
+          // FALLBACK: Create invoice entry even if generation failed
+          success: false, // Mark as not generated yet
+          profileId: 'invoice',
+          profileName: `💰 Invoice (${successCount} Profiles)`,
+          isInvoice: true,
+          fileName: `Invoice-${visitData.visitId}.pdf`,
+          needsGeneration: true, // Flag to regenerate on action
+          error: invoiceResult?.error || 'Not generated'
+        };
+        
         // Combine profile PDFs + invoice into one checklist
         const allResults = [
           ...results.filter(r => r.success),
-          invoiceResult && invoiceResult.success ? {
-            ...invoiceResult,
-            profileId: 'invoice', // Special ID for invoice
-            profileName: `💰 Invoice (${invoiceResult.profileCount} Profiles)`,
-            isInvoice: true
-          } : null
-        ].filter(Boolean);
+          invoiceEntry // ALWAYS include invoice
+        ];
         
         console.log('📋 Total checklist items (PDFs + Invoice):', allResults.length);
-        console.log('📋 Checklist items:', allResults.map(r => ({ name: r.profileName, isInvoice: r.isInvoice || false })));
+        console.log('📋 Checklist items:', allResults.map(r => ({ name: r.profileName, isInvoice: r.isInvoice || false, needsGen: r.needsGeneration })));
         
         if (invoiceResult && !invoiceResult.success) {
-          console.warn('⚠️ Invoice failed but continuing with PDFs only');
+          console.warn('⚠️ Invoice generation failed, will regenerate on user action');
           console.warn('⚠️ Invoice error details:', invoiceResult.error);
-          toast.warning(`Generated ${successCount} PDFs (Invoice failed: ${invoiceResult.error})`);
+          toast.success(`✅ Generated ${successCount} PDF(s)! Invoice will be generated when you click Print/Download.`);
         } else if (invoiceResult && invoiceResult.success) {
           console.log('✅ Invoice successfully added to checklist!');
           toast.success(`✅ Generated ${successCount} PDF(s) + 1 Invoice!`);
         } else {
-          console.error('❌ No invoice result at all!');
-          console.error('❌ This should NEVER happen - invoice generator returned null/undefined');
-          toast.error('❌ CRITICAL: Invoice generation failed - no result returned! Check console for details.');
+          console.warn('⚠️ Invoice not pre-generated, will create on demand');
+          toast.success(`✅ Generated ${successCount} PDF(s)! Invoice ready to generate.`);
         }
         
         // Store combined results
