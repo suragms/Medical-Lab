@@ -591,11 +591,49 @@ const ResultEntryPage = () => {
       const successPdfs = pdfResults.filter(r => r.success);
       
       if (successPdfs.length > 0) {
-        // Store results and initialize tracking
-        setGeneratedPdfResults(successPdfs);
+        // CRITICAL: Also generate invoice and add to list
+        console.log('🧾 Generating invoice for checklist...');
+        
+        let invoiceResult = null;
+        try {
+          invoiceResult = await generateCombinedInvoice(visitData, allProfiles, { download: false, print: false });
+          console.log('🧾 Invoice result:', invoiceResult);
+        } catch (invoiceError) {
+          console.error('❌ Invoice generation failed:', invoiceError);
+          invoiceResult = { success: false, error: invoiceError.message };
+        }
+        
+        // ALWAYS add invoice to list, even if generation failed
+        const invoiceEntry = invoiceResult && invoiceResult.success ? {
+          ...invoiceResult,
+          profileId: 'invoice',
+          profileName: `💰 Invoice (${invoiceResult.profileCount} Profiles)`,
+          isInvoice: true,
+          fileName: invoiceResult.fileName || `Invoice-${visitData.visitId}.pdf`
+        } : {
+          success: false,
+          profileId: 'invoice',
+          profileName: `💰 Invoice (${successPdfs.length} Profiles)`,
+          isInvoice: true,
+          fileName: `Invoice-${visitData.visitId}.pdf`,
+          needsGeneration: true,
+          error: invoiceResult?.error || 'Not generated'
+        };
+        
+        // Combine profile PDFs + invoice into one list
+        const allResults = [
+          ...successPdfs,
+          invoiceEntry // ALWAYS include invoice
+        ];
+        
+        console.log('📋 Total items in checklist:', allResults.length);
+        console.log('📋 Items:', allResults.map(r => r.profileName));
+        
+        // Store combined results
+        setGeneratedPdfResults(allResults);
         
         const initialStatus = {};
-        successPdfs.forEach(result => {
+        allResults.forEach(result => {
           initialStatus[result.profileId] = {
             printed: false,
             downloaded: false,
@@ -607,7 +645,7 @@ const ResultEntryPage = () => {
         // Show modal
         setShowPdfActionsModal(true);
         
-        toast.success(`✅ Generated ${successPdfs.length} profile PDF(s) - Choose actions in modal!`);
+        toast.success(`✅ Generated ${successPdfs.length} PDF(s) + 1 Invoice!`);
       }
       
       // Update local state
@@ -850,7 +888,9 @@ const ResultEntryPage = () => {
       if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
         if (hasResults) {
-          handleGenerateBothReportAndInvoice();
+          handleGenerateReport();
+        } else {
+          toast.error('Please enter test results first');
         }
       }
     };
@@ -973,6 +1013,9 @@ const ResultEntryPage = () => {
   };
   
   const billing = calculateBilling();
+  
+  // Check if any results have been entered
+  const hasResults = Object.values(results).some(r => r.value !== '');
   
   // Check if can edit (not locked after report generation, unless admin)
   const canEditResults = !visit?.reportedAt || role === 'admin';
