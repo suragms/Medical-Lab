@@ -30,6 +30,8 @@ const AddPatientPage = () => {
   const [selectedProfiles, setSelectedProfiles] = useState([]); // Changed to array for multiple profiles
   const [tests, setTests] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [profileSearchTerm, setProfileSearchTerm] = useState(''); // NEW: Search for profiles
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false); // NEW: Control dropdown visibility
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('amount');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -92,7 +94,9 @@ const AddPatientPage = () => {
               testMap.set(test.testId, {
                 ...test,
                 id: test.testId,
-                selected: true
+                selected: true,
+                profileId: profileId, // ADDED: Track which profile this test belongs to
+                profileName: profile.name // ADDED: Store profile name for reference
               });
             }
           });
@@ -270,8 +274,12 @@ const AddPatientPage = () => {
       toast.error('Valid 10-digit phone number is required');
       return false;
     }
+    if (selectedProfiles.length === 0) {
+      toast.error('⚠️ Please select at least one test profile');
+      return false;
+    }
     if (selectedTests.length === 0) {
-      toast.error('Please select at least one test');
+      toast.error('No tests loaded. Please select at least one profile with tests');
       return false;
     }
     return true;
@@ -321,7 +329,9 @@ const AddPatientPage = () => {
           description: test.description || test.name,
           unit: test.unit || '',
           bioReference: test.bioReference || '',
-          price: test.price || 0
+          price: test.price || 0,
+          profileId: test.profileId || null, // ADDED: Track which profile this test belongs to
+          profileName: test.profileName || 'Custom' // ADDED: Store profile name
         })),
         subtotal,
         discount: discountAmount,
@@ -362,32 +372,100 @@ const AddPatientPage = () => {
           <h3>Patient Details</h3>
           
           <div className="form-field">
-            <label>Test Profiles (Select Multiple)</label>
-            <div className="profile-select-pills">
-              {profiles.filter(p => p.active).length === 0 ? (
-                <p className="no-profiles-msg">No profiles available</p>
-              ) : (
-                profiles.filter(p => p.active).map(p => {
-                  const isSelected = selectedProfiles.includes(p.profileId);
-                  return (
-                    <button
-                      key={p.profileId}
-                      type="button"
-                      className={`profile-pill ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleProfileToggle(p.profileId)}
-                    >
-                      <span className="profile-name">{p.name}</span>
-                      <span className="profile-count">({p.tests?.length || 0} tests)</span>
-                      {isSelected && <span className="check-mark">✓</span>}
-                    </button>
-                  );
-                })
+            <label>Test Profiles *</label>
+            
+            {/* Search Input */}
+            <div className="profile-search-container">
+              <div className="profile-search-box" onClick={() => setShowProfileDropdown(!showProfileDropdown)}>
+                <Search size={16} />
+                <input
+                  type="text"
+                  value={profileSearchTerm}
+                  onChange={(e) => {
+                    setProfileSearchTerm(e.target.value);
+                    setShowProfileDropdown(true);
+                  }}
+                  onFocus={() => setShowProfileDropdown(true)}
+                  placeholder="Click to select profiles..."
+                  className="profile-search-input"
+                  readOnly={!showProfileDropdown}
+                />
+                {selectedProfiles.length > 0 ? (
+                  <span className="selected-count">{selectedProfiles.length} selected</span>
+                ) : (
+                  <span className="dropdown-arrow">▼</span>
+                )}
+              </div>
+              
+              {/* Dropdown List - Simple, No Checkboxes */}
+              {showProfileDropdown && (
+                <>
+                  <div className="dropdown-overlay" onClick={() => setShowProfileDropdown(false)} />
+                  <div className="profile-dropdown-simple">
+                    <div className="dropdown-list-simple">
+                      {profiles.filter(p => p.active && 
+                        p.name.toLowerCase().includes(profileSearchTerm.toLowerCase())
+                      ).map(p => {
+                        const isSelected = selectedProfiles.includes(p.profileId);
+                        return (
+                          <div
+                            key={p.profileId}
+                            className={`dropdown-item-simple ${isSelected ? 'selected' : ''}`}
+                            onClick={() => handleProfileToggle(p.profileId)}
+                          >
+                            <div className="profile-info-simple">
+                              <span className="profile-name-simple">{p.name}</span>
+                              <span className="profile-meta-simple">
+                                {p.tests?.length || 0} tests • ₹{p.packagePrice || 0}
+                              </span>
+                            </div>
+                            {isSelected && <span className="check-mark-simple">✓</span>}
+                          </div>
+                        );
+                      })}
+                      {profiles.filter(p => p.active && 
+                        p.name.toLowerCase().includes(profileSearchTerm.toLowerCase())
+                      ).length === 0 && (
+                        <div className="no-results-simple">No profiles found</div>
+                      )}
+                    </div>
+                    <div className="dropdown-footer">
+                      <button 
+                        type="button"
+                        className="done-btn"
+                        onClick={() => {
+                          setShowProfileDropdown(false);
+                          setProfileSearchTerm('');
+                        }}
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
+            
+            {/* Selected profiles as clean tags */}
             {selectedProfiles.length > 0 && (
-              <div className="selected-summary">
-                <span className="summary-icon">✓</span>
-                <span>{selectedProfiles.length} profile(s) selected</span>
+              <div className="selected-profiles-tags">
+                {selectedProfiles.map(profileId => {
+                  const profile = profiles.find(p => p.profileId === profileId);
+                  if (!profile) return null;
+                  return (
+                    <div key={profileId} className="profile-tag">
+                      <span className="tag-name">{profile.name}</span>
+                      <button
+                        type="button"
+                        className="tag-remove"
+                        onClick={() => handleProfileToggle(profileId)}
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

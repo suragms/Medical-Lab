@@ -193,50 +193,44 @@ export const generateInvoicePDF = async (invoiceData) => {
 
   yPos += 6; // Reduced from 8
 
-  // ========== ITEMS TABLE ==========
+  // ========== ITEMS TABLE - PROFILE ONLY (NO INDIVIDUAL TEST PRICES) ==========
   const tableData = items.map((item, index) => {
-    // Ensure numbers are properly parsed
-    const price = parseFloat(item.price) || 0;
-    const qty = parseInt(item.qty) || 1;
-    const amount = price * qty;
+    // Show only profile-level pricing, no individual test prices
+    const amount = parseFloat(item.price) || 0;
     
     return [
       String(index + 1),
       String(item.name || '-'),
-      'Rs. ' + price.toFixed(2),
-      String(qty),
       'Rs. ' + amount.toFixed(2)
     ];
   });
 
   doc.autoTable({
     startY: yPos,
-    head: [['#', 'Test / Package Description', 'Rate', 'Qty', 'Amount']],
+    head: [['#', 'Test Profile / Package', 'Amount']],
     body: tableData,
     theme: 'grid',
     headStyles: {
       fillColor: [30, 58, 138],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 7.5, // Reduced from 8.5
+      fontSize: 7.5,
       halign: 'center',
       valign: 'middle',
-      cellPadding: 2 // Reduced from 3
+      cellPadding: 2
     },
     bodyStyles: {
-      fontSize: 7.5, // Reduced from 8.5
+      fontSize: 7.5,
       textColor: [0, 0, 0],
-      cellPadding: 2 // Reduced from 2.5
+      cellPadding: 2
     },
     alternateRowStyles: {
       fillColor: [249, 250, 251]
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center', valign: 'middle', fontStyle: 'bold' },
-      1: { cellWidth: 95, halign: 'left', valign: 'middle', fontStyle: 'bold' },
-      2: { cellWidth: 25, halign: 'right', valign: 'middle' },
-      3: { cellWidth: 10, halign: 'center', valign: 'middle' },
-      4: { cellWidth: 40, halign: 'right', valign: 'middle', fontStyle: 'bold' }
+      0: { cellWidth: 15, halign: 'center', valign: 'middle', fontStyle: 'bold' },
+      1: { cellWidth: 125, halign: 'left', valign: 'middle', fontStyle: 'bold' },
+      2: { cellWidth: 40, halign: 'right', valign: 'middle', fontStyle: 'bold' }
     },
     margin: { left: 15, right: 15 },
     didDrawPage: (data) => {
@@ -249,11 +243,10 @@ export const generateInvoicePDF = async (invoiceData) => {
   // ========== SUMMARY SECTION - COMPACT ==========
   yPos = doc.lastAutoTable.finalY + 5; // Reduced from 6
   
-  // Calculate totals correctly - ENSURE NUMBERS
+  // Calculate totals correctly - Profile-level pricing only
   const calculatedSubtotal = items.reduce((sum, item) => {
     const price = parseFloat(item.price) || 0;
-    const qty = parseInt(item.qty) || 1;
-    return sum + (price * qty);
+    return sum + price; // No quantity multiplication for profiles
   }, 0);
   const actualDiscount = parseFloat(discount) || 0;
   const calculatedTotal = calculatedSubtotal - actualDiscount;

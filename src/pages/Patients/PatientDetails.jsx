@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Download, Share2, Printer, Mail, User, Phone, MapPin, Calendar, Stethoscope, Edit, X, Save, Activity, DollarSign, CheckCircle } from 'lucide-react';
+import { ArrowLeft, FileText, Download, Share2, Printer, Mail, User, Phone, MapPin, Calendar, Stethoscope, Edit, X, Save, Activity, DollarSign, CheckCircle, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getProfileTemplate } from '../../features/profile-manager/profileTemplates';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
-import { getVisitById, getPatientById, getProfileById, updatePatient, markPDFGenerated, markInvoiceGenerated } from '../../features/shared/dataService';
+import { getVisitById, getPatientById, getProfileById, getProfiles, updatePatient, updateVisit, markPDFGenerated, markInvoiceGenerated } from '../../features/shared/dataService';
 import { getTechnicians } from '../../services/authService';
+import { groupTestsByProfile, generateProfileReports, generateCombinedInvoice } from '../../utils/profilePdfHelper';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import './PatientDetails.css';
@@ -16,15 +17,23 @@ const PatientDetails = () => {
   const [visit, setVisit] = useState(null);
   const [patient, setPatient] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [profileGroups, setProfileGroups] = useState({}); // NEW: Grouped tests by profile
+  const [allProfiles, setAllProfiles] = useState([]); // NEW: All available profiles
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showPdfActionsModal, setShowPdfActionsModal] = useState(false); // NEW: PDF actions modal
+  const [generatedPdfResults, setGeneratedPdfResults] = useState([]); // NEW: Store PDF results
+  const [pdfCompletionStatus, setPdfCompletionStatus] = useState({}); // NEW: Track completion per PDF
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false); // NEW: Invoice modal
+  const [invoiceResult, setInvoiceResult] = useState(null); // NEW: Store invoice result
+  const [invoiceActionDone, setInvoiceActionDone] = useState(false); // NEW: Track if invoice action done
   const [showEditModal, setShowEditModal] = useState(false);
   const [editData, setEditData] = useState({
     name: '',
     age: '',
     gender: '',
     phone: '',
-    email: '', // Added email
+    email: '',
     address: '',
     referredBy: ''
   });
@@ -33,200 +42,349 @@ const PatientDetails = () => {
   useEffect(() => {
     loadVisitData();
     
-    // Listen for real-time data updates
+    // Listen for ALL real-time data updates
     const handleDataUpdate = () => {
+      console.log('🔄 PatientDetails: Data update event received');
       loadVisitData();
     };
     
+    const handleStorageChange = () => {
+      console.log('🔄 PatientDetails: Storage change event received');
+      loadVisitData();
+    };
+    
+    // Listen to multiple event types for comprehensive updates
     window.addEventListener('healit-data-update', handleDataUpdate);
-    return () => window.removeEventListener('healit-data-update', handleDataUpdate);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('dataUpdated', handleDataUpdate);
+    
+    return () => {
+      window.removeEventListener('healit-data-update', handleDataUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('dataUpdated', handleDataUpdate);
+    };
   }, [id]);
 
   const loadVisitData = () => {
+    console.log('🔍 PatientDetails: Loading visit data for ID:', id);
     try {
       const visitData = getVisitById(id);
       if (!visitData) {
+        console.warn('⚠️ Visit not found:', id);
         setLoading(false);
         return;
       }
       
+      console.log('✅ Visit data loaded:', visitData);
+      console.log('Tests in visit:', visitData.tests);
+      console.log('Sample tests with profileId:', visitData.tests?.slice(0, 2));
+      
       const patientData = getPatientById(visitData.patientId);
       const profileData = getProfileById(visitData.profileId);
+      
+      // Load all profiles for reference
+      const profiles = getProfiles();
+      setAllProfiles(profiles);
+      
+      // Group tests by profile
+      if (visitData.tests && visitData.tests.length > 0) {
+        const grouped = groupTestsByProfile(visitData.tests);
+        setProfileGroups(grouped);
+        console.log('📦 Grouped tests by profile:', grouped);
+        console.log('Profile IDs found:', Object.keys(grouped));
+      }
       
       setVisit(visitData);
       setPatient(patientData);
       setProfile(profileData);
     } catch (error) {
-      console.error('Error loading visit data:', error);
+      console.error('❌ Error loading visit data:', error);
       toast.error('Failed to load visit details');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGeneratePDF = async () => {
-    // CRITICAL VALIDATION: Results must be entered
+  // NEW: Generate PDFs for all profiles separately and show action modal
+  const handleGenerateAllProfilePDFs = async () => {
     if (!hasResults || !visit.tests || visit.tests.length === 0) {
-      toast.error('❌ Cannot generate PDF: Test results must be entered and report generated first!');
+      toast.error('❌ Cannot generate PDFs: Test results must be entered first!');
       return;
     }
 
-    // WARNING: If already generated, ask for confirmation
     if (visit.pdfGenerated) {
-      const confirmReprint = window.confirm('ℹ️ PDF already generated!\n\nDo you want to RE-PRINT this report?');
+      const confirmReprint = window.confirm('ℹ️ PDFs already generated!\n\nDo you want to RE-GENERATE all profile reports?');
       if (!confirmReprint) return;
     }
 
     setIsGenerating(true);
     try {
-      let signingTechnician = null;
-      if (visit.signing_technician_id) {
-        const technicians = getTechnicians();
-        signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
-      }
-      
       const visitData = {
         ...visit,
+        visitId: id, // ADDED: Ensure visitId is set
         patient,
-        profile,
-        signingTechnician
+        tests: visit.tests,
+        collectedAt: visit.collectedAt,
+        receivedAt: visit.receivedAt,
+        reportedAt: visit.reportedAt
       };
       
-      // Download the PDF report
-      await downloadReportPDF(visitData);
+      console.log('🚀 Starting PDF generation with visit data:', {
+        visitId: visitData.visitId,
+        testsCount: visitData.tests?.length,
+        profileCount: Object.keys(groupTestsByProfile(visitData.tests || [])).length
+      });
+
+      // Generate PDFs but DON'T auto-download
+      const results = await generateProfileReports(visitData, allProfiles, { download: false, print: false });
       
-      // Also open in new tab for viewing/printing (slight delay to ensure download starts)
-      setTimeout(() => {
-        printReportPDF(visitData);
-      }, 500);
-      
-      if (!visit.pdfGenerated) {
-        markPDFGenerated(id);
-        toast.success('✅ PDF downloaded & opened in new tab!');
+      const successCount = results.filter(r => r.success).length;
+
+      if (successCount > 0) {
+        // ALSO generate invoice and add to results
+        console.log('🧾 Generating invoice for checklist...');
+        console.log('🔍 Visit data for invoice:', {
+          visitId: visitData.visitId,
+          testsCount: visitData.tests?.length,
+          hasPatient: !!visitData.patient
+        });
+        
+        let invoiceResult = null;
+        try {
+          invoiceResult = await generateCombinedInvoice(visitData, allProfiles, { download: false, print: false });
+          console.log('🧾 Invoice result:', invoiceResult);
+          console.log('🧾 Invoice success?', invoiceResult?.success);
+          console.log('🧾 Invoice error?', invoiceResult?.error);
+        } catch (invoiceError) {
+          console.error('❌ Invoice generation EXCEPTION:', invoiceError);
+          console.error('❌ Stack trace:', invoiceError.stack);
+          invoiceResult = { success: false, error: invoiceError.message };
+        }
+        
+        console.log('📦 Profile PDFs count:', results.filter(r => r.success).length);
+        console.log('📦 Invoice will be added?', invoiceResult && invoiceResult.success);
+        
+        // Combine profile PDFs + invoice into one checklist
+        const allResults = [
+          ...results.filter(r => r.success),
+          invoiceResult && invoiceResult.success ? {
+            ...invoiceResult,
+            profileId: 'invoice', // Special ID for invoice
+            profileName: `💰 Invoice (${invoiceResult.profileCount} Profiles)`,
+            isInvoice: true
+          } : null
+        ].filter(Boolean);
+        
+        console.log('📋 Total checklist items (PDFs + Invoice):', allResults.length);
+        console.log('📋 Checklist items:', allResults.map(r => ({ name: r.profileName, isInvoice: r.isInvoice || false })));
+        
+        if (invoiceResult && !invoiceResult.success) {
+          console.warn('⚠️ Invoice failed but continuing with PDFs only');
+          console.warn('⚠️ Invoice error details:', invoiceResult.error);
+          toast.warning(`Generated ${successCount} PDFs (Invoice failed: ${invoiceResult.error})`);
+        } else if (invoiceResult && invoiceResult.success) {
+          console.log('✅ Invoice successfully added to checklist!');
+          toast.success(`✅ Generated ${successCount} PDF(s) + 1 Invoice!`);
+        } else {
+          console.error('❌ No invoice result at all!');
+          console.error('❌ This should NEVER happen - invoice generator returned null/undefined');
+          toast.error('❌ CRITICAL: Invoice generation failed - no result returned! Check console for details.');
+        }
+        
+        // Store combined results
+        setGeneratedPdfResults(allResults);
+        
+        // Initialize completion tracking for each PDF + invoice
+        const initialStatus = {};
+        allResults.forEach(result => {
+          initialStatus[result.profileId] = {
+            printed: false,
+            downloaded: false,
+            shared: false
+          };
+        });
+        setPdfCompletionStatus(initialStatus);
+        
+        setShowPdfActionsModal(true);
+        
+        if (!visit.pdfGenerated) {
+          markPDFGenerated(id);
+        }
+        
+        // Dispatch ALL update events
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('dataUpdated'));
+        window.dispatchEvent(new CustomEvent('healit-data-update', { 
+          detail: { type: 'pdf_generated', visitId: id } 
+        }));
+        
+        loadVisitData();
       } else {
-        toast.success('🖨️ PDF re-downloaded & re-opened successfully!');
+        toast.error('⚠️ Failed to generate reports');
       }
-      
-      loadVisitData();
     } catch (error) {
       console.error('PDF generation error:', error);
-      toast.error('Failed to generate PDF: ' + error.message);
+      toast.error('Failed to generate PDFs: ' + error.message);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleGenerateInvoice = async () => {
-    // CRITICAL VALIDATION: Results must be entered
+  // NEW: Mark PDF action as complete
+  const markPdfActionComplete = (profileId, actionType) => {
+    setPdfCompletionStatus(prev => ({
+      ...prev,
+      [profileId]: {
+        ...prev[profileId],
+        [actionType]: true
+      }
+    }));
+  };
+
+  // NEW: Check if all PDFs are handled
+  const allPdfsCompleted = () => {
+    return Object.values(pdfCompletionStatus).every(status => 
+      status.printed || status.downloaded || status.shared
+    );
+  };
+
+  // NEW: Complete and mark as paid
+  const handleCompleteAndMarkPaid = async () => {
+    const confirm = window.confirm(
+      '✅ COMPLETE & MARK AS PAID?\n\n' +
+      'This will:\n' +
+      '• Mark visit as COMPLETED\n' +
+      '• Mark payment as PAID\n' +
+      '• Update all related pages\n\n' +
+      'Continue?'
+    );
+    
+    if (!confirm) return;
+
+    try {
+      // Update visit status and payment
+      const updatedVisit = updateVisit(id, {
+        status: 'completed',
+        paymentStatus: 'paid',
+        paidAt: new Date().toISOString(),
+        pdfGenerated: true,
+        invoiceGenerated: true
+      });
+
+      // Close modal
+      setShowPdfActionsModal(false);
+      
+      // Dispatch events
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('dataUpdated'));
+      window.dispatchEvent(new CustomEvent('healit-data-update', { 
+        detail: { type: 'visit_completed', visitId: id, status: 'completed', paymentStatus: 'paid' } 
+      }));
+      
+      // Reload data
+      loadVisitData();
+      
+      toast.success('✅ Visit completed and marked as paid!');
+      
+      // Redirect to patients page after 2 seconds
+      setTimeout(() => {
+        navigate('/patients');
+      }, 2000);
+    } catch (error) {
+      console.error('Error completing visit:', error);
+      toast.error('Failed to complete visit');
+    }
+  };
+
+  // NEW: Complete invoice action and mark paid
+  const handleInvoiceCompleteAndPaid = async () => {
+    const confirm = window.confirm(
+      '✅ MARK AS PAID?\n\n' +
+      'This will:\n' +
+      '• Mark payment as PAID\n' +
+      '• Mark visit as COMPLETED\n' +
+      '• Update all related pages\n\n' +
+      'Continue?'
+    );
+    
+    if (!confirm) return;
+    
+    try {
+      // Update visit
+      const updatedVisit = updateVisit(id, {
+        visitStatus: 'completed',
+        paymentStatus: 'paid',
+        paidAt: new Date().toISOString()
+      });
+      
+      // Close modal
+      setShowInvoiceModal(false);
+      
+      // Dispatch ALL update events
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('dataUpdated'));
+      window.dispatchEvent(new CustomEvent('healit-data-update', { 
+        detail: { type: 'visit_completed', visitId: id } 
+      }));
+      
+      toast.success('✅ Visit completed and marked as PAID!');
+      loadVisitData();
+    } catch (error) {
+      console.error('Complete error:', error);
+      toast.error('Failed to mark as paid');
+    }
+  };
+
+  // NEW: Generate ONE combined invoice with all profiles
+  const handleGenerateAllProfileInvoices = async () => {
     if (!hasResults || !visit.tests || visit.tests.length === 0) {
-      toast.error('❌ Cannot generate invoice: Test results must be entered and report generated first!');
+      toast.error('❌ Cannot generate invoice: Test results must be entered first!');
       return;
     }
 
-    // CRITICAL WARNING: If already generated and paid
     if (visit.invoiceGenerated && visit.paymentStatus === 'paid') {
-      const confirmReInvoice = window.confirm('⚠️ INVOICE ALREADY GENERATED & PAID!\n\nPatient: ' + patient.name + '\nPaid Amount: ₹' + (profile?.price || profile?.packagePrice || 0) + '\n\nAre you sure you want to RE-PRINT this invoice?\n\n(This will NOT change payment status)');
+      const confirmReInvoice = window.confirm('⚠️ INVOICE ALREADY GENERATED & PAID!\n\nAre you sure you want to RE-GENERATE?\n\n(This will NOT change payment status)');
       if (!confirmReInvoice) return;
     }
 
     setIsGenerating(true);
     try {
-      // Use ADVANCED Invoice template
-      const printWindow = window.open('', '', 'width=800,height=600');
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Invoice - ${visit.visitId}</title>
-            <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Arial', sans-serif; padding: 40px; background: #fff; }
-              .invoice-container { max-width: 800px; margin: 0 auto; border: 2px solid #000; padding: 30px; }
-              .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #000; padding-bottom: 20px; }
-              .header h1 { font-size: 28px; color: #000; margin-bottom: 5px; }
-              .header p { font-size: 16px; color: #666; }
-              .invoice-details { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
-              .detail-section h3 { font-size: 14px; color: #000; margin-bottom: 10px; text-transform: uppercase; }
-              .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ddd; }
-              .detail-row strong { color: #000; }
-              .detail-row span { color: #666; }
-              .items-table { width: 100%; margin: 30px 0; border-collapse: collapse; }
-              .items-table th { background: #000; color: #fff; padding: 12px; text-align: left; }
-              .items-table td { padding: 12px; border-bottom: 1px solid #ddd; }
-              .total-section { text-align: right; margin-top: 30px; padding-top: 20px; border-top: 3px solid #000; }
-              .total-section h2 { font-size: 24px; color: #000; }
-              .footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; }
-              @media print { body { padding: 0; } .invoice-container { border: none; } }
-            </style>
-          </head>
-          <body>
-            <div class="invoice-container">
-              <div class="header">
-                <h1>HEALit Med Laboratories</h1>
-                <p>Kunnathpeedika Centre | Phone: 7356865161 | Email: info@healitlab.com</p>
-              </div>
-              
-              <div class="invoice-details">
-                <div class="detail-section">
-                  <h3>Bill To:</h3>
-                  <div class="detail-row"><strong>Name:</strong> <span>${patient.name}</span></div>
-                  <div class="detail-row"><strong>Age/Gender:</strong> <span>${patient.age} years / ${patient.gender}</span></div>
-                  <div class="detail-row"><strong>Phone:</strong> <span>${patient.phone}</span></div>
-                  ${patient.address ? `<div class="detail-row"><strong>Address:</strong> <span>${patient.address}</span></div>` : ''}
-                </div>
-                <div class="detail-section">
-                  <h3>Invoice Details:</h3>
-                  <div class="detail-row"><strong>Invoice No:</strong> <span>${visit.visitId}</span></div>
-                  <div class="detail-row"><strong>Date:</strong> <span>${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
-                  <div class="detail-row"><strong>Collected On:</strong> <span>${visit.collectedAt ? new Date(visit.collectedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'}</span></div>
-                  <div class="detail-row"><strong>Received On:</strong> <span>${visit.receivedAt ? new Date(visit.receivedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'}</span></div>
-                  <div class="detail-row"><strong>Reported On:</strong> <span>${visit.reportedAt ? new Date(visit.reportedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'}</span></div>
-                </div>
-              </div>
-              
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th>Test Name</th>
-                    <th style="text-align: right;">Amount (₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${visit.tests.map(test => `
-                    <tr>
-                      <td>${test.name || test.name_snapshot}</td>
-                      <td style="text-align: right;">₹${test.price || 0}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-                <tfoot>
-                  <tr style="border-top: 2px solid #000; font-weight: bold;">
-                    <td style="text-align: right; padding-top: 10px;">Total:</td>
-                    <td style="text-align: right; padding-top: 10px;">₹${visit.finalAmount || 0}</td>
-                  </tr>
-                </tfoot>
-              </table>
-              
-              <div class="footer">
-                <p>Thank you for choosing HEALit Med Laboratories</p>
-                <p style="font-size: 12px; margin-top: 5px;">This is a computer-generated invoice</p>
-              </div>
-            </div>
-            <script>window.print();</script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      
-      // Mark invoice as generated and paid ONLY if first time
-      if (!visit.invoiceGenerated) {
-        markInvoiceGenerated(id);
-        toast.success('✅ Invoice generated & marked as PAID!');
+      const visitData = {
+        ...visit,
+        patient,
+        tests: visit.tests,
+        collectedAt: visit.collectedAt,
+        receivedAt: visit.receivedAt,
+        reportedAt: visit.reportedAt,
+        paymentStatus: visit.paymentStatus,
+        paymentMethod: visit.paymentMethod || 'Cash'
+      };
+
+      const result = await generateCombinedInvoice(visitData, allProfiles, { download: false, print: false });
+
+      if (result.success) {
+        // Store result and show modal
+        setInvoiceResult(result);
+        setInvoiceActionDone(false);
+        setShowInvoiceModal(true);
+        
+        toast.success(`✅ Invoice generated with ${result.profileCount} profile(s) - Choose action!`);
+        
+        if (!visit.invoiceGenerated) {
+          markInvoiceGenerated(id);
+        }
+        
+        // Dispatch ALL update events
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('dataUpdated'));
+        window.dispatchEvent(new CustomEvent('healit-data-update', { 
+          detail: { type: 'invoice_generated', visitId: id } 
+        }));
+        
+        loadVisitData();
       } else {
-        toast.success('🖨️ Invoice re-printed!');
+        toast.error(`⚠️ Failed to generate invoice: ${result.error}`);
       }
-      
-      loadVisitData();
     } catch (error) {
       console.error('Invoice generation error:', error);
       toast.error('Failed to generate invoice: ' + error.message);
@@ -676,24 +834,40 @@ const PatientDetails = () => {
               
               <div className="divider" style={{margin: '12px 0', borderTop: '1px solid #E5E5E5'}}></div>
               
+              {/* Show profile count if multiple profiles detected */}
+              {Object.keys(profileGroups).length > 1 && (
+                <div style={{padding: '8px', background: '#EFF6FF', borderRadius: '8px', textAlign: 'center', marginBottom: '8px'}}>
+                  <span style={{color: '#1E3A8A', fontWeight: 600, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px'}}>
+                    <Layers size={14} />
+                    {Object.keys(profileGroups).length} Profiles Detected
+                  </span>
+                </div>
+              )}
+              
               <Button
                 variant={visit.pdfGenerated ? "outline" : "secondary"}
                 fullWidth
-                icon={visit.pdfGenerated ? CheckCircle : FileText}
-                onClick={handleGeneratePDF}
-                disabled={!hasResults}
+                icon={visit.pdfGenerated ? CheckCircle : Layers}
+                onClick={handleGenerateAllProfilePDFs}
+                disabled={!hasResults || isGenerating}
               >
-                {visit.pdfGenerated ? '🖨️ Re-Print PDF' : (hasResults ? 'Generate PDF' : '⚠️ No Results Yet')}
+                {visit.pdfGenerated ? '🖨️ Re-Generate PDFs' : (hasResults ? '📄 Generate Profile PDFs' : '⚠️ No Results Yet')}
               </Button>
               <Button
                 variant={visit.invoiceGenerated ? "outline" : "primary"}
                 fullWidth
                 icon={visit.invoiceGenerated ? CheckCircle : DollarSign}
-                onClick={handleGenerateInvoice}
-                disabled={!hasResults}
+                onClick={handleGenerateAllProfileInvoices}
+                disabled={!hasResults || isGenerating}
               >
-                {visit.invoiceGenerated ? '🖨️ Re-Print Invoice' : (hasResults ? 'Generate Invoice' : '⚠️ No Results Yet')}
+                {visit.invoiceGenerated ? '🖨️ Re-Generate Invoice' : (hasResults ? '📄 Generate Invoice' : '⚠️ No Results Yet')}
               </Button>
+              
+              <div style={{padding: '6px 8px', background: '#F9FAFB', borderRadius: '6px', marginTop: '8px'}}>
+                <p style={{fontSize: '0.7rem', color: '#6B7280', textAlign: 'center', margin: 0}}>
+                  ℹ️ One invoice with all profiles. Separate PDFs per profile.
+                </p>
+              </div>
               
               {visit.paymentStatus === 'paid' && (
                 <div className="payment-status-indicator" style={{padding: '8px', background: '#D1FAE5', borderRadius: '8px', textAlign: 'center', marginTop: '8px'}}>
@@ -827,6 +1001,382 @@ const PatientDetails = () => {
               <Button icon={Save} onClick={handleSaveEdit}>
                 Save Changes
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Actions Modal */}
+      {showPdfActionsModal && (
+        <div className="modal-overlay" onClick={() => setShowPdfActionsModal(false)}>
+          <div className="modal-content pdf-actions-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><FileText size={24} /> Generated Reports - Complete Actions</h3>
+              <button className="close-btn" onClick={() => setShowPdfActionsModal(false)}>×</button>
+            </div>
+
+            <div className="pdf-actions-list">
+              {generatedPdfResults.map((pdfResult, index) => {
+                const status = pdfCompletionStatus[pdfResult.profileId] || {};
+                const isCompleted = status.printed || status.downloaded || status.shared;
+                
+                return (
+                  <div key={pdfResult.profileId} className={`pdf-action-item ${isCompleted ? 'completed' : ''}`}>
+                    <div className="pdf-info">
+                      <div className="pdf-checkbox">
+                        {isCompleted ? (
+                          <span className="checkmark">✓</span>
+                        ) : (
+                          <span className="pdf-number">{index + 1}</span>
+                        )}
+                      </div>
+                      <div className="pdf-details">
+                        <h4>{pdfResult.profileName}</h4>
+                        <p className="pdf-filename">{pdfResult.fileName}</p>
+                        {isCompleted && (
+                          <p className="completion-status">
+                            {status.printed && '🖨️ Printed'}
+                            {status.downloaded && ' ⬇️ Downloaded'}
+                            {status.shared && ' 📤 Shared'}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  
+                  <div className="pdf-actions">
+                    <button 
+                      className="action-btn print-btn"
+                      onClick={async () => {
+                        try {
+                          // Get signing technician
+                          const signingTechnician = visit.signing_technician_id ? 
+                            getTechnicians().find(t => t.technicianId === visit.signing_technician_id) : null;
+                          
+                          const visitData = {
+                            ...visit,
+                            patient,
+                            tests: visit.tests,
+                            collectedAt: visit.collectedAt,
+                            receivedAt: visit.receivedAt,
+                            reportedAt: visit.reportedAt,
+                            paymentStatus: visit.paymentStatus,
+                            paymentMethod: visit.paymentMethod || 'Cash',
+                            signingTechnician // ADDED: Include signing technician
+                          };
+                          
+                          // Check if this is invoice or profile PDF
+                          if (pdfResult.isInvoice) {
+                            // Print invoice
+                            await generateCombinedInvoice(visitData, allProfiles, { 
+                              download: false, 
+                              print: true
+                            });
+                            toast.success('🖨️ Invoice print dialog opened');
+                          } else {
+                            // Print profile PDF
+                            await generateProfileReports(visitData, allProfiles, { 
+                              download: false, 
+                              print: true,
+                              profileFilter: pdfResult.profileId 
+                            });
+                            toast.success(`🖨️ Print dialog opened for ${pdfResult.profileName}`);
+                          }
+                          
+                          markPdfActionComplete(pdfResult.profileId, 'printed');
+                        } catch (error) {
+                          toast.error('Failed to print');
+                        }
+                      }}
+                      title="Print"
+                    >
+                      <Printer size={18} />
+                      Print
+                    </button>
+                    
+                    <button 
+                      className="action-btn download-btn"
+                      onClick={async () => {
+                        try {
+                          // Get signing technician
+                          const signingTechnician = visit.signing_technician_id ? 
+                            getTechnicians().find(t => t.technicianId === visit.signing_technician_id) : null;
+                          
+                          const visitData = {
+                            ...visit,
+                            patient,
+                            tests: visit.tests,
+                            collectedAt: visit.collectedAt,
+                            receivedAt: visit.receivedAt,
+                            reportedAt: visit.reportedAt,
+                            paymentStatus: visit.paymentStatus,
+                            paymentMethod: visit.paymentMethod || 'Cash',
+                            signingTechnician // ADDED: Include signing technician
+                          };
+                          
+                          // Check if this is invoice or profile PDF
+                          if (pdfResult.isInvoice) {
+                            // Download invoice
+                            await generateCombinedInvoice(visitData, allProfiles, { 
+                              download: true, 
+                              print: false
+                            });
+                            toast.success('⬇️ Invoice downloaded');
+                          } else {
+                            // Download profile PDF
+                            await generateProfileReports(visitData, allProfiles, { 
+                              download: true, 
+                              print: false,
+                              profileFilter: pdfResult.profileId 
+                            });
+                            toast.success(`⬇️ Downloaded ${pdfResult.profileName}`);
+                          }
+                          
+                          markPdfActionComplete(pdfResult.profileId, 'downloaded');
+                        } catch (error) {
+                          toast.error('Failed to download');
+                        }
+                      }}
+                      title="Download"
+                    >
+                      <Download size={18} />
+                      Download
+                    </button>
+                    
+                    <button 
+                      className="action-btn whatsapp-btn"
+                      onClick={() => {
+                        const phone = patient.phone || '';
+                        if (!phone) {
+                          toast.error('No phone number available');
+                          return;
+                        }
+                        markPdfActionComplete(pdfResult.profileId, 'shared');
+                        toast.info(`📱 Opening WhatsApp for ${pdfResult.profileName}`);
+                        const message = `Hi ${patient.name}, your ${pdfResult.profileName} report is ready. Visit ID: ${visit.visitId}`;
+                        window.open(`https://wa.me/${phone.replace(/^0/, '91')}?text=${encodeURIComponent(message)}`, '_blank');
+                      }}
+                      title="Share via WhatsApp"
+                    >
+                      <Share2 size={18} />
+                      WhatsApp
+                    </button>
+                    
+                    <button 
+                      className="action-btn email-btn"
+                      onClick={() => {
+                        const email = patient.email || '';
+                        if (!email) {
+                          toast.error('No email address available');
+                          return;
+                        }
+                        markPdfActionComplete(pdfResult.profileId, 'shared');
+                        toast.info(`📧 Opening email for ${pdfResult.profileName}`);
+                        const subject = `Lab Report - ${pdfResult.profileName} - ${patient.name}`;
+                        const body = `Dear ${patient.name},
+
+Your ${pdfResult.profileName} report is attached.
+
+Visit ID: ${visit.visitId}
+
+Thank you,
+HEALit Med Laboratories`;
+                        window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+                      }}
+                      title="Share via Email"
+                    >
+                      <Mail size={18} />
+                      Email
+                    </button>
+                  </div>
+                </div>
+                );
+              })}
+            </div>
+
+            <div className="modal-footer">
+              {allPdfsCompleted() ? (
+                <>
+                  <div className="completion-message">
+                    <CheckCircle size={20} color="#10B981" />
+                    <span>All reports handled! Ready to complete.</span>
+                  </div>
+                  <Button 
+                    variant="success" 
+                    onClick={handleCompleteAndMarkPaid}
+                    icon={CheckCircle}
+                  >
+                    Complete & Mark Paid
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="progress-container">
+                    <div className="progress-bar">
+                      <div 
+                        className="progress-fill" 
+                        style={{
+                          width: `${(Object.values(pdfCompletionStatus).filter(s => s.printed || s.downloaded || s.shared).length / generatedPdfResults.length) * 100}%`
+                        }}
+                      />
+                    </div>
+                    <div className="progress-text">
+                      {Object.values(pdfCompletionStatus).filter(s => s.printed || s.downloaded || s.shared).length} / {generatedPdfResults.length} completed
+                    </div>
+                  </div>
+                  <Button variant="ghost" onClick={() => setShowPdfActionsModal(false)}>
+                    Close
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoiceModal && invoiceResult && (
+        <div className="modal-overlay" onClick={() => setShowInvoiceModal(false)}>
+          <div className="modal-content pdf-actions-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><DollarSign size={24} /> Invoice Generated - Complete Action</h3>
+              <button className="close-btn" onClick={() => setShowInvoiceModal(false)}>×</button>
+            </div>
+
+            <div className="pdf-actions-list">
+              <div className={`pdf-action-item ${invoiceActionDone ? 'completed' : ''}`}>
+                <div className="pdf-info">
+                  <div className="pdf-checkbox">
+                    {invoiceActionDone ? (
+                      <span className="checkmark">✓</span>
+                    ) : (
+                      <span className="pdf-number">💵</span>
+                    )}
+                  </div>
+                  <div className="pdf-details">
+                    <h4>Combined Invoice - {invoiceResult.profileCount} Profile(s)</h4>
+                    <p className="pdf-filename">{invoiceResult.fileName}</p>
+                    {invoiceActionDone && <p className="completion-status">✓ Action completed</p>}
+                  </div>
+                </div>
+                
+                <div className="pdf-actions">
+                  {/* Print */}
+                  <button
+                    className="action-btn print-btn"
+                    onClick={async () => {
+                      const visitData = {
+                        ...visit,
+                        patient,
+                        tests: visit.tests,
+                        collectedAt: visit.collectedAt,
+                        receivedAt: visit.receivedAt,
+                        reportedAt: visit.reportedAt,
+                        paymentStatus: visit.paymentStatus,
+                        paymentMethod: visit.paymentMethod || 'Cash'
+                      };
+                      await generateCombinedInvoice(visitData, allProfiles, { download: false, print: true });
+                      setInvoiceActionDone(true);
+                      toast.success('🖨️ Invoice print dialog opened');
+                    }}
+                  >
+                    <Printer size={18} />
+                    Print
+                  </button>
+                  
+                  {/* Download */}
+                  <button
+                    className="action-btn download-btn"
+                    onClick={async () => {
+                      const visitData = {
+                        ...visit,
+                        patient,
+                        tests: visit.tests,
+                        collectedAt: visit.collectedAt,
+                        receivedAt: visit.receivedAt,
+                        reportedAt: visit.reportedAt,
+                        paymentStatus: visit.paymentStatus,
+                        paymentMethod: visit.paymentMethod || 'Cash'
+                      };
+                      await generateCombinedInvoice(visitData, allProfiles, { download: true, print: false });
+                      setInvoiceActionDone(true);
+                      toast.success('⬇️ Invoice downloaded');
+                    }}
+                  >
+                    <Download size={18} />
+                    Download
+                  </button>
+                  
+                  {/* WhatsApp */}
+                  <button
+                    className="action-btn whatsapp-btn"
+                    onClick={() => {
+                      const phone = patient.phone || '1234567890';
+                      const message = `Hi ${patient.name}, your invoice for visit ${visit.visitNumber} is ready. Total amount: ₹${visit.totalAmount || 0}. Please contact us for payment. - Lab`;
+                      const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                      window.open(whatsappUrl, '_blank');
+                      setInvoiceActionDone(true);
+                      toast.success('📱 WhatsApp opened with invoice details');
+                    }}
+                  >
+                    <Share2 size={18} />
+                    WhatsApp
+                  </button>
+                  
+                  {/* Email */}
+                  <button
+                    className="action-btn email-btn"
+                    onClick={() => {
+                      const email = patient.email || '';
+                      const subject = `Invoice - Visit ${visit.visitNumber} - ${patient.name}`;
+                      const body = `Dear ${patient.name},
+
+Your invoice for visit ${visit.visitNumber} is ready.
+
+Total Amount: ₹${visit.totalAmount || 0}
+
+Please contact us for payment details.
+
+Thank you,
+Lab Team`;
+                      const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      window.open(mailtoUrl, '_blank');
+                      setInvoiceActionDone(true);
+                      toast.success('📧 Email opened with invoice details');
+                    }}
+                  >
+                    <Mail size={18} />
+                    Email
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              {invoiceActionDone ? (
+                <>
+                  <div className="completion-message">
+                    <CheckCircle size={20} color="#10B981" />
+                    <span>Invoice action completed! Mark as paid?</span>
+                  </div>
+                  <Button 
+                    variant="success" 
+                    onClick={handleInvoiceCompleteAndPaid}
+                    icon={CheckCircle}
+                  >
+                    Mark as Paid & Complete
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="completion-message warning">
+                    <Activity size={20} color="#F59E0B" />
+                    <span>Complete an action to proceed</span>
+                  </div>
+                  <Button variant="ghost" onClick={() => setShowInvoiceModal(false)}>
+                    Close
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>

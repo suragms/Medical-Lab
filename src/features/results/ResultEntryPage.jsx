@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, FileText, Receipt, Check, Loader, Download, Printer, Share2, Mail, AlertCircle, TrendingUp, TrendingDown, MessageCircle, TestTube2, Plus, Search, X, Home } from 'lucide-react';
-import { getVisitById, updateVisit, getPatientById, getProfileById, getTestsMaster } from '../../features/shared/dataService';
+import { ArrowLeft, Save, FileText, Receipt, Check, Loader, Download, Printer, Share2, Mail, AlertCircle, TrendingUp, TrendingDown, MessageCircle, TestTube2, Plus, Search, X, Home, Activity, CheckCircle } from 'lucide-react';
+import { getVisitById, updateVisit, getPatientById, getProfileById, getTestsMaster, getProfiles } from '../../features/shared/dataService';
 import { getSettings } from '../../services/settingsService';
 import { useAuthStore } from '../../store';
 import { getCurrentUser, getUsers } from '../../services/authService';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
-import { downloadInvoice, printInvoice } from '../../utils/invoicePdfGenerator';
+import { generateCombinedInvoice, generateProfileReports } from '../../utils/profilePdfHelper';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 import './ResultEntry.css';
@@ -28,6 +28,9 @@ const ResultEntryPage = () => {
   const [useMySignatureDefault, setUseMySignatureDefault] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showPdfActionsModal, setShowPdfActionsModal] = useState(false); // NEW: PDF modal
+  const [generatedPdfResults, setGeneratedPdfResults] = useState([]); // NEW: PDF results
+  const [pdfCompletionStatus, setPdfCompletionStatus] = useState({}); // NEW: Track completion
   const [showAddTestModal, setShowAddTestModal] = useState(false);
   const [testSearchQuery, setTestSearchQuery] = useState('');
   const [multiSelectMode, setMultiSelectMode] = useState(false);
@@ -573,71 +576,42 @@ const ResultEntryPage = () => {
         }
       });
       
-      // Generate PDF Report - Download AND Open in new tab for printing
+      // Get all profiles
+      const allProfiles = getProfiles();
+      
+      // Build complete visit data
       const visitData = {
         ...updatedVisit,
         patient,
-        profile,
         signingTechnician: selectedTechnician
       };
       
-      // Download the PDF report
-      await downloadReportPDF(visitData);
-      toast.success('✅ PDF Report download started!');
+      // Generate SEPARATE PDFs but DON'T auto-download - show modal instead
+      const pdfResults = await generateProfileReports(visitData, allProfiles, { download: false, print: false });
+      const successPdfs = pdfResults.filter(r => r.success);
       
-      // Also open in new tab for viewing/printing (slight delay to ensure download starts)
-      setTimeout(() => {
-        printReportPDF(visitData);
-        toast.success('✅ PDF Report opened in new tab!');
-      }, 500);
+      if (successPdfs.length > 0) {
+        // Store results and initialize tracking
+        setGeneratedPdfResults(successPdfs);
+        
+        const initialStatus = {};
+        successPdfs.forEach(result => {
+          initialStatus[result.profileId] = {
+            printed: false,
+            downloaded: false,
+            shared: false
+          };
+        });
+        setPdfCompletionStatus(initialStatus);
+        
+        // Show modal
+        setShowPdfActionsModal(true);
+        
+        toast.success(`✅ Generated ${successPdfs.length} profile PDF(s) - Choose actions in modal!`);
+      }
       
-      // Wait 1 second then generate invoice
-      setTimeout(() => {
-        // Prepare invoice data
-        const invoiceData = {
-          patient: {
-            name: patient.name,
-            phone: patient.phone,
-            age: patient.age,
-            gender: patient.gender,
-            visitId: visit.visitId,
-            date: visit.createdAt,
-            paymentStatus: 'Paid'
-          },
-          invoice: {
-            invoiceNumber: `INV-${visit.visitId}`,
-            generatedOn: now,
-            staffName: currentUser?.fullName || currentUser?.username,
-            method: visit.paymentMethod || 'Cash'
-          },
-          times: {
-            collected: visit.collectedAt,
-            received: visit.receivedAt,
-            reported: visit.reportedAt
-          },
-          items: visit.tests.map(test => ({
-            name: test.name_snapshot || test.name || 'Test',
-            price: test.price_snapshot || test.price || 0,
-            qty: 1
-          })),
-          discount: billing.discountAmount,
-          subtotal: billing.subtotal,
-          finalTotal: billing.finalAmount,
-          amountPaid: billing.finalAmount
-        };
-        
-        printInvoice(invoiceData);
-        toast.success('✅ Invoice opened for printing!');
-        
-        // Update local state
-        setVisit(updatedVisit);
-        
-        // Auto-redirect to dashboard after 3 seconds
-        setTimeout(() => {
-          toast.success('Redirecting to dashboard...');
-          navigate('/dashboard');
-        }, 3000);
-      }, 1000);
+      // Update local state
+      setVisit(updatedVisit);
     } catch (error) {
       console.error('Generation error:', error);
       toast.error('Failed to generate documents: ' + error.message);
@@ -661,43 +635,30 @@ const ResultEntryPage = () => {
         discount
       });
       
-      // Prepare invoice data
-      const invoiceData = {
-        patient: {
-          name: patient.name,
-          phone: patient.phone,
-          age: patient.age,
-          gender: patient.gender,
-          visitId: visit.visitId,
-          date: visit.createdAt,
-          paymentStatus: 'Paid'
-        },
-        invoice: {
-          invoiceNumber: `INV-${visit.visitId}`,
-          generatedOn: new Date().toISOString(),
-          staffName: currentUser?.fullName || currentUser?.username,
-          method: visit.paymentMethod || 'Cash'
-        },
-        times: {
-          collected: visit.collectedAt,
-          received: visit.receivedAt,
-          reported: visit.reportedAt
-        },
-        items: visit.tests.map(test => ({
-          name: test.name_snapshot || test.name || 'Test',
-          price: test.price_snapshot || test.price || 0,
-          qty: 1
-        })),
-        discount: billing.discountAmount,
-        subtotal: billing.subtotal,
-        finalTotal: billing.finalAmount,
-        amountPaid: billing.finalAmount
+      // Get all profiles
+      const allProfiles = getProfiles();
+      
+      // Build visit data with profile info
+      const visitData = {
+        ...updatedVisit,
+        patient,
+        tests: updatedVisit.tests,
+        collectedAt: updatedVisit.collectedAt,
+        receivedAt: updatedVisit.receivedAt,
+        reportedAt: updatedVisit.reportedAt,
+        paymentStatus: 'paid',
+        paymentMethod: updatedVisit.paymentMethod || 'Cash',
+        created_by_name: currentUser?.fullName || currentUser?.username
       };
       
-      // Generate and download invoice PDF
-      downloadInvoice(invoiceData, `Invoice-${patient.name}-${visit.visitId}.pdf`);
+      // Generate combined invoice with all profiles
+      const result = await generateCombinedInvoice(visitData, allProfiles, { download: true, print: false });
       
-      toast.success('Invoice PDF generated successfully!');
+      if (result.success) {
+        toast.success(`✅ Invoice generated with ${result.profileCount} profile(s)!`);
+      } else {
+        toast.error(`⚠️ Failed to generate invoice: ${result.error}`);
+      }
       
       // Update local state
       setVisit(updatedVisit);
@@ -796,6 +757,56 @@ const ResultEntryPage = () => {
         console.error('Email share error:', error);
         toast.error('Failed to share via email');
       }
+    }
+  };
+
+  // NEW: Mark PDF action as complete
+  const markPdfActionComplete = (profileId, action) => {
+    setPdfCompletionStatus(prev => ({
+      ...prev,
+      [profileId]: {
+        ...prev[profileId],
+        [action]: true
+      }
+    }));
+  };
+
+  // NEW: Check if all PDFs are completed
+  const allPdfsCompleted = () => {
+    return Object.values(pdfCompletionStatus).every(status => 
+      status.printed || status.downloaded || status.shared
+    );
+  };
+
+  // NEW: Complete and mark paid
+  const handleCompleteAndMarkPaid = async () => {
+    try {
+      // Update visit status
+      const updatedVisit = updateVisit(visitId, {
+        visitStatus: 'completed',
+        paymentStatus: 'paid',
+        paidAt: new Date().toISOString()
+      });
+
+      // Close modal
+      setShowPdfActionsModal(false);
+
+      // Trigger all data update events
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('dataUpdated'));
+      window.dispatchEvent(new CustomEvent('healit-data-update', { 
+        detail: { type: 'visit_completed', visitId } 
+      }));
+
+      toast.success('✅ Visit completed and marked as paid!');
+
+      // Redirect to dashboard
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+    } catch (error) {
+      console.error('Complete error:', error);
+      toast.error('Failed to complete visit');
     }
   };
 
@@ -1160,6 +1171,150 @@ const ResultEntryPage = () => {
             <Button variant="ghost" onClick={() => setShowShareOptions(false)} fullWidth>
               Close
             </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* PDF Actions Modal - Checklist */}
+      {showPdfActionsModal && (
+        <div className="modal-overlay" onClick={() => setShowPdfActionsModal(false)}>
+          <div className="modal-content pdf-actions-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📄 Generated Reports - Complete Actions</h3>
+              <button className="close-btn" onClick={() => setShowPdfActionsModal(false)}>×</button>
+            </div>
+
+            <div className="pdf-actions-list">
+              {generatedPdfResults.map((pdfResult, index) => {
+                const status = pdfCompletionStatus[pdfResult.profileId] || {};
+                const isCompleted = status.printed || status.downloaded || status.shared;
+                
+                return (
+                  <div key={pdfResult.profileId} className={`pdf-action-item ${isCompleted ? 'completed' : ''}`}>
+                    <div className="pdf-info">
+                      <div className="pdf-checkbox">
+                        {isCompleted ? (
+                          <span className="checkmark">✓</span>
+                        ) : (
+                          <span className="pdf-number">{index + 1}</span>
+                        )}
+                      </div>
+                      <div className="pdf-details">
+                        <h4>{pdfResult.profileName}</h4>
+                        <p className="pdf-filename">{pdfResult.fileName}</p>
+                        {isCompleted && <p className="completion-status">✓ Handled</p>}
+                      </div>
+                    </div>
+                    
+                    <div className="pdf-actions">
+                      {/* Print */}
+                      <button
+                        className="action-btn print-btn"
+                        onClick={async () => {
+                          await generateProfileReports(
+                            { ...visit, patient, signingTechnician: selectedTechnician }, 
+                            getProfiles(), 
+                            { download: false, print: true, profileFilter: pdfResult.profileId }
+                          );
+                          markPdfActionComplete(pdfResult.profileId, 'printed');
+                          toast.success(`🖨️ Print dialog opened for ${pdfResult.profileName}`);
+                        }}
+                      >
+                        <Printer size={18} />
+                        Print
+                      </button>
+                      
+                      {/* Download */}
+                      <button
+                        className="action-btn download-btn"
+                        onClick={async () => {
+                          await generateProfileReports(
+                            { ...visit, patient, signingTechnician: selectedTechnician }, 
+                            getProfiles(), 
+                            { download: true, print: false, profileFilter: pdfResult.profileId }
+                          );
+                          markPdfActionComplete(pdfResult.profileId, 'downloaded');
+                          toast.success(`⬇️ Downloaded: ${pdfResult.fileName}`);
+                        }}
+                      >
+                        <Download size={18} />
+                        Download
+                      </button>
+                      
+                      {/* WhatsApp */}
+                      <button
+                        className="action-btn whatsapp-btn"
+                        onClick={() => {
+                          const phone = patient.phone || '1234567890';
+                          const message = `Hi ${patient.name}, your lab report for ${pdfResult.profileName} is ready. Please contact us to collect it. - ${currentUser?.fullName || 'Lab'}`;
+                          const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                          window.open(whatsappUrl, '_blank');
+                          markPdfActionComplete(pdfResult.profileId, 'shared');
+                          toast.success(`📱 WhatsApp opened for ${pdfResult.profileName}`);
+                        }}
+                      >
+                        <MessageCircle size={18} />
+                        WhatsApp
+                      </button>
+                      
+                      {/* Email */}
+                      <button
+                        className="action-btn email-btn"
+                        onClick={() => {
+                          const email = patient.email || '';
+                          const subject = `Lab Report - ${pdfResult.profileName} - ${patient.name}`;
+                          const body = `Dear ${patient.name},
+
+Your lab report for ${pdfResult.profileName} is ready.
+
+Please contact us to collect your report.
+
+Thank you,
+${currentUser?.fullName || 'Lab Team'}`;
+                          const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                          window.open(mailtoUrl, '_blank');
+                          markPdfActionComplete(pdfResult.profileId, 'shared');
+                          toast.success(`📧 Email opened for ${pdfResult.profileName}`);
+                        }}
+                      >
+                        <Mail size={18} />
+                        Email
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="modal-footer">
+              {allPdfsCompleted() ? (
+                <>
+                  <div className="completion-message">
+                    <CheckCircle size={20} color="#10B981" />
+                    <span>All reports handled! Ready to complete.</span>
+                  </div>
+                  <Button 
+                    variant="success" 
+                    onClick={handleCompleteAndMarkPaid}
+                    icon={CheckCircle}
+                  >
+                    Complete & Mark Paid
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="completion-message warning">
+                    <Activity size={20} color="#F59E0B" />
+                    <span>
+                      {Object.values(pdfCompletionStatus).filter(s => s.printed || s.downloaded || s.shared).length} / {generatedPdfResults.length} completed
+                    </span>
+                  </div>
+                  <Button variant="ghost" onClick={() => setShowPdfActionsModal(false)}>
+                    Close
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

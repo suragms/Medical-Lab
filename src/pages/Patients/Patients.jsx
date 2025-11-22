@@ -21,8 +21,9 @@ import {
   Share2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getVisits, getPatients, getProfileById, markPDFGenerated, markInvoiceGenerated, getVisitById, deletePatient } from '../../features/shared/dataService';
+import { getVisits, getPatients, getProfileById, getProfiles, markPDFGenerated, markInvoiceGenerated, getVisitById, deletePatient } from '../../features/shared/dataService';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
+import { generateCombinedInvoice } from '../../utils/profilePdfHelper'; // NEW: Combined invoice
 import { getTechnicians } from '../../services/authService';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -210,8 +211,9 @@ const Patients = () => {
     
     const patient = getPatientForVisit(visit);
     const profile = getProfileById(visit.profileId);
+    const allProfiles = getProfiles(); // Get all profiles for lookup
     
-    // CRITICAL: Check if results entered AND report generated (accepts both 'report_generated' and 'completed')
+    // CRITICAL: Check if results entered AND report generated
     const hasResults = (
       (visit.status === 'report_generated' || visit.status === 'completed') && 
       visit.reportedAt && 
@@ -220,122 +222,57 @@ const Patients = () => {
     );
     
     if (!hasResults) {
-      toast.error('❌ Cannot generate invoice: Test results must be entered and report generated first!');
+      toast.error('❌ Cannot generate invoice: Test results must be entered first!');
       return;
     }
     
     // Check if tests have actual result values
-    // Tests store values directly as test.value (not test.result.value)
     const hasResultValues = visit.tests.some(t => t.value || t.result?.value);
     if (!hasResultValues) {
       toast.error('❌ Cannot generate invoice: No test result values found!');
       return;
     }
     
-    // CRITICAL WARNING: If already generated and paid, strong confirmation
+    // WARNING: If already generated and paid
     if (visit.invoiceGenerated && visit.paymentStatus === 'paid') {
-      const confirmReInvoice = window.confirm('⚠️ INVOICE ALREADY GENERATED & PAID!\n\nPatient: ' + patient.name + '\nPaid Amount: ₹' + (profile?.price || profile?.packagePrice || 0) + '\n\nAre you sure you want to RE-PRINT this invoice?\n\n(This will NOT change payment status)');
+      const confirmReInvoice = window.confirm('⚠️ INVOICE ALREADY GENERATED & PAID!\n\nAre you sure you want to RE-GENERATE?\n\n(This will NOT change payment status)');
       if (!confirmReInvoice) return;
     }
     
     try {
-      // Use ADVANCED Invoice template (from utils if exists, or create proper one)
-      const printWindow = window.open('', '', 'width=800,height=600');
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Invoice - ${visit.visitId}</title>
-            <style>
-              * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: 'Arial', sans-serif; padding: 40px; background: #fff; }
-              .invoice-container { max-width: 800px; margin: 0 auto; border: 2px solid #000; padding: 30px; }
-              .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #000; padding-bottom: 20px; }
-              .header h1 { font-size: 28px; color: #000; margin-bottom: 5px; }
-              .header p { font-size: 16px; color: #666; }
-              .invoice-details { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
-              .detail-section h3 { font-size: 14px; color: #000; margin-bottom: 10px; text-transform: uppercase; }
-              .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dotted #ddd; }
-              .detail-row strong { color: #000; }
-              .detail-row span { color: #666; }
-              .items-table { width: 100%; margin: 30px 0; border-collapse: collapse; }
-              .items-table th { background: #000; color: #fff; padding: 12px; text-align: left; }
-              .items-table td { padding: 12px; border-bottom: 1px solid #ddd; }
-              .total-section { text-align: right; margin-top: 30px; padding-top: 20px; border-top: 3px solid #000; }
-              .total-section h2 { font-size: 24px; color: #000; }
-              .footer { text-align: center; margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; }
-              @media print { body { padding: 0; } .invoice-container { border: none; } }
-            </style>
-          </head>
-          <body>
-            <div class="invoice-container">
-              <div class="header">
-                <h1>HEALit Med Laboratories</h1>
-                <p>Kunnathpeedika Centre | Phone: 7356865161 | Email: info@healitlab.com</p>
-              </div>
-              
-              <div class="invoice-details">
-                <div class="detail-section">
-                  <h3>Bill To:</h3>
-                  <div class="detail-row"><strong>Name:</strong> <span>${patient.name}</span></div>
-                  <div class="detail-row"><strong>Age/Gender:</strong> <span>${patient.age} years / ${patient.gender}</span></div>
-                  <div class="detail-row"><strong>Phone:</strong> <span>${patient.phone}</span></div>
-                  ${patient.address ? `<div class="detail-row"><strong>Address:</strong> <span>${patient.address}</span></div>` : ''}
-                </div>
-                <div class="detail-section">
-                  <h3>Invoice Details:</h3>
-                  <div class="detail-row"><strong>Invoice No:</strong> <span>${visit.visitId}</span></div>
-                  <div class="detail-row"><strong>Date:</strong> <span>${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span></div>
-                  <div class="detail-row"><strong>Collected On:</strong> <span>${visit.collectedAt ? new Date(visit.collectedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'}</span></div>
-                  <div class="detail-row"><strong>Received On:</strong> <span>${visit.receivedAt ? new Date(visit.receivedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'}</span></div>
-                  <div class="detail-row"><strong>Reported On:</strong> <span>${visit.reportedAt ? new Date(visit.reportedAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—'}</span></div>
-                </div>
-              </div>
-              
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th>Test Name</th>
-                    <th style="text-align: right;">Amount (₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${visit.tests.map(test => `
-                    <tr>
-                      <td>${test.name || test.name_snapshot}</td>
-                      <td style="text-align: right;">₹${test.price || 0}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-                <tfoot>
-                  <tr style="border-top: 2px solid #000; font-weight: bold;">
-                    <td style="text-align: right; padding-top: 10px;">Total:</td>
-                    <td style="text-align: right; padding-top: 10px;">₹${visit.finalAmount || 0}</td>
-                  </tr>
-                </tfoot>
-              </table>
-              
-              <div class="footer">
-                <p>Thank you for choosing HEALit Med Laboratories</p>
-                <p style="font-size: 12px; margin-top: 5px;">This is a computer-generated invoice</p>
-              </div>
-            </div>
-            <script>window.print();</script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      
-      // Mark invoice as generated and paid ONLY if first time
-      if (!visit.invoiceGenerated) {
-        markInvoiceGenerated(visitId);
-        toast.success('✅ Invoice generated & marked as PAID!');
+      // NEW: Use profile-based invoice generation
+      const visitData = {
+        ...visit,
+        patient,
+        tests: visit.tests,
+        collectedAt: visit.collectedAt,
+        receivedAt: visit.receivedAt,
+        reportedAt: visit.reportedAt,
+        paymentStatus: visit.paymentStatus,
+        paymentMethod: visit.paymentMethod || 'Cash',
+        visitId: visit.visitId,
+        created_by_name: visit.created_by_name || 'Staff'
+      };
+
+      console.log('💵 Generating combined invoice for visit:', visit.visitId);
+      const result = await generateCombinedInvoice(visitData, allProfiles, { download: true, print: false });
+
+      if (result.success) {
+        toast.success(`✅ Invoice generated with ${result.profileCount} profile(s)!`);
         
-        // Trigger data updates
+        // Mark invoice as generated ONLY if first time
+        if (!visit.invoiceGenerated) {
+          markInvoiceGenerated(visitId);
+        }
+        
+        // Dispatch ALL update events
         window.dispatchEvent(new Event('storage'));
         window.dispatchEvent(new Event('dataUpdated'));
+        window.dispatchEvent(new CustomEvent('healit-data-update', { 
+          detail: { type: 'invoice_generated', visitId } 
+        }));
       } else {
-        toast.success('🖨️ Invoice re-printed!');
+        toast.error(`⚠️ Failed to generate invoice: ${result.error}`);
       }
       
       loadData();

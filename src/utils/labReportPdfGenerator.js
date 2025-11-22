@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { LOGO_PATHS, SIGNATURE_PATHS, imageToBase64 } from './assetPath'; // ADDED: Import logo/signature helpers
 
 /**
  * Format date/time for display - matches format: "20 Nov 2025, 10:23 am"
@@ -22,8 +23,9 @@ const formatDateTime = (isoString) => {
  * Generate Lab Report PDF for HEALit Med Laboratories
  * Professional medical format with test results
  * Features: Colorful table, bold abnormal values, smart pagination, no subtotal
+ * Supports filtering by profile for separate profile reports
  */
-export const generateLabReportPDF = (reportData) => {
+export const generateLabReportPDF = async (reportData, options = {}) => { // CHANGED: Made async for logo loading
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -32,25 +34,45 @@ export const generateLabReportPDF = (reportData) => {
   const {
     patient = {},
     times = {},
-    testGroups = []
+    testGroups = [],
+    signingTechnician = null, // ADDED: Get signing technician
+    profileFilter = null // Optional: filter tests by specific profile
   } = reportData;
 
   // ========== HEADER ==========
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 58, 138);
-  doc.text('[HEALit]', 15, yPos);
+  // Add logos at top
+  const logoHeight = 24;
+  const logoY = yPos;
+  
+  // Left Logo - HEALit
+  try {
+    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
+    doc.addImage(healitBase64, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
+  } catch (error) {
+    console.error('HEALit logo not loaded:', error);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138);
+    doc.text('[HEALit]', 15, logoY + 12);
+  }
 
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('HEALit Med Laboratories', pageWidth / 2, yPos, { align: 'center' });
+  doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
 
-  doc.setFontSize(10);
-  doc.setTextColor(30, 58, 138);
-  doc.text('[Thyrocare]', pageWidth - 25, yPos, { align: 'right' });
+  // Right Logo - Thyrocare  
+  try {
+    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
+    doc.addImage(partnerBase64, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
+  } catch (error) {
+    console.error('Partner logo not loaded:', error);
+    doc.setFontSize(10);
+    doc.setTextColor(30, 58, 138);
+    doc.text('[Thyrocare]', pageWidth - 25, logoY + 12, { align: 'right' });
+  }
 
-  yPos += 6;
+  yPos += logoHeight + 3;
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
@@ -87,15 +109,15 @@ export const generateLabReportPDF = (reportData) => {
   const leftDetails = [
     `Patient Name: ${patient.name || '-'}`,
     `Phone: ${patient.phone || '-'}`,
-    `Referred By: ${patient.referredBy || 'Self'}`,
-    `Collected: ${times.collected ? formatDateTime(times.collected) : '-'}`,
-    `Received: ${times.received ? formatDateTime(times.received) : '-'}`
+    `Referred By: ${patient.referredBy || 'Self'}`
   ];
 
   const rightDetails = [
     `Age/Gender: ${patient.age || '-'}Y / ${patient.gender || '-'}`,
     `Visit ID: ${patient.visitId || '-'}`,
     `Profile: ${patient.testProfile || '-'}`,
+    `Collected: ${times.collected ? formatDateTime(times.collected) : '-'}`,
+    `Received: ${times.received ? formatDateTime(times.received) : '-'}`,
     `Reported: ${times.reported ? formatDateTime(times.reported) : formatDateTime(new Date())}`
   ];
 
@@ -127,7 +149,15 @@ export const generateLabReportPDF = (reportData) => {
 
   // ========== TEST RESULTS ==========
   // Flatten all tests for single table display
-  const allTests = testGroups.flatMap(group => group.tests || []);
+  let allTests = testGroups.flatMap(group => group.tests || []);
+  
+  // Filter by profile if specified (for separate profile reports)
+  if (options.profileFilter) {
+    allTests = allTests.filter(test => 
+      test.profileId === options.profileFilter || 
+      test.profile === options.profileFilter
+    );
+  }
   
   // Prepare table data with proper formatting and highlighting
   const tableData = allTests.map(test => {
@@ -209,14 +239,56 @@ export const generateLabReportPDF = (reportData) => {
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(75, 85, 99);
   
-  doc.text('Prepared by:', 15, footerY);
-  doc.line(40, footerY + 1, 80, footerY + 1);
+  // UPDATED: Show signing technician name if available
+  const technicianName = signingTechnician?.fullName || signingTechnician?.name || 'Lab Staff';
+  
+  const leftSigX = 15;
+  const rightSigX = pageWidth - 70;
+  
+  // LEFT SIGNATURE - Lab Technician (Billed By)
+  doc.text('Billed By:', leftSigX, footerY);
+  
+  // Add technician signature image
+  try {
+    const technicianSignatureBase64 = await imageToBase64(SIGNATURE_PATHS.rakhi);
+    doc.addImage(technicianSignatureBase64, 'PNG', leftSigX, footerY + 2, 30, 12);
+  } catch (error) {
+    console.error('Technician signature failed:', error);
+    doc.setFont('helvetica', 'bold');
+    doc.text(technicianName, leftSigX, footerY + 8);
+    doc.setFont('helvetica', 'normal');
+  }
+  
+  doc.setFontSize(8);
+  doc.setTextColor(17, 17, 17);
+  doc.text('Rakhi T.R', leftSigX, footerY + 17);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(102, 102, 102);
+  doc.text('DMLT', leftSigX, footerY + 21);
 
-  doc.text('Lab In-Charge:', 15, footerY + 5);
-  doc.line(45, footerY + 6, 80, footerY + 6);
-
-  doc.text('Authorized Signature', pageWidth - 15, footerY + 3, { align: 'right' });
-  doc.line(pageWidth - 55, footerY + 4, pageWidth - 15, footerY + 4);
+  // RIGHT SIGNATURE - Authorized Signatory (Lab In-Charge)
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(75, 85, 99);
+  doc.text('Authorized Signatory:', rightSigX, footerY);
+  
+  // Add authorized signature image
+  try {
+    const authSignatureBase64 = await imageToBase64(SIGNATURE_PATHS.aparna);
+    doc.addImage(authSignatureBase64, 'PNG', rightSigX, footerY + 2, 30, 12);
+  } catch (error) {
+    console.error('Auth signature failed:', error);
+    doc.line(rightSigX + 1, footerY + 10, rightSigX + 31, footerY + 10);
+  }
+  
+  doc.setFontSize(8);
+  doc.setTextColor(17, 17, 17);
+  doc.text('Aparna A.T', rightSigX, footerY + 17);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(102, 102, 102);
+  doc.text('Incharge', rightSigX, footerY + 21);
 
   return doc;
 };
@@ -311,8 +383,8 @@ const renderTestTable = (doc, startY, tableData) => {
 /**
  * Download lab report PDF
  */
-export const downloadLabReport = (reportData, fileName) => {
-  const doc = generateLabReportPDF(reportData);
+export const downloadLabReport = async (reportData, fileName, options = {}) => {
+  const doc = await generateLabReportPDF(reportData, options);
   const name = fileName || `${reportData.patient?.visitId || 'Report'}-${reportData.patient?.name?.replace(/\s+/g, '_') || 'Patient'}.pdf`;
   doc.save(name);
 };
@@ -320,8 +392,8 @@ export const downloadLabReport = (reportData, fileName) => {
 /**
  * Print lab report PDF
  */
-export const printLabReport = (reportData) => {
-  const doc = generateLabReportPDF(reportData);
+export const printLabReport = async (reportData, options = {}) => {
+  const doc = await generateLabReportPDF(reportData, options);
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
   const iframe = document.createElement('iframe');
@@ -336,7 +408,7 @@ export const printLabReport = (reportData) => {
 /**
  * Get lab report PDF as blob for sharing
  */
-export const getLabReportBlob = (reportData) => {
-  const doc = generateLabReportPDF(reportData);
+export const getLabReportBlob = async (reportData, options = {}) => {
+  const doc = await generateLabReportPDF(reportData, options);
   return doc.output('blob');
 };
