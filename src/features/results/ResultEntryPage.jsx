@@ -17,7 +17,7 @@ const ResultEntryPage = () => {
   const { role } = useAuthStore();
   const currentUser = getCurrentUser();
   const settings = getSettings();
-  
+
   const [visit, setVisit] = useState(null);
   const [patient, setPatient] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -38,14 +38,14 @@ const ResultEntryPage = () => {
   const [availableTests, setAvailableTests] = useState([]);
   const [loadingTests, setLoadingTests] = useState(false);
   const saveTimeoutRef = useRef(null);
-  
+
   const canEditReportedTime = role === 'admin' && settings.allowManualReportedTime;
   const canEditDiscount = role === 'admin' || settings.allowStaffEditDiscount;
-  
+
   // Load available tests when modal opens or search query changes
   useEffect(() => {
     if (!showAddTestModal) return;
-    
+
     const loadTests = () => {
       setLoadingTests(true);
       try {
@@ -59,16 +59,16 @@ const ResultEntryPage = () => {
         setLoadingTests(false);
       }
     };
-    
+
     loadTests();
   }, [showAddTestModal, testSearchQuery]);
-  
+
   // Get all active technicians (users with role staff/admin)
   const allUsers = getUsers();
   const technicians = allUsers.filter(u => u.isActive && (u.role === 'staff' || u.role === 'admin'));
-  
+
   // Get selected technician
-  const selectedTechnician = selectedTechnicianId 
+  const selectedTechnician = selectedTechnicianId
     ? technicians.find(t => t.userId === selectedTechnicianId)
     : null;
 
@@ -80,25 +80,25 @@ const ResultEntryPage = () => {
       navigate('/patients');
       return;
     }
-    
+
     // CRITICAL RESTRICTION: Can't enter results if sample times not set
     if (!visitData.collectedAt || !visitData.receivedAt || visitData.status === 'tests_selected') {
       toast.error('❌ Cannot enter results: Sample times must be set first!', { duration: 5000 });
       navigate(`/sample-times/${visitId}`);
       return;
     }
-    
+
     setVisit(visitData);
-    
+
     // Load patient and profile
     const patientData = getPatientById(visitData.patientId);
     setPatient(patientData);
-    
+
     if (visitData.profileId) {
       const profileData = getProfileById(visitData.profileId);
       setProfile(profileData);
     }
-    
+
     // Initialize results from visit
     const initialResults = {};
     if (visitData.tests && visitData.tests.length > 0) {
@@ -110,15 +110,15 @@ const ResultEntryPage = () => {
       });
     }
     setResults(initialResults);
-    
+
     // Set discount from visit
     setDiscount(visitData.discount || 0);
-    
+
     // Auto-select signing technician
     // Default to current user if they're a technician
     const currentUserRole = currentUser?.role;
     const currentUserId = currentUser?.userId;
-    
+
     if (currentUserRole === 'staff' || currentUserRole === 'admin') {
       setSelectedTechnicianId(currentUserId);
     } else if (visitData.signing_technician_id) {
@@ -127,15 +127,15 @@ const ResultEntryPage = () => {
       // Fallback to first active technician
       setSelectedTechnicianId(technicians[0].userId);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitId]);
 
   // Save results (defined before useEffect that uses it)
   const handleSave = useCallback(() => {
     if (!visit) return;
-    
+
     setSaveStatus('saving');
-    
+
     try {
       // Update visit with results - including ALL test data (prices, removed tests, etc.)
       const updatedTests = visit.tests.map(test => ({
@@ -143,13 +143,13 @@ const ResultEntryPage = () => {
         value: results[test.testId]?.value || '',
         status: results[test.testId]?.status || 'NORMAL'
       }));
-      
+
       // Use updateVisit to save ALL changes (tests array, discount, etc.)
       updateVisit(visitId, {
         tests: updatedTests,
         discount: discount
       });
-      
+
       // Audit log
       console.log('AUDIT: SAVE_RESULTS', {
         userId: currentUser?.userId,
@@ -157,9 +157,9 @@ const ResultEntryPage = () => {
         action: 'SAVE_RESULTS',
         timestamp: new Date().toISOString()
       });
-      
+
       setSaveStatus('saved');
-      
+
       // Reset to saved after 2 seconds
       setTimeout(() => {
         setSaveStatus('');
@@ -174,62 +174,62 @@ const ResultEntryPage = () => {
   // Auto-save functionality (only for result changes)
   useEffect(() => {
     if (!visit || Object.keys(results).length === 0) return;
-    
+
     // Skip auto-save on initial load
     const hasAnyValue = Object.values(results).some(r => r.value !== '');
     if (!hasAnyValue) return;
-    
+
     // Clear existing timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-    
+
     // Set new timeout for autosave (2 seconds after input stops)
     saveTimeoutRef.current = setTimeout(() => {
       handleSave();
     }, 2000);
-    
+
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [results]);
 
   // Handle result input change with validation
   const handleResultChange = (testId, value) => {
     const test = visit.tests.find(t => t.testId === testId);
     let status = 'normal';
-    
+
     // Only validate and calculate status for numeric input types
     if (test.inputType_snapshot === 'number') {
       // Allow empty string or valid numeric values (int/float)
       if (value !== '') {
         const numValue = parseFloat(value);
-        
+
         // Strict validation: must be a valid number (int or float)
         if (isNaN(numValue) || !isFinite(numValue)) {
           toast.error('Please enter a valid number (integers or decimals only)');
           return;
         }
-        
+
         // Check for negative values
         if (numValue < 0) {
           toast.error('Value cannot be negative');
           return;
         }
-        
+
         // Maximum value check (reasonable medical range)
         if (numValue > 999999) {
           toast.error('Value too large (max: 999,999)');
           return;
         }
-        
+
         // Calculate status based on reference ranges
         const refHigh = parseFloat(test.refHigh_snapshot);
         const refLow = parseFloat(test.refLow_snapshot);
-        
+
         // Determine status: high, low, or normal
         if (!isNaN(refHigh) && numValue > refHigh) {
           status = 'high';
@@ -242,7 +242,7 @@ const ResultEntryPage = () => {
     } else if (test.inputType_snapshot === 'text') {
       // Text input: no status calculation, always normal
       status = 'normal';
-      
+
       // Validate text length
       if (value.length > 200) {
         toast.error('Text value too long (max 200 characters)');
@@ -255,7 +255,7 @@ const ResultEntryPage = () => {
       // Default: normal for any other type
       status = 'normal';
     }
-    
+
     // Update results with value and calculated status
     setResults(prev => ({
       ...prev,
@@ -266,18 +266,18 @@ const ResultEntryPage = () => {
   // Handle price change with validation
   const handlePriceChange = (testIndex, newPrice) => {
     const priceValue = parseFloat(newPrice);
-    
+
     // Validate price
     if (isNaN(priceValue) || priceValue < 0) {
       toast.error('Please enter a valid price (must be 0 or greater)');
       return;
     }
-    
+
     if (priceValue > 100000) {
       toast.error('Price too high (max ₹100,000)');
       return;
     }
-    
+
     setVisit(prev => {
       const updatedTests = [...prev.tests];
       updatedTests[testIndex] = {
@@ -287,7 +287,7 @@ const ResultEntryPage = () => {
       };
       return { ...prev, tests: updatedTests };
     });
-    
+
     // Trigger auto-save
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -303,26 +303,26 @@ const ResultEntryPage = () => {
       toast.error('Cannot remove tests - results are locked');
       return;
     }
-    
+
     const test = visit.tests[testIndex];
     const confirmed = window.confirm(`Remove "${test.name || test.name_snapshot}" from this visit?`);
-    
+
     if (!confirmed) return;
-    
+
     setVisit(prev => {
       const updatedTests = prev.tests.filter((_, idx) => idx !== testIndex);
       return { ...prev, tests: updatedTests };
     });
-    
+
     // Remove from results state as well
     setResults(prev => {
       const updated = { ...prev };
       delete updated[test.testId];
       return updated;
     });
-    
+
     toast.success('Test removed successfully');
-    
+
     // Trigger auto-save immediately
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -343,14 +343,14 @@ const ResultEntryPage = () => {
       }
     });
   };
-  
+
   // Add multiple tests
   const handleAddMultipleTests = () => {
     if (selectedTestsToAdd.length === 0) {
       toast.error('Please select at least one test');
       return;
     }
-    
+
     let addedCount = 0;
     selectedTestsToAdd.forEach(test => {
       // Check if test already exists
@@ -372,20 +372,20 @@ const ResultEntryPage = () => {
             value: '',
             status: 'normal'
           };
-          
+
           return { ...prev, tests: [...prev.tests, newTest] };
         });
-        
+
         // Initialize result for new test
         setResults(prev => ({
           ...prev,
           [test.testId]: { value: '', status: 'normal' }
         }));
-        
+
         addedCount++;
       }
     });
-    
+
     toast.success(`Added ${addedCount} test(s)`);
     setShowAddTestModal(false);
     setTestSearchQuery('');
@@ -399,19 +399,19 @@ const ResultEntryPage = () => {
       handleToggleTestSelection(test);
       return;
     }
-    
+
     if (!canEditResults) {
       toast.error('Cannot add tests - results are locked');
       return;
     }
-    
+
     // Check if test already exists
     const exists = visit.tests.some(t => t.testId === test.testId);
     if (exists) {
       toast.error('Test already added to this visit');
       return;
     }
-    
+
     setVisit(prev => {
       const newTest = {
         testId: test.testId,
@@ -428,16 +428,16 @@ const ResultEntryPage = () => {
         value: '',
         status: 'NORMAL'
       };
-      
+
       return { ...prev, tests: [...prev.tests, newTest] };
     });
-    
+
     // Initialize result for new test
     setResults(prev => ({
       ...prev,
       [test.testId]: { value: '', status: 'NORMAL' }
     }));
-    
+
     toast.success(`${test.name} added successfully`);
     setShowAddTestModal(false);
     setTestSearchQuery('');
@@ -446,20 +446,20 @@ const ResultEntryPage = () => {
   // Handle discount change with validation
   const handleDiscountChange = (newDiscount) => {
     const discountValue = parseFloat(newDiscount);
-    
+
     // Validate discount
     if (isNaN(discountValue)) {
       toast.error('Please enter a valid discount percentage');
       return;
     }
-    
+
     if (discountValue < 0 || discountValue > 100) {
       toast.error('Discount must be between 0-100%');
       return;
     }
-    
+
     setDiscount(discountValue);
-    
+
     // Trigger auto-save
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -472,32 +472,32 @@ const ResultEntryPage = () => {
   // Validate before generating report
   const validateBeforeGenerate = () => {
     const errors = [];
-    
+
     if (!visit.collectedAt) {
       errors.push('Sample collection time not recorded');
     }
-    
+
     if (!visit.receivedAt) {
       errors.push('Sample received time not recorded');
     }
-    
+
     if (!selectedTechnicianId) {
       errors.push('Please select a signing technician');
     }
-    
+
     // Check if at least one result entered (if configured)
     const hasResults = Object.values(results).some(r => r.value !== '');
     if (!hasResults && !settings.allowPartialReports) {
       errors.push('Please enter at least one test result');
     }
-    
+
     return errors;
   };
 
   // Generate BOTH PDF Report AND Invoice together
   const handleGenerateReport = async () => {
     const errors = validateBeforeGenerate();
-    
+
     if (errors.length > 0) {
       toast.error(
         <div>
@@ -510,30 +510,30 @@ const ResultEntryPage = () => {
       );
       return;
     }
-    
+
     // Confirm action
     const confirmed = window.confirm(
       'Generate PDF Report + Invoice — This will mark as PAID and complete the visit. Continue?'
     );
-    
+
     if (!confirmed) return;
-    
+
     setIsGeneratingPDF(true);
-    
+
     try {
       // Save current results first
       await handleSave();
-      
+
       // Set reportedAt and paidAt to current timestamp
       const now = new Date().toISOString();
-      
+
       // Update visit with reportedAt, results, and signing technician
       const updatedTests = visit.tests.map(test => ({
         ...test,
         value: results[test.testId]?.value || '',
         status: results[test.testId]?.status || 'NORMAL'
       }));
-      
+
       const updatedVisit = updateVisit(visitId, {
         reportedAt: now,
         tests: updatedTests,
@@ -548,21 +548,21 @@ const ResultEntryPage = () => {
         subtotal: billing.subtotal,
         discountAmount: billing.discountAmount
       });
-      
+
       // Force data update event to refresh ALL pages
-      window.dispatchEvent(new CustomEvent('healit-data-update', { 
-        detail: { 
-          type: 'visit_completed', 
+      window.dispatchEvent(new CustomEvent('healit-data-update', {
+        detail: {
+          type: 'visit_completed',
           visitId,
           status: 'completed',
           paymentStatus: 'paid'
-        } 
+        }
       }));
-      
+
       // Also trigger storage event for cross-tab sync
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('dataUpdated'));
-      
+
       // Audit log
       console.log('AUDIT: GENERATE_BOTH', {
         userId: currentUser?.userId,
@@ -575,25 +575,25 @@ const ResultEntryPage = () => {
           totalAmount: billing.finalAmount
         }
       });
-      
+
       // Get all profiles
       const allProfiles = getProfiles();
-      
+
       // Build complete visit data
       const visitData = {
         ...updatedVisit,
         patient,
         signingTechnician: selectedTechnician
       };
-      
+
       // Generate SEPARATE PDFs but DON'T auto-download - show modal instead
       const pdfResults = await generateProfileReports(visitData, allProfiles, { download: false, print: false });
       const successPdfs = pdfResults.filter(r => r.success);
-      
+
       if (successPdfs.length > 0) {
         // CRITICAL: Also generate invoice and add to list
         console.log('🧾 Generating invoice for checklist...');
-        
+
         let invoiceResult = null;
         try {
           invoiceResult = await generateCombinedInvoice(visitData, allProfiles, { download: false, print: false });
@@ -602,7 +602,7 @@ const ResultEntryPage = () => {
           console.error('❌ Invoice generation failed:', invoiceError);
           invoiceResult = { success: false, error: invoiceError.message };
         }
-        
+
         // ALWAYS add invoice to list, even if generation failed
         const invoiceEntry = invoiceResult && invoiceResult.success ? {
           ...invoiceResult,
@@ -619,19 +619,19 @@ const ResultEntryPage = () => {
           needsGeneration: true,
           error: invoiceResult?.error || 'Not generated'
         };
-        
+
         // Combine profile PDFs + invoice into one list
         const allResults = [
           ...successPdfs,
           invoiceEntry // ALWAYS include invoice
         ];
-        
+
         console.log('📋 Total items in checklist:', allResults.length);
         console.log('📋 Items:', allResults.map(r => r.profileName));
-        
+
         // Store combined results
         setGeneratedPdfResults(allResults);
-        
+
         const initialStatus = {};
         allResults.forEach(result => {
           initialStatus[result.profileId] = {
@@ -641,13 +641,13 @@ const ResultEntryPage = () => {
           };
         });
         setPdfCompletionStatus(initialStatus);
-        
+
         // Show modal
         setShowPdfActionsModal(true);
-        
+
         toast.success(`✅ Generated ${successPdfs.length} PDF(s) + 1 Invoice!`);
       }
-      
+
       // Update local state
       setVisit(updatedVisit);
     } catch (error) {
@@ -665,17 +665,17 @@ const ResultEntryPage = () => {
     try {
       // Save first
       await handleSave();
-      
+
       // Update payment status to paid
       const updatedVisit = updateVisit(visitId, {
         paymentStatus: 'paid',
         paidAt: new Date().toISOString(),
         discount
       });
-      
+
       // Get all profiles
       const allProfiles = getProfiles();
-      
+
       // Build visit data with profile info
       const visitData = {
         ...updatedVisit,
@@ -688,26 +688,26 @@ const ResultEntryPage = () => {
         paymentMethod: updatedVisit.paymentMethod || 'Cash',
         created_by_name: currentUser?.fullName || currentUser?.username
       };
-      
+
       // Generate combined invoice with all profiles
       const result = await generateCombinedInvoice(visitData, allProfiles, { download: true, print: false });
-      
+
       if (result.success) {
         toast.success(`✅ Invoice generated with ${result.profileCount} profile(s)!`);
       } else {
         toast.error(`⚠️ Failed to generate invoice: ${result.error}`);
       }
-      
+
       // Update local state
       setVisit(updatedVisit);
-      
+
       // Trigger all data update events
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('dataUpdated'));
-      window.dispatchEvent(new CustomEvent('healit-data-update', { 
-        detail: { type: 'invoice_generated', visitId } 
+      window.dispatchEvent(new CustomEvent('healit-data-update', {
+        detail: { type: 'invoice_generated', visitId }
       }));
-      
+
       // Log audit
       console.log('AUDIT: GENERATE_INVOICE', {
         userId: currentUser?.userId,
@@ -716,7 +716,7 @@ const ResultEntryPage = () => {
         timestamp: new Date().toISOString(),
         amount: billing.finalAmount
       });
-      
+
       // Auto-redirect to dashboard after 2 seconds
       setTimeout(() => {
         toast.success('Redirecting to dashboard...');
@@ -727,61 +727,61 @@ const ResultEntryPage = () => {
       toast.error('Failed to generate invoice: ' + error.message);
     }
   };
-  
+
   // Print Report
   const handlePrintReport = () => {
     if (!visit.reportedAt) {
       toast.error('Please generate report first');
       return;
     }
-    
+
     const visitData = {
       ...visit,
       patient,
       profile
     };
-    
+
     printReportPDF(visitData);
     toast.success('Opening print dialog...');
   };
-  
+
   // Share via WhatsApp
   const handleShareWhatsApp = () => {
     if (!visit.reportedAt) {
       toast.error('Please generate report first');
       return;
     }
-    
+
     const visitData = {
       ...visit,
       patient,
       profile
     };
-    
+
     shareViaWhatsApp(visitData, patient.phone);
   };
-  
+
   // Share via Email
   const handleShareEmail = async () => {
     if (!visit.reportedAt) {
       toast.error('Please generate report first');
       return;
     }
-    
+
     let signingTechnician = null;
     if (visit.signing_technician_id) {
       // Use getUsers() which is already imported
       const users = getUsers();
       signingTechnician = users.find(u => u.userId === visit.signing_technician_id);
     }
-    
+
     const visitData = {
       ...visit,
       patient,
       profile,
       signingTechnician
     };
-    
+
     const email = prompt('Enter email address:', patient.email || '');
     if (email) {
       try {
@@ -811,7 +811,7 @@ const ResultEntryPage = () => {
 
   // NEW: Check if all PDFs are completed
   const allPdfsCompleted = () => {
-    return Object.values(pdfCompletionStatus).every(status => 
+    return Object.values(pdfCompletionStatus).every(status =>
       status.printed || status.downloaded || status.shared
     );
   };
@@ -832,8 +832,8 @@ const ResultEntryPage = () => {
       // Trigger all data update events
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('dataUpdated'));
-      window.dispatchEvent(new CustomEvent('healit-data-update', { 
-        detail: { type: 'visit_completed', visitId } 
+      window.dispatchEvent(new CustomEvent('healit-data-update', {
+        detail: { type: 'visit_completed', visitId }
       }));
 
       toast.success('✅ Visit completed and marked as paid!');
@@ -853,11 +853,11 @@ const ResultEntryPage = () => {
   const handleKeyDown = (e, testId) => {
     if (e.key === 'Enter') {
       e.preventDefault(); // Prevent form submission
-      
+
       // Find current input's index
       const allTests = visit.tests || [];
       const currentIndex = allTests.findIndex(t => t.testId === testId);
-      
+
       // Move to next test input
       if (currentIndex < allTests.length - 1) {
         const nextTest = allTests[currentIndex + 1];
@@ -883,7 +883,7 @@ const ResultEntryPage = () => {
         handleSave();
         toast.success('✨ Saved! (Ctrl+S)');
       }
-      
+
       // Ctrl+Enter to generate report
       if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
@@ -896,7 +896,7 @@ const ResultEntryPage = () => {
         }
       }
     };
-    
+
     window.addEventListener('keydown', handleGlobalKeyboard);
     return () => window.removeEventListener('keydown', handleGlobalKeyboard);
   }, [results, handleSave]); // eslint-disable-line
@@ -906,7 +906,11 @@ const ResultEntryPage = () => {
     const testId = test.testId;
     const inputType = test.inputType_snapshot;
     const currentValue = results[testId]?.value || '';
-    
+    const status = results[testId]?.status || 'normal';
+    const isAbnormal = status === 'high' || status === 'low';
+
+    const inputClass = `result-input ${inputType === 'number' ? 'numeric' : ''} ${isAbnormal ? 'abnormal-result ' + status : ''}`;
+
     switch (inputType) {
       case 'number':
         return (
@@ -916,13 +920,13 @@ const ResultEntryPage = () => {
             onChange={(e) => handleResultChange(testId, e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, testId)}
             data-test-id={testId}
-            className="result-input numeric"
+            className={inputClass}
             placeholder="Enter value"
             step="0.01"
             title="Press Enter to move to next field"
           />
         );
-      
+
       case 'text':
         return (
           <input
@@ -936,7 +940,7 @@ const ResultEntryPage = () => {
             title="Press Enter to move to next field"
           />
         );
-      
+
       case 'select':
         return (
           <select
@@ -953,7 +957,7 @@ const ResultEntryPage = () => {
             ))}
           </select>
         );
-      
+
       default:
         return (
           <input
@@ -973,9 +977,9 @@ const ResultEntryPage = () => {
   // Render status badge
   const renderStatusBadge = (testId) => {
     const status = results[testId]?.status || 'NORMAL';
-    
+
     if (!results[testId]?.value) return null;
-    
+
     return (
       <span className={`status-badge ${status.toLowerCase()}`}>
         {status}
@@ -986,26 +990,26 @@ const ResultEntryPage = () => {
   // Format reference range
   const formatReference = (test) => {
     const parts = [];
-    
+
     if (test.inputType_snapshot === 'number' && test.refLow_snapshot && test.refHigh_snapshot) {
       parts.push(`${test.refLow_snapshot}–${test.refHigh_snapshot} ${test.unit_snapshot}`);
     }
-    
+
     if (test.refText_snapshot) {
       parts.push(test.refText_snapshot);
     }
-    
+
     return parts.length > 0 ? parts.join('\n') : '—';
   };
 
   // Calculate billing summary
   const calculateBilling = () => {
     if (!visit || !visit.tests) return { testCount: 0, subtotal: 0, discountAmount: 0, finalAmount: 0 };
-    
+
     const subtotal = visit.tests.reduce((sum, test) => sum + (test.price_snapshot || test.price || 0), 0);
     const discountAmount = (subtotal * discount) / 100;
     const finalAmount = subtotal - discountAmount;
-    
+
     return {
       testCount: visit.tests.length,
       subtotal,
@@ -1013,12 +1017,12 @@ const ResultEntryPage = () => {
       finalAmount
     };
   };
-  
+
   const billing = calculateBilling();
-  
+
   // Check if any results have been entered
   const hasResults = Object.values(results).some(r => r.value !== '');
-  
+
   // Check if can edit (not locked after report generation, unless admin)
   const canEditResults = !visit?.reportedAt || role === 'admin';
 
@@ -1048,7 +1052,7 @@ const ResultEntryPage = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Quick Action Icons */}
         <div className="header-actions-result">
           <Button variant="ghost" size="small" onClick={() => navigate('/dashboard')} icon={Home}>
@@ -1157,8 +1161,8 @@ const ResultEntryPage = () => {
                         {renderStatusBadge(test.testId)}
                       </td>
                       <td className="col-action">
-                        <button 
-                          className="btn-remove" 
+                        <button
+                          className="btn-remove"
                           onClick={() => handleRemoveTest(index)}
                           disabled={!canEditResults}
                           title="Remove test"
@@ -1208,7 +1212,7 @@ const ResultEntryPage = () => {
               <span className="billing-value total">₹{calculateBilling().finalAmount.toFixed(2)}</span>
             </div>
           </div>
-          
+
           <div className="progress-section">
             <div className="progress-info">
               <span className="progress-label">Results Entered:</span>
@@ -1217,13 +1221,13 @@ const ResultEntryPage = () => {
               </span>
             </div>
             <div className="progress-bar">
-              <div 
-                className="progress-fill" 
+              <div
+                className="progress-fill"
                 style={{ width: `${(Object.values(results).filter(r => r.value).length / (visit.tests?.length || 1)) * 100}%` }}
               ></div>
             </div>
           </div>
-          
+
           <div className="action-buttons">
             <div className="save-indicator">
               {saveStatus === 'saving' && (
@@ -1236,7 +1240,7 @@ const ResultEntryPage = () => {
                 <><AlertCircle size={14} /> Save failed</>
               )}
             </div>
-            
+
             <Button
               variant="primary"
               onClick={handleGenerateReport}
@@ -1246,12 +1250,12 @@ const ResultEntryPage = () => {
               {isGeneratingPDF ? 'Generating...' : 'Generate PDF Report + Invoice'}
             </Button>
           </div>
-          
+
           <div className="helper-note">
-            <AlertCircle size={14} />  
+            <AlertCircle size={14} />
             <span>Signed by: {currentUser?.fullName} ({currentUser?.qualification || 'Lab Technician'})</span>
           </div>
-          
+
           {/* Keyboard Shortcuts Hint */}
           <div className="keyboard-shortcuts-hint">
             <Activity size={14} />
@@ -1259,7 +1263,7 @@ const ResultEntryPage = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Share Options Modal */}
       {showShareOptions && (
         <div className="share-modal-overlay" onClick={() => setShowShareOptions(false)}>
@@ -1267,7 +1271,7 @@ const ResultEntryPage = () => {
             <h3>Share Report</h3>
             <p className="help-text">Choose how to share the medical report</p>
             <div className="share-options-grid">
-              <Button variant="primary" onClick={() => downloadReportPDF({...visit, patient, profile, signingTechnician: selectedTechnician})} icon={Download} fullWidth>
+              <Button variant="primary" onClick={() => downloadReportPDF({ ...visit, patient, profile, signingTechnician: selectedTechnician })} icon={Download} fullWidth>
                 Download PDF
               </Button>
               <Button variant="outline" onClick={handlePrintReport} icon={Printer} fullWidth>
@@ -1286,7 +1290,7 @@ const ResultEntryPage = () => {
           </div>
         </div>
       )}
-      
+
       {/* PDF Actions Modal - Checklist */}
       {showPdfActionsModal && (
         <div className="modal-overlay" onClick={() => setShowPdfActionsModal(false)}>
@@ -1300,7 +1304,7 @@ const ResultEntryPage = () => {
               {generatedPdfResults.map((pdfResult, index) => {
                 const status = pdfCompletionStatus[pdfResult.profileId] || {};
                 const isCompleted = status.printed || status.downloaded || status.shared;
-                
+
                 return (
                   <div key={pdfResult.profileId} className={`pdf-action-item ${isCompleted ? 'completed' : ''}`}>
                     <div className="pdf-info">
@@ -1317,76 +1321,101 @@ const ResultEntryPage = () => {
                         {isCompleted && <p className="completion-status">✓ Handled</p>}
                       </div>
                     </div>
-                    
+
                     <div className="pdf-actions">
                       {/* Print */}
                       <button
                         className="action-btn print-btn"
                         onClick={async () => {
-                          await generateProfileReports(
-                            { ...visit, patient, signingTechnician: selectedTechnician }, 
-                            getProfiles(), 
-                            { download: false, print: true, profileFilter: pdfResult.profileId }
-                          );
-                          markPdfActionComplete(pdfResult.profileId, 'printed');
-                          toast.success(`🖨️ Print dialog opened for ${pdfResult.profileName}`);
+                          if (pdfResult.isInvoice) {
+                            await generateCombinedInvoice(
+                              { ...visit, patient, signingTechnician: selectedTechnician },
+                              getProfiles(),
+                              { download: false, print: true }
+                            );
+                            // Mark all as complete for Invoice when printed, as requested
+                            markPdfActionComplete(pdfResult.profileId, 'printed');
+                            markPdfActionComplete(pdfResult.profileId, 'downloaded');
+                            markPdfActionComplete(pdfResult.profileId, 'shared');
+                            toast.success(`🖨️ Print dialog opened for Invoice`);
+                          } else {
+                            await generateProfileReports(
+                              { ...visit, patient, signingTechnician: selectedTechnician },
+                              getProfiles(),
+                              { download: false, print: true, profileFilter: pdfResult.profileId }
+                            );
+                            markPdfActionComplete(pdfResult.profileId, 'printed');
+                            toast.success(`🖨️ Print dialog opened for ${pdfResult.profileName}`);
+                          }
                         }}
                       >
                         <Printer size={18} />
                         Print
                       </button>
-                      
+
                       {/* Download */}
                       <button
                         className="action-btn download-btn"
                         onClick={async () => {
-                          await generateProfileReports(
-                            { ...visit, patient, signingTechnician: selectedTechnician }, 
-                            getProfiles(), 
-                            { download: true, print: false, profileFilter: pdfResult.profileId }
-                          );
-                          markPdfActionComplete(pdfResult.profileId, 'downloaded');
-                          toast.success(`⬇️ Downloaded: ${pdfResult.fileName}`);
+                          if (pdfResult.isInvoice) {
+                            await generateCombinedInvoice(
+                              { ...visit, patient, signingTechnician: selectedTechnician },
+                              getProfiles(),
+                              { download: true, print: false }
+                            );
+                            markPdfActionComplete(pdfResult.profileId, 'downloaded');
+                            toast.success(`⬇️ Downloaded: ${pdfResult.fileName}`);
+                          } else {
+                            await generateProfileReports(
+                              { ...visit, patient, signingTechnician: selectedTechnician },
+                              getProfiles(),
+                              { download: true, print: false, profileFilter: pdfResult.profileId }
+                            );
+                            markPdfActionComplete(pdfResult.profileId, 'downloaded');
+                            toast.success(`⬇️ Downloaded: ${pdfResult.fileName}`);
+                          }
                         }}
                       >
                         <Download size={18} />
                         Download
                       </button>
-                      
+
                       {/* WhatsApp */}
                       <button
                         className="action-btn whatsapp-btn"
                         onClick={() => {
                           const phone = patient.phone || '1234567890';
-                          const message = `Hi ${patient.name}, your lab report for ${pdfResult.profileName} is ready. Please contact us to collect it. - ${currentUser?.fullName || 'Lab'}`;
+                          const reportType = pdfResult.isInvoice ? 'Invoice' : pdfResult.profileName;
+                          const message = `Hi ${patient.name}, your ${pdfResult.isInvoice ? 'invoice' : 'lab report'} for ${reportType} is ready. Please contact us to collect it. - ${currentUser?.fullName || 'Lab'}`;
                           const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
                           window.open(whatsappUrl, '_blank');
                           markPdfActionComplete(pdfResult.profileId, 'shared');
-                          toast.success(`📱 WhatsApp opened for ${pdfResult.profileName}`);
+                          toast.success(`📱 WhatsApp opened for ${reportType}`);
                         }}
                       >
                         <MessageCircle size={18} />
                         WhatsApp
                       </button>
-                      
+
                       {/* Email */}
                       <button
                         className="action-btn email-btn"
                         onClick={() => {
                           const email = patient.email || '';
-                          const subject = `Lab Report - ${pdfResult.profileName} - ${patient.name}`;
+                          const reportType = pdfResult.isInvoice ? 'Invoice' : pdfResult.profileName;
+                          const subject = `Lab ${pdfResult.isInvoice ? 'Invoice' : 'Report'} - ${reportType} - ${patient.name}`;
                           const body = `Dear ${patient.name},
 
-Your lab report for ${pdfResult.profileName} is ready.
+Your ${pdfResult.isInvoice ? 'invoice' : 'lab report'} for ${reportType} is ready.
 
-Please contact us to collect your report.
+Please contact us to collect it.
 
 Thank you,
 ${currentUser?.fullName || 'Lab Team'}`;
                           const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                           window.open(mailtoUrl, '_blank');
                           markPdfActionComplete(pdfResult.profileId, 'shared');
-                          toast.success(`📧 Email opened for ${pdfResult.profileName}`);
+                          toast.success(`📧 Email opened for ${reportType}`);
                         }}
                       >
                         <Mail size={18} />
@@ -1405,8 +1434,8 @@ ${currentUser?.fullName || 'Lab Team'}`;
                     <CheckCircle size={20} color="#10B981" />
                     <span>All reports handled! Ready to complete.</span>
                   </div>
-                  <Button 
-                    variant="success" 
+                  <Button
+                    variant="success"
                     onClick={handleCompleteAndMarkPaid}
                     icon={CheckCircle}
                   >
@@ -1430,7 +1459,7 @@ ${currentUser?.fullName || 'Lab Team'}`;
           </div>
         </div>
       )}
-      
+
       {/* Add Test Modal */}
       {showAddTestModal && (
         <div className="share-modal-overlay" onClick={() => {
@@ -1449,7 +1478,7 @@ ${currentUser?.fullName || 'Lab Team'}`;
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="search-box">
               <Search size={18} />
               <input
@@ -1460,7 +1489,7 @@ ${currentUser?.fullName || 'Lab Team'}`;
                 autoFocus
               />
             </div>
-            
+
             {/* Multi-select toggle */}
             <div className="modal-toolbar">
               <button
@@ -1483,7 +1512,7 @@ ${currentUser?.fullName || 'Lab Team'}`;
                 </button>
               )}
             </div>
-            
+
             <div className="test-list">
               {loadingTests ? (
                 <div className="loading-state">

@@ -1244,3 +1244,29 @@
     opacity: 1;
   }
 }
+
+/* Abnormal Result Styling */
+.result-input.abnormal-result {
+  font-weight: 800;
+  font-size: 1.05rem;
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.result-input.abnormal-result.high {
+  color: #D97706;
+  border-color: #F59E0B;
+  background-color: #FFFBEB;
+}
+
+.result-input.abnormal-result.low {
+  color: #2563EB;
+  border-color: #3B82F6;
+  background-color: #EFF6FF;
+}
+
+.result-input.abnormal-result:focus {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
