@@ -105,6 +105,31 @@ const PatientDetails = () => {
     }
   };
 
+  // Keyboard shortcuts for PDF modal
+  useEffect(() => {
+    if (!showPdfActionsModal) return; // Only active when modal is open
+    
+    const handleKeyPress = (e) => {
+      // ESC to close modal
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowPdfActionsModal(false);
+        toast.info('❌ Modal closed (ESC)');
+        return;
+      }
+      
+      // Ctrl+Enter to Complete & Mark Paid (if all PDFs done)
+      if (e.ctrlKey && e.key === 'Enter' && allPdfsCompleted()) {
+        e.preventDefault();
+        handleCompleteAndMarkPaid();
+        return;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showPdfActionsModal, pdfCompletionStatus]);
+
   // NEW: Generate PDFs for all profiles separately and show action modal
   const handleGenerateAllProfilePDFs = async () => {
     if (!hasResults || !visit.tests || visit.tests.length === 0) {
@@ -1060,6 +1085,9 @@ const PatientDetails = () => {
                     <button 
                       className="action-btn print-btn"
                       onClick={async () => {
+                        // Show loading toast immediately
+                        const loadingToast = toast.loading(pdfResult.isInvoice ? '🖨️ Preparing invoice for print...' : `🖨️ Preparing ${pdfResult.profileName} for print...`);
+                        
                         try {
                           // Get signing technician
                           const signingTechnician = visit.signing_technician_id ? 
@@ -1084,7 +1112,7 @@ const PatientDetails = () => {
                               download: false, 
                               print: true
                             });
-                            toast.success('🖨️ Invoice print dialog opened');
+                            toast.success('🖨️ Invoice print dialog opened', { id: loadingToast });
                           } else {
                             // Print profile PDF
                             await generateProfileReports(visitData, allProfiles, { 
@@ -1092,12 +1120,13 @@ const PatientDetails = () => {
                               print: true,
                               profileFilter: pdfResult.profileId 
                             });
-                            toast.success(`🖨️ Print dialog opened for ${pdfResult.profileName}`);
+                            toast.success(`🖨️ Print dialog opened for ${pdfResult.profileName}`, { id: loadingToast });
                           }
                           
                           markPdfActionComplete(pdfResult.profileId, 'printed');
                         } catch (error) {
-                          toast.error('Failed to print');
+                          console.error('Print error:', error);
+                          toast.error('❌ Failed to print: ' + (error.message || 'Unknown error'), { id: loadingToast });
                         }
                       }}
                       title="Print"
@@ -1109,6 +1138,9 @@ const PatientDetails = () => {
                     <button 
                       className="action-btn download-btn"
                       onClick={async () => {
+                        // Show loading toast immediately
+                        const loadingToast = toast.loading(pdfResult.isInvoice ? '⬇️ Generating invoice PDF...' : `⬇️ Generating ${pdfResult.profileName}...`);
+                        
                         try {
                           // Get signing technician
                           const signingTechnician = visit.signing_technician_id ? 
@@ -1133,7 +1165,7 @@ const PatientDetails = () => {
                               download: true, 
                               print: false
                             });
-                            toast.success('⬇️ Invoice downloaded');
+                            toast.success('✅ Invoice downloaded successfully!', { id: loadingToast });
                           } else {
                             // Download profile PDF
                             await generateProfileReports(visitData, allProfiles, { 
@@ -1141,12 +1173,13 @@ const PatientDetails = () => {
                               print: false,
                               profileFilter: pdfResult.profileId 
                             });
-                            toast.success(`⬇️ Downloaded ${pdfResult.profileName}`);
+                            toast.success(`✅ Downloaded ${pdfResult.profileName} successfully!`, { id: loadingToast });
                           }
                           
                           markPdfActionComplete(pdfResult.profileId, 'downloaded');
                         } catch (error) {
-                          toast.error('Failed to download');
+                          console.error('Download error:', error);
+                          toast.error('❌ Failed to download: ' + (error.message || 'Unknown error'), { id: loadingToast });
                         }
                       }}
                       title="Download"
@@ -1213,13 +1246,18 @@ HEALit Med Laboratories`;
                     <CheckCircle size={20} color="#10B981" />
                     <span>All reports handled! Ready to complete.</span>
                   </div>
-                  <Button 
-                    variant="success" 
-                    onClick={handleCompleteAndMarkPaid}
-                    icon={CheckCircle}
-                  >
-                    Complete & Mark Paid
-                  </Button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#6B7280', fontStyle: 'italic' }}>
+                      🚀 Press <kbd style={{ padding: '2px 6px', background: '#E5E7EB', borderRadius: '4px', fontFamily: 'monospace' }}>Ctrl+Enter</kbd> to complete
+                    </div>
+                    <Button 
+                      variant="success" 
+                      onClick={handleCompleteAndMarkPaid}
+                      icon={CheckCircle}
+                    >
+                      Complete & Mark Paid
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <>
@@ -1236,9 +1274,14 @@ HEALit Med Laboratories`;
                       {Object.values(pdfCompletionStatus).filter(s => s.printed || s.downloaded || s.shared).length} / {generatedPdfResults.length} completed
                     </div>
                   </div>
-                  <Button variant="ghost" onClick={() => setShowPdfActionsModal(false)}>
-                    Close
-                  </Button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ fontSize: '0.75rem', color: '#6B7280', fontStyle: 'italic' }}>
+                      ⏱️ Tip: Press <kbd style={{ padding: '2px 6px', background: '#E5E7EB', borderRadius: '4px', fontFamily: 'monospace' }}>ESC</kbd> to close
+                    </div>
+                    <Button variant="ghost" onClick={() => setShowPdfActionsModal(false)}>
+                      Close
+                    </Button>
+                  </div>
                 </>
               )}
             </div>

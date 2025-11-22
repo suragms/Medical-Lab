@@ -139,13 +139,13 @@ export const generateLabReportPDF = async (reportData, options = {}) => { // CHA
   yPos += 4 + (addressLines.length - 1) * 4;
   yPos += 5;
 
-  yPos -= 25;
+  yPos -= 30; // Reset to align with top of left column
   rightDetails.forEach(line => {
     doc.text(line, rightCol, yPos);
     yPos += 5;
   });
 
-  yPos += 10;
+  yPos += 15; // Add more space before table to prevent overlap
 
   // ========== TEST RESULTS ==========
   // Flatten all tests for single table display
@@ -231,7 +231,7 @@ export const generateLabReportPDF = async (reportData, options = {}) => { // CHA
   // ========== FOOTER (on last page only) ==========
   const currentPageCount = doc.internal.getNumberOfPages();
   doc.setPage(currentPageCount); // Go to last page
-  const footerY = 280;
+  const footerY = 265; // Moved up from 280 to fit within page
   doc.setDrawColor(229, 231, 235);
   doc.line(15, footerY - 5, pageWidth - 15, footerY - 5);
 
@@ -243,52 +243,64 @@ export const generateLabReportPDF = async (reportData, options = {}) => { // CHA
   const technicianName = signingTechnician?.fullName || signingTechnician?.name || 'Lab Staff';
   
   const leftSigX = 15;
-  const rightSigX = pageWidth - 70;
+  const rightSigX = pageWidth - 65; // Adjusted for better alignment
   
   // LEFT SIGNATURE - Lab Technician (Billed By)
+  doc.setFontSize(7);
+  doc.setTextColor(75, 85, 99);
   doc.text('Billed By:', leftSigX, footerY);
   
   // Add technician signature image
   try {
     const technicianSignatureBase64 = await imageToBase64(SIGNATURE_PATHS.rakhi);
-    doc.addImage(technicianSignatureBase64, 'PNG', leftSigX, footerY + 2, 30, 12);
+    doc.addImage(technicianSignatureBase64, 'PNG', leftSigX, footerY + 2, 28, 11);
   } catch (error) {
     console.error('Technician signature failed:', error);
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
     doc.text(technicianName, leftSigX, footerY + 8);
     doc.setFont('helvetica', 'normal');
   }
   
+  // Technician Name
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(17, 17, 17);
-  doc.text('Rakhi T.R', leftSigX, footerY + 17);
+  doc.text('Rakhi T.R', leftSigX, footerY + 15);
+  
+  // Technician Qualification
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(102, 102, 102);
-  doc.text('DMLT', leftSigX, footerY + 21);
+  doc.text('DMLT', leftSigX, footerY + 19);
 
   // RIGHT SIGNATURE - Authorized Signatory (Lab In-Charge)
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setTextColor(75, 85, 99);
   doc.text('Authorized Signatory:', rightSigX, footerY);
   
   // Add authorized signature image
   try {
     const authSignatureBase64 = await imageToBase64(SIGNATURE_PATHS.aparna);
-    doc.addImage(authSignatureBase64, 'PNG', rightSigX, footerY + 2, 30, 12);
+    doc.addImage(authSignatureBase64, 'PNG', rightSigX, footerY + 2, 28, 11);
   } catch (error) {
     console.error('Auth signature failed:', error);
-    doc.line(rightSigX + 1, footerY + 10, rightSigX + 31, footerY + 10);
+    doc.setDrawColor(150, 150, 150);
+    doc.line(rightSigX + 1, footerY + 10, rightSigX + 29, footerY + 10);
   }
   
+  // Authorized Signatory Name
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(17, 17, 17);
-  doc.text('Aparna A.T', rightSigX, footerY + 17);
+  doc.text('Aparna A.T', rightSigX, footerY + 15);
+  
+  // Authorized Signatory Title
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(102, 102, 102);
-  doc.text('Incharge', rightSigX, footerY + 21);
+  doc.text('Incharge', rightSigX, footerY + 19);
 
   return doc;
 };
