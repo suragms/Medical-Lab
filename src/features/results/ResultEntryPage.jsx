@@ -810,6 +810,55 @@ const ResultEntryPage = () => {
     }
   };
 
+  // ========== KEYBOARD SHORTCUTS ==========
+  // Handle Enter key to move to next input
+  const handleKeyDown = (e, testId) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevent form submission
+      
+      // Find current input's index
+      const allTests = visit.tests || [];
+      const currentIndex = allTests.findIndex(t => t.testId === testId);
+      
+      // Move to next test input
+      if (currentIndex < allTests.length - 1) {
+        const nextTest = allTests[currentIndex + 1];
+        const nextInput = document.querySelector(`input[data-test-id="${nextTest.testId}"], select[data-test-id="${nextTest.testId}"]`);
+        if (nextInput) {
+          nextInput.focus();
+          if (nextInput.select) nextInput.select(); // Select all text for easy overwrite
+        }
+      } else {
+        // Last field - focus on Save button or Generate Report
+        const saveButton = document.querySelector('.action-bar-glass button[title*="Save"]');
+        if (saveButton) saveButton.focus();
+      }
+    }
+  };
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleGlobalKeyboard = (e) => {
+      // Ctrl+S to save
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+        toast.success('✨ Saved! (Ctrl+S)');
+      }
+      
+      // Ctrl+Enter to generate report
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        if (hasResults) {
+          handleGenerateBothReportAndInvoice();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleGlobalKeyboard);
+    return () => window.removeEventListener('keydown', handleGlobalKeyboard);
+  }, [hasResults]); // eslint-disable-line
+
   // Render result input based on type
   const renderResultInput = (test) => {
     const testId = test.testId;
@@ -823,9 +872,12 @@ const ResultEntryPage = () => {
             type="number"
             value={currentValue}
             onChange={(e) => handleResultChange(testId, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, testId)}
+            data-test-id={testId}
             className="result-input numeric"
             placeholder="Enter value"
             step="0.01"
+            title="Press Enter to move to next field"
           />
         );
       
@@ -835,8 +887,11 @@ const ResultEntryPage = () => {
             type="text"
             value={currentValue}
             onChange={(e) => handleResultChange(testId, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, testId)}
+            data-test-id={testId}
             className="result-input text"
             placeholder="Enter text"
+            title="Press Enter to move to next field"
           />
         );
       
@@ -845,7 +900,10 @@ const ResultEntryPage = () => {
           <select
             value={currentValue}
             onChange={(e) => handleResultChange(testId, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, testId)}
+            data-test-id={testId}
             className="result-input select"
+            title="Press Enter to move to next field"
           >
             <option value="">Select...</option>
             {test.dropdownOptions_snapshot?.map((option, idx) => (
@@ -860,8 +918,11 @@ const ResultEntryPage = () => {
             type="text"
             value={currentValue}
             onChange={(e) => handleResultChange(testId, e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, testId)}
+            data-test-id={testId}
             className="result-input"
             placeholder="Enter result"
+            title="Press Enter to move to next field"
           />
         );
     }
@@ -1144,6 +1205,12 @@ const ResultEntryPage = () => {
           <div className="helper-note">
             <AlertCircle size={14} />  
             <span>Signed by: {currentUser?.fullName} ({currentUser?.qualification || 'Lab Technician'})</span>
+          </div>
+          
+          {/* Keyboard Shortcuts Hint */}
+          <div className="keyboard-shortcuts-hint">
+            <Activity size={14} />
+            <span>⚡ <strong>Shortcuts:</strong> ENTER = Next field | TAB = Navigate | Ctrl+S = Save | Ctrl+Enter = Generate Report</span>
           </div>
         </div>
       </div>
