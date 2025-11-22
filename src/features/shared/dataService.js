@@ -40,23 +40,27 @@ export const initializeSeedData = async () => {
   try {
     console.log('Attempting to sync with server...');
     const res = await apiCall('/sync', 'GET');
+    console.log('Server response:', res);
+
     if (res && res.success && res.data) {
       const { patients, visits, results, invoices, settings, profiles, testsMaster } = res.data;
 
-      if (patients.length) localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify(patients));
-      if (visits.length) localStorage.setItem(STORAGE_KEYS.VISITS, JSON.stringify(visits));
-      if (results.length) localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
-      if (invoices.length) localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
+      if (patients && patients.length) localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify(patients));
+      if (visits && visits.length) localStorage.setItem(STORAGE_KEYS.VISITS, JSON.stringify(visits));
+      if (results && results.length) localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
+      if (invoices && invoices.length) localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
       if (settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-      if (profiles.length) localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles));
-      if (testsMaster.length) localStorage.setItem(STORAGE_KEYS.TESTS_MASTER, JSON.stringify(testsMaster));
+      if (profiles && profiles.length) localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles));
+      if (testsMaster && testsMaster.length) localStorage.setItem(STORAGE_KEYS.TESTS_MASTER, JSON.stringify(testsMaster));
 
-      console.log('Synced with server successfully');
+      console.log('✅ Synced with server successfully');
       dispatchDataUpdate('all');
       return; // Exit if sync successful
+    } else {
+      console.warn('⚠️ Server returned no data or unsuccessful response');
     }
   } catch (e) {
-    console.warn('Server sync failed, falling back to local seed data', e);
+    console.warn('❌ Server sync failed, falling back to local seed data', e);
   }
 
   // Fallback to local seed data logic...
