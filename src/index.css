@@ -188,7 +188,7 @@
   --shadow-2xl: 0 0.125rem 0.25rem 0 hsl(0 0% 0% / 1.00);
 }
 
-@theme inline {
+:root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

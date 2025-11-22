@@ -13,8 +13,13 @@ const CACHE_CONFIG = {
   PROTECTED_KEYS: [
     'auth-storage', // Zustand auth persistence
     'settings-storage', // Zustand settings persistence
+    'patient-storage', // Patient data persistence
+    'test-result-storage', // Test results persistence
+    'financial-storage', // Financial data persistence
+    'activity-storage', // Staff activity logs
     'healit_users', // User data
     'healit_data_version', // Data version tracker
+    'last_cache_clear', // Cache clear timestamp
   ]
 };
 

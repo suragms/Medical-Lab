@@ -5,6 +5,31 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { preloadCriticalImages } from './utils/assetPath';
 import './index.css';
 
+// Clear browser cache on app start to prevent stale content
+if ('caches' in window) {
+  caches.keys().then(names => {
+    const appVersion = Date.now();
+    console.log('🔄 Checking cache freshness...');
+    names.forEach(name => {
+      // Keep only recent caches (within last 5 minutes)
+      const cacheTime = parseInt(name.split('-v')[1]);
+      if (isNaN(cacheTime) || (appVersion - cacheTime) > 300000) {
+        console.log('🗑️ Deleting old cache:', name);
+        caches.delete(name);
+      }
+    });
+  });
+}
+
+// Force reload service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(registration => {
+      registration.update(); // Check for updates immediately
+    });
+  });
+}
+
 // PERFORMANCE: Preload images for INSTANT PDF generation
 preloadCriticalImages().then(() => {
   console.log('⚡ PDF images ready - generation will be FAST!');

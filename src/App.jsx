@@ -6,6 +6,8 @@ import { initializeSeedData } from './features/shared/dataService';
 import { initializeAuthData } from './services/authService';
 import { preloadCriticalImages } from './utils/assetPath';
 import { initializeAutoClear } from './utils/browserCacheManager';
+import dataMigrationService from './services/dataMigrationService';
+import apiService from './services/apiService';
 
 // Pages
 import Login from './pages/Login/Login';
@@ -61,13 +63,31 @@ function App() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        console.log('Initializing app with localStorage...');
+        console.log('Initializing app with centralized storage...');
+        
+        // Initialize seed data (for first-time users)
         initializeSeedData();
         initializeAuthData();
+        
         // Preload critical images for PDFs and UI
         preloadCriticalImages();
+        
         // Initialize automatic browser cache clearing
         await initializeAutoClear();
+        
+        // Check backend health
+        try {
+          const healthCheck = await apiService.healthCheck();
+          console.log('✅ Backend connection:', healthCheck.status);
+          
+          // Sync data with backend
+          await dataMigrationService.fullSync();
+          console.log('✅ Data synchronized with backend');
+        } catch (apiError) {
+          console.warn('⚠️ Backend unavailable, using local storage:', apiError.message);
+          // App will continue with localStorage only
+        }
+        
         console.log('App initialization complete');
       } catch (error) {
         console.error('Error initializing app:', error);

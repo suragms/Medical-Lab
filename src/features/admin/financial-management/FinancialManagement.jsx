@@ -15,6 +15,8 @@ import {
 } from './financeService';
 import Button from '../../../components/ui/Button';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import './FinancialManagement.css';
 
 const FinancialManagement = () => {
@@ -305,13 +307,177 @@ const FinancialManagement = () => {
   
   // Export handlers
   const handleExportExcel = () => {
-    toast.success('Excel export feature coming soon');
-    // TODO: Implement Excel export
+    try {
+      // Create CSV content
+      const headers = ['Date', 'Category', 'Description', 'Paid To', 'Amount', 'Staff', 'Payment Method'];
+      const rows = expenses.map(expense => [
+        new Date(expense.date).toLocaleDateString(),
+        getCategoryName(expense.categoryId),
+        expense.description || '—',
+        expense.paidTo || '—',
+        `Rs. ${expense.amount.toLocaleString('en-IN')}`,
+        getUserName(expense.staffId),
+        expense.paymentMethod
+      ]);
+  
+      // Add summary row
+      const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+      rows.push(['', '', '', 'TOTAL', `Rs. ${totalExpenses.toLocaleString('en-IN')}`, '', '']);
+  
+      // Convert to CSV
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+  
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Financial_Report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+  
+      toast.success('✅ Excel file downloaded successfully!');
+    } catch (error) {
+      console.error('Excel export error:', error);
+      toast.error('❌ Failed to export Excel file');
+    }
   };
   
   const handleExportPDF = () => {
-    toast.success('PDF export feature coming soon');
-    // TODO: Implement PDF export
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let yPos = 15;
+  
+      // Header
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Financial Report', pageWidth / 2, yPos, { align: 'center' });
+  
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPos, { align: 'center' });
+  
+      yPos += 10;
+  
+      // Summary Section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Financial Summary', 15, yPos);
+  
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+        
+      const summaryData = [
+        ['Total Revenue', `Rs. ${summary.revenue.current.toLocaleString('en-IN')}`],
+        ['Total Expenses', `Rs. ${summary.expenses.current.toLocaleString('en-IN')}`],
+        ['Net Profit', `Rs. ${summary.profit.current.toLocaleString('en-IN')}`],
+        ['Pending Bills', summary.pendingBills.toString()]
+      ];
+  
+      doc.autoTable({
+        startY: yPos,
+        head: [['Item', 'Value']],
+        body: summaryData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [30, 58, 138],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 10
+        },
+        margin: { left: 15, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 100 },
+          1: { cellWidth: 80, halign: 'right', fontStyle: 'bold' }
+        }
+      });
+  
+      yPos = doc.lastAutoTable.finalY + 10;
+  
+      // Expenses Table
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Expense Details', 15, yPos);
+  
+      yPos += 5;
+  
+      const tableData = expenses.map(expense => [
+        new Date(expense.date).toLocaleDateString(),
+        getCategoryName(expense.categoryId),
+        expense.description || '—',
+        expense.paidTo || '—',
+        `Rs. ${expense.amount.toLocaleString('en-IN')}`,
+        expense.paymentMethod
+      ]);
+  
+      // Add total row
+      const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+      tableData.push(['', '', '', 'TOTAL', `Rs. ${totalExpenses.toLocaleString('en-IN')}`, '']);
+  
+      doc.autoTable({
+        startY: yPos,
+        head: [['Date', 'Category', 'Description', 'Paid To', 'Amount', 'Method']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: {
+          fillColor: [30, 58, 138],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9
+        },
+        bodyStyles: {
+          fontSize: 8
+        },
+        alternateRowStyles: {
+          fillColor: [240, 248, 255]
+        },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
+          5: { cellWidth: 25 }
+        },
+        margin: { left: 15, right: 15 },
+        didParseCell: (data) => {
+          // Make total row bold
+          if (data.row.index === tableData.length - 1) {
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fillColor = [220, 240, 255];
+          }
+        }
+      });
+  
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+        doc.text('HEALit Med Laboratories - Financial Management', pageWidth / 2, doc.internal.pageSize.getHeight() - 6, { align: 'center' });
+      }
+  
+      // Save PDF
+      doc.save(`Financial_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('✅ PDF downloaded successfully!');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error('❌ Failed to export PDF');
+    }
   };
   
   // Get category name

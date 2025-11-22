@@ -2,6 +2,14 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
+
+# Dev server configuration
+[dev]
+  command = "vite"
+  targetPort = 3000
+  port = 8888
+  autoLaunch = false
 
 # Environment variables for build
 [build.environment]
@@ -21,6 +29,12 @@
   pretty_urls = false
 [build.processing.images]
   compress = true
+
+# Redirect API requests to serverless function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
 
 # Redirect all requests to index.html for React Router
 [[redirects]]

@@ -419,56 +419,69 @@ export const printLabReport = async (reportData, options = {}) => {
     const url = URL.createObjectURL(blob);
     console.log('Blob URL:', url);
     
-    console.log('4️⃣ Creating iframe for printing...');
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    iframe.src = url;
+    console.log('4️⃣ Opening PDF in new window for printing...');
+    // UPDATED: Use window.open instead of iframe for better compatibility
+    const printWindow = window.open(url, '_blank');
     
-    console.log('5️⃣ Appending iframe to body...');
-    document.body.appendChild(iframe);
-    
-    console.log('6️⃣ Waiting for iframe load...');
-    iframe.onload = () => {
-      console.log('✅ Iframe loaded! Opening print dialog...');
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        console.log('✅ Print dialog opened successfully!');
-        
-        // Clean up after print
+    if (printWindow) {
+      printWindow.onload = () => {
+        console.log('✅ Print window loaded! Triggering print...');
         setTimeout(() => {
+          printWindow.print();
+          console.log('✅ Print dialog opened successfully!');
+        }, 250); // Small delay to ensure PDF is fully loaded
+      };
+    } else {
+      console.error('❌ Print window blocked by popup blocker');
+      // Fallback to iframe if popup blocked
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      iframe.src = url;
+      
+      document.body.appendChild(iframe);
+      
+      iframe.onload = () => {
+        console.log('✅ Iframe loaded! Opening print dialog...');
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          console.log('✅ Print dialog opened successfully!');
+          
+          // Clean up after print
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            URL.revokeObjectURL(url);
+            console.log('🧹 Cleaned up iframe and blob URL');
+          }, 1000);
+        } catch (printError) {
+          console.error('❌ Print dialog error:', printError);
           document.body.removeChild(iframe);
           URL.revokeObjectURL(url);
-          console.log('🧹 Cleaned up iframe and blob URL');
-        }, 1000);
-      } catch (printError) {
-        console.error('❌ Print dialog error:', printError);
+          throw new Error('Failed to open print dialog: ' + printError.message);
+        }
+      };
+      
+      iframe.onerror = (error) => {
+        console.error('❌ Iframe load error:', error);
         document.body.removeChild(iframe);
         URL.revokeObjectURL(url);
-        throw new Error('Failed to open print dialog: ' + printError.message);
-      }
-    };
-    
-    iframe.onerror = (error) => {
-      console.error('❌ Iframe load error:', error);
-      document.body.removeChild(iframe);
-      URL.revokeObjectURL(url);
-      throw new Error('Failed to load PDF for printing');
-    };
-    
-    // Timeout fallback
-    setTimeout(() => {
-      if (iframe.parentNode) {
-        console.warn('⚠️ Print timeout - cleaning up...');
-        document.body.removeChild(iframe);
-        URL.revokeObjectURL(url);
-      }
-    }, 10000); // 10 second timeout
+        throw new Error('Failed to load PDF for printing');
+      };
+      
+      // Timeout fallback
+      setTimeout(() => {
+        if (iframe.parentNode) {
+          console.warn('⚠️ Print timeout - cleaning up...');
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(url);
+        }
+      }, 10000); // 10 second timeout
+    }
     
   } catch (error) {
     console.error('❌ CRITICAL: printLabReport failed:', error);
