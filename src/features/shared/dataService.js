@@ -42,22 +42,40 @@ export const initializeSeedData = async () => {
     const res = await apiCall('/sync', 'GET');
     console.log('Server response:', res);
 
-    if (res && res.success && res.data) {
-      const { patients, visits, results, invoices, settings, profiles, testsMaster } = res.data;
+    if (res && res.success) {
+      // Case 1: Database not configured
+      if (res.message && res.message.includes('Database not configured')) {
+        console.warn('⚠️ Database not configured - running in local-only mode');
+        // Continue to load local data...
+      }
+      // Case 2: Server has data - Sync down (Server Wins)
+      else if (res.data && (
+        (res.data.patients && res.data.patients.length > 0) ||
+        (res.data.visits && res.data.visits.length > 0)
+      )) {
+        console.log('📥 Downloading data from server...');
+        const { patients, visits, results, invoices, settings, profiles, testsMaster } = res.data;
 
-      if (patients && patients.length) localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify(patients));
-      if (visits && visits.length) localStorage.setItem(STORAGE_KEYS.VISITS, JSON.stringify(visits));
-      if (results && results.length) localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
-      if (invoices && invoices.length) localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
-      if (settings) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-      if (profiles && profiles.length) localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles));
-      if (testsMaster && testsMaster.length) localStorage.setItem(STORAGE_KEYS.TESTS_MASTER, JSON.stringify(testsMaster));
+        if (patients) localStorage.setItem(STORAGE_KEYS.PATIENTS, JSON.stringify(patients));
+        if (visits) localStorage.setItem(STORAGE_KEYS.VISITS, JSON.stringify(visits));
+        if (results) localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
+        if (invoices) localStorage.setItem(STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
+        if (settings && Object.keys(settings).length > 0) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+        if (profiles && profiles.length > 0) localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles));
+        if (testsMaster && testsMaster.length > 0) localStorage.setItem(STORAGE_KEYS.TESTS_MASTER, JSON.stringify(testsMaster));
 
-      console.log('✅ Synced with server successfully');
-      dispatchDataUpdate('all');
-      return; // Exit if sync successful
+        console.log('✅ Synced with server successfully');
+        dispatchDataUpdate('all');
+        return; // Exit if sync successful
+      }
+      // Case 3: Server is empty but connected - Upload local data (Initial Seed)
+      else {
+        console.log('📤 Server is empty. Uploading local data to seed database...');
+        await syncLocalToServer();
+        return;
+      }
     } else {
-      console.warn('⚠️ Server returned no data or unsuccessful response');
+      console.warn('⚠️ Server returned unsuccessful response');
     }
   } catch (e) {
     console.warn('❌ Server sync failed, falling back to local seed data', e);
@@ -468,6 +486,36 @@ export const searchTests = (searchTerm) => {
   });
 };
 
+// Sync local data to server (Bulk Upload)
+export const syncLocalToServer = async () => {
+  try {
+    const payload = {
+      patients: getPatients(),
+      visits: getVisits(),
+      results: JSON.parse(localStorage.getItem(STORAGE_KEYS.RESULTS) || '[]'),
+      invoices: JSON.parse(localStorage.getItem(STORAGE_KEYS.INVOICES) || '[]'),
+      settings: getSettings(),
+      profiles: getProfiles(),
+      testsMaster: JSON.parse(localStorage.getItem(STORAGE_KEYS.TESTS_MASTER) || '[]'),
+      auditLogs: JSON.parse(localStorage.getItem(STORAGE_KEYS.AUDIT_LOGS) || '[]')
+    };
+
+    console.log('Uploading local data payload:', payload);
+    const res = await apiCall('/sync', 'POST', payload);
+
+    if (res && res.success) {
+      console.log('✅ Local data uploaded to server successfully');
+      return true;
+    } else {
+      console.error('❌ Failed to upload local data:', res);
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error uploading local data:', error);
+    return false;
+  }
+};
+
 export default {
   initializeSeedData,
   clearAllData,
@@ -495,5 +543,7 @@ export default {
   getSettings,
   updateSettings,
   logAudit,
-  searchTests
+  logAudit,
+  searchTests,
+  syncLocalToServer
 };
