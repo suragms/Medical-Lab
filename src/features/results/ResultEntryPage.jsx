@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store';
 import { getCurrentUser, getUsers } from '../../services/authService';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
 import { generateCombinedInvoice, generateProfileReports } from '../../utils/profilePdfHelper';
+import { parseRange, checkRangeStatus } from '../../utils/rangeParser';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 import './ResultEntry.css';
@@ -99,13 +100,53 @@ const ResultEntryPage = () => {
       setProfile(profileData);
     }
 
-    // Initialize results from visit
+    // Initialize results from visit with RE-CALCULATED status
     const initialResults = {};
     if (visitData.tests && visitData.tests.length > 0) {
       visitData.tests.forEach(test => {
+        const value = test.value || '';
+        let status = test.status || 'normal';
+
+        // Re-calculate status if value exists (fix for existing incorrect statuses)
+        if (value !== '' && test.inputType_snapshot === 'number') {
+          const numValue = parseFloat(value);
+
+          if (!isNaN(numValue)) {
+            // Priority 1: Use refLow_snapshot and refHigh_snapshot if available
+            let refHigh = parseFloat(test.refHigh_snapshot);
+            let refLow = parseFloat(test.refLow_snapshot);
+
+            // Priority 2: Parse bioReference_snapshot if refLow/refHigh not available
+            if ((isNaN(refLow) || isNaN(refHigh)) && (test.bioReference_snapshot || test.bioReference)) {
+              const rangeStr = test.bioReference_snapshot || test.bioReference;
+              const parsedRange = parseRange(rangeStr);
+
+              if (parsedRange) {
+                if (parsedRange.type === 'range') {
+                  refLow = parsedRange.min;
+                  refHigh = parsedRange.max;
+                } else if (parsedRange.type === 'lt' || parsedRange.type === 'lte') {
+                  refHigh = parsedRange.value;
+                } else if (parsedRange.type === 'gt' || parsedRange.type === 'gte') {
+                  refLow = parsedRange.value;
+                }
+              }
+            }
+
+            // Determine status
+            if (!isNaN(refHigh) && numValue > refHigh) {
+              status = 'high';
+            } else if (!isNaN(refLow) && numValue < refLow) {
+              status = 'low';
+            } else if (!isNaN(refLow) && !isNaN(refHigh) && numValue >= refLow && numValue <= refHigh) {
+              status = 'normal';
+            }
+          }
+        }
+
         initialResults[test.testId] = {
-          value: test.value || '',
-          status: test.status || 'normal'
+          value: value,
+          status: status
         };
       });
     }
@@ -141,7 +182,7 @@ const ResultEntryPage = () => {
       const updatedTests = visit.tests.map(test => ({
         ...test,
         value: results[test.testId]?.value || '',
-        status: results[test.testId]?.status || 'NORMAL'
+        status: results[test.testId]?.status || 'normal'
       }));
 
       // Use updateVisit to save ALL changes (tests array, discount, etc.)
@@ -206,36 +247,64 @@ const ResultEntryPage = () => {
     if (test.inputType_snapshot === 'number') {
       // Allow empty string or valid numeric values (int/float)
       if (value !== '') {
+        // Strict validation: only allow numbers, decimals, and one decimal point
+        const numericPattern = /^-?\d*\.?\d*$/;
+        if (!numericPattern.test(value)) {
+          toast.error('⚠️ Please enter a valid number (integers or decimals only)');
+          return;
+        }
+
         const numValue = parseFloat(value);
 
         // Strict validation: must be a valid number (int or float)
         if (isNaN(numValue) || !isFinite(numValue)) {
-          toast.error('Please enter a valid number (integers or decimals only)');
+          toast.error('⚠️ Please enter a valid number (integers or decimals only)');
           return;
         }
 
         // Check for negative values
         if (numValue < 0) {
-          toast.error('Value cannot be negative');
+          toast.error('⚠️ Value cannot be negative');
           return;
         }
 
         // Maximum value check (reasonable medical range)
         if (numValue > 999999) {
-          toast.error('Value too large (max: 999,999)');
+          toast.error('⚠️ Value too large (max: 999,999)');
           return;
         }
 
         // Calculate status based on reference ranges
-        const refHigh = parseFloat(test.refHigh_snapshot);
-        const refLow = parseFloat(test.refLow_snapshot);
+        // Priority 1: Use refLow_snapshot and refHigh_snapshot if available
+        let refHigh = parseFloat(test.refHigh_snapshot);
+        let refLow = parseFloat(test.refLow_snapshot);
+
+        // Priority 2: Parse bioReference_snapshot if refLow/refHigh not available
+        if ((isNaN(refLow) || isNaN(refHigh)) && (test.bioReference_snapshot || test.bioReference)) {
+          const rangeStr = test.bioReference_snapshot || test.bioReference;
+          const parsedRange = parseRange(rangeStr);
+
+          if (parsedRange) {
+            if (parsedRange.type === 'range') {
+              refLow = parsedRange.min;
+              refHigh = parsedRange.max;
+            } else if (parsedRange.type === 'lt' || parsedRange.type === 'lte') {
+              refHigh = parsedRange.value;
+            } else if (parsedRange.type === 'gt' || parsedRange.type === 'gte') {
+              refLow = parsedRange.value;
+            }
+          }
+        }
 
         // Determine status: high, low, or normal
         if (!isNaN(refHigh) && numValue > refHigh) {
           status = 'high';
         } else if (!isNaN(refLow) && numValue < refLow) {
           status = 'low';
+        } else if (!isNaN(refLow) && !isNaN(refHigh) && numValue >= refLow && numValue <= refHigh) {
+          status = 'normal';
         } else {
+          // If reference ranges are not properly set, default to normal
           status = 'normal';
         }
       }
@@ -245,7 +314,7 @@ const ResultEntryPage = () => {
 
       // Validate text length
       if (value.length > 200) {
-        toast.error('Text value too long (max 200 characters)');
+        toast.error('⚠️ Text value too long (max 200 characters)');
         return;
       }
     } else if (test.inputType_snapshot === 'select') {
@@ -915,15 +984,15 @@ const ResultEntryPage = () => {
       case 'number':
         return (
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={currentValue}
             onChange={(e) => handleResultChange(testId, e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, testId)}
             data-test-id={testId}
             className={inputClass}
-            placeholder="Enter value"
-            step="0.01"
-            title="Press Enter to move to next field"
+            placeholder="Enter value (numbers only)"
+            title="Press Enter to move to next field. Only integers and decimals allowed."
           />
         );
 
@@ -976,13 +1045,13 @@ const ResultEntryPage = () => {
 
   // Render status badge
   const renderStatusBadge = (testId) => {
-    const status = results[testId]?.status || 'NORMAL';
+    const status = results[testId]?.status || 'normal';
 
     if (!results[testId]?.value) return null;
 
     return (
       <span className={`status-badge ${status.toLowerCase()}`}>
-        {status}
+        {status.toUpperCase()}
       </span>
     );
   };

@@ -340,6 +340,34 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+/* Abnormal Result Input Highlighting */
+.col-result input.abnormal-result {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.col-result input.abnormal-result.high {
+  background: #FEF3C7;
+  border-color: #F59E0B;
+  color: #D97706;
+}
+
+.col-result input.abnormal-result.high:focus {
+  border-color: #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.col-result input.abnormal-result.low {
+  background: #DBEAFE;
+  border-color: #3B82F6;
+  color: #1E40AF;
+}
+
+.col-result input.abnormal-result.low:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
 .col-result textarea {
   min-height: 60px;
   resize: vertical;
@@ -383,39 +411,64 @@
   font-weight: 500;
 }
 
-/* Status Badges */
+/* Status Badges - Enhanced */
 .status-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 0.8125rem;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 0.75rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .status-badge.normal {
-  background: #ECFDF5;
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
   color: #059669;
-  border: 1px solid #BBF7D0;
+  border: 1.5px solid #10B981;
 }
 
 .status-badge.high {
-  background: #FEF3C7;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
   color: #D97706;
-  border: 1px solid #FDE68A;
+  border: 1.5px solid #F59E0B;
+  animation: pulseHigh 2s ease-in-out infinite;
 }
 
 .status-badge.low {
-  background: #EFF6FF;
-  color: #2563EB;
-  border: 1px solid #BFDBFE;
+  background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+  color: #1E40AF;
+  border: 1.5px solid #3B82F6;
+  animation: pulseLow 2s ease-in-out infinite;
 }
 
 .status-badge.pending {
   background: #F1F5F9;
   color: #64748B;
-  border: 1px solid #CBD5E1;
+  border: 1.5px solid #CBD5E1;
+}
+
+/* Pulse animations for abnormal values */
+@keyframes pulseHigh {
+  0%, 100% {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 0 0 0 rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 0 0 6px rgba(245, 158, 11, 0);
+  }
+}
+
+@keyframes pulseLow {
+  0%, 100% {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 0 0 6px rgba(59, 130, 246, 0);
+  }
 }
 
 /* No Tests Message */
