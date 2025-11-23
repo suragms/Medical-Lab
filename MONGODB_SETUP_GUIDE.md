@@ -34,7 +34,7 @@ Follow these steps to set up your database and configure Netlify.
 2. Click **Connect** on your cluster.
 3. Select **Drivers**.
 4. Copy the connection string. It looks like:
-   `mongodb+srv://admin:<password>@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority`
+   `mongodb+srv://suragsunil2023_db_user:<password>@labdb.qjokknr.mongodb.net/?appName=Labdb`
 
 ## Step 5: Configure Netlify Environment Variables
 
@@ -43,9 +43,9 @@ Follow these steps to set up your database and configure Netlify.
 3. Go to **Site configuration** > **Environment variables**.
 4. Click **Add a variable**.
 5. **Key**: `MONGODB_URI`
-6. **Value**: Paste your connection string.
-   * **IMPORTANT**: Replace `<password>` with the password you created in Step 2.
-   * Example: `mongodb+srv://admin:LabAdmin123!@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority`
+6. **Value**: Paste your connection string:
+   `mongodb+srv://suragsunil2023_db_user:<password>@labdb.qjokknr.mongodb.net/?appName=Labdb`
+   * **IMPORTANT**: Replace `<password>` with the password you created for the user `suragsunil2023_db_user`.
 7. Click **Create variable**.
 
 ## Step 6: Redeploy Your Site
