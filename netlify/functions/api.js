@@ -272,6 +272,9 @@ router.post('/tests', async (req, res) => {
   }
 });
 
+// Mount router on multiple paths to handle different Netlify routing scenarios
+app.use('/', router);
 app.use('/api', router);
+app.use('/.netlify/functions/api', router);
 
 export const handler = serverless(app);

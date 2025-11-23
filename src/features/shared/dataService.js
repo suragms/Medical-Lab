@@ -12,7 +12,7 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: 'healit_audit_logs'
 };
 
-const API_URL = '/.netlify/functions/api';
+const API_URL = '/api';
 
 // Helper for API calls (fire and forget for mutations)
 const apiCall = async (endpoint, method, body) => {
