@@ -46,7 +46,10 @@ export class DataMigrationService {
       settings: getData('healit_settings') || {},
       profiles: getData('healit_profiles') || [],
       testsMaster: getData('healit_tests_master') || [],
-      auditLogs: getData('healit_audit_logs') || []
+      auditLogs: getData('healit_audit_logs') || [],
+      financialExpenses: getData('healit_financial_expenses') || [],
+      financialCategories: getData('healit_financial_categories') || [],
+      financialReminders: getData('healit_financial_reminders') || []
     };
   }
 
@@ -64,7 +67,8 @@ export class DataMigrationService {
         localData.patients.length > 0 ||
         localData.visits.length > 0 ||
         localData.results.length > 0 ||
-        localData.invoices.length > 0;
+        localData.invoices.length > 0 ||
+        localData.financialExpenses.length > 0;
 
       if (!hasData) {
         console.log('ℹ️ No local data to migrate');
@@ -132,6 +136,18 @@ export class DataMigrationService {
 
         if (data.auditLogs && data.auditLogs.length > 0) {
           localStorage.setItem('healit_audit_logs', JSON.stringify(data.auditLogs));
+        }
+
+        if (data.financialExpenses && data.financialExpenses.length > 0) {
+          localStorage.setItem('healit_financial_expenses', JSON.stringify(data.financialExpenses));
+        }
+
+        if (data.financialCategories && data.financialCategories.length > 0) {
+          localStorage.setItem('healit_financial_categories', JSON.stringify(data.financialCategories));
+        }
+
+        if (data.financialReminders && data.financialReminders.length > 0) {
+          localStorage.setItem('healit_financial_reminders', JSON.stringify(data.financialReminders));
         }
 
         // Dispatch event to refresh UI

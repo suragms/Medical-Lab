@@ -3,7 +3,8 @@ import serverless from 'serverless-http';
 import cors from 'cors';
 import { connectDB } from './lib/db';
 import {
-  Patient, Visit, Result, Invoice, Settings, AuditLog, Profile, TestMaster
+  Patient, Visit, Result, Invoice, Settings, AuditLog, Profile, TestMaster,
+  FinancialExpense, FinancialCategory, FinancialReminder
 } from './lib/models';
 
 const app = express();
@@ -49,7 +50,7 @@ router.get('/sync', async (req, res) => {
       });
     }
 
-    const [patients, visits, results, invoices, settings, auditLogs, profiles, testsMaster] = await Promise.all([
+    const [patients, visits, results, invoices, settings, auditLogs, profiles, testsMaster, financialExpenses, financialCategories, financialReminders] = await Promise.all([
       Patient.find({}),
       Visit.find({}),
       Result.find({}),
@@ -57,7 +58,10 @@ router.get('/sync', async (req, res) => {
       Settings.findOne({}),
       AuditLog.find({}),
       Profile.find({}),
-      TestMaster.find({})
+      TestMaster.find({}),
+      FinancialExpense.find({}),
+      FinancialCategory.find({}),
+      FinancialReminder.find({})
     ]);
 
     res.json({
@@ -70,7 +74,10 @@ router.get('/sync', async (req, res) => {
         settings: settings || {},
         auditLogs,
         profiles,
-        testsMaster
+        testsMaster,
+        financialExpenses,
+        financialCategories,
+        financialReminders
       }
     });
   } catch (error) {
@@ -82,7 +89,7 @@ router.get('/sync', async (req, res) => {
 // POST /sync - Bulk upload data from client
 router.post('/sync', async (req, res) => {
   try {
-    const { patients, visits, results, invoices, settings, profiles, testsMaster, auditLogs } = req.body;
+    const { patients, visits, results, invoices, settings, profiles, testsMaster, auditLogs, financialExpenses, financialCategories, financialReminders } = req.body;
 
     // Bulk insert/update data
     if (patients && patients.length > 0) {
@@ -128,6 +135,24 @@ router.post('/sync', async (req, res) => {
     if (auditLogs && auditLogs.length > 0) {
       await Promise.all(auditLogs.map(log =>
         AuditLog.findOneAndUpdate({ logId: log.logId }, log, { upsert: true, new: true })
+      ));
+    }
+
+    if (financialExpenses && financialExpenses.length > 0) {
+      await Promise.all(financialExpenses.map(expense =>
+        FinancialExpense.findOneAndUpdate({ expenseId: expense.expenseId }, expense, { upsert: true, new: true })
+      ));
+    }
+
+    if (financialCategories && financialCategories.length > 0) {
+      await Promise.all(financialCategories.map(category =>
+        FinancialCategory.findOneAndUpdate({ categoryId: category.categoryId }, category, { upsert: true, new: true })
+      ));
+    }
+
+    if (financialReminders && financialReminders.length > 0) {
+      await Promise.all(financialReminders.map(reminder =>
+        FinancialReminder.findOneAndUpdate({ reminderId: reminder.reminderId }, reminder, { upsert: true, new: true })
       ));
     }
 
