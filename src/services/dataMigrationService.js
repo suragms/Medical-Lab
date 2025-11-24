@@ -165,20 +165,19 @@ export class DataMigrationService {
   }
 
   /**
-   * Full sync: Upload local data and then download to ensure consistency
+   * Full sync: Always download from server (Server Wins strategy)
+   * This ensures all browsers show the same data from MongoDB
    */
   async fullSync() {
     try {
-      // First check if we need to migrate
-      if (!this.hasMigrated()) {
-        const uploadResult = await this.migrateToBackend();
-        if (!uploadResult.success) {
-          console.warn('Upload failed, continuing with download...');
-        }
-      }
-
-      // Then sync from backend to get latest data
+      // ALWAYS sync from backend first (Server Wins)
+      console.log('🔄 Syncing from server (Server Wins)...');
       const downloadResult = await this.syncFromBackend();
+
+      // If download was successful, mark as migrated
+      if (downloadResult.success) {
+        this.markMigrated();
+      }
 
       return downloadResult;
     } catch (error) {
