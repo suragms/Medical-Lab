@@ -200,8 +200,24 @@ router.put('/patients/:id', async (req, res) => {
 router.delete('/patients/:id', async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Find all visits for this patient
+    const patientVisits = await Visit.find({ patientId: id });
+    const visitIds = patientVisits.map(v => v.visitId);
+
+    // Delete patient
     await Patient.findOneAndDelete({ patientId: id });
-    res.json({ success: true });
+
+    // Delete all associated visits
+    await Visit.deleteMany({ patientId: id });
+
+    // Delete all results for these visits
+    await Result.deleteMany({ visitId: { $in: visitIds } });
+
+    // Delete all invoices for these visits
+    await Invoice.deleteMany({ visitId: { $in: visitIds } });
+
+    res.json({ success: true, message: 'Patient and all associated data deleted' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
