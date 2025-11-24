@@ -12,7 +12,9 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: 'healit_audit_logs'
 };
 
-const API_URL = '/api';
+const API_URL = import.meta.env.PROD
+  ? '/.netlify/functions/api'
+  : 'http://localhost:8888/.netlify/functions/api';
 
 // Helper for API calls (fire and forget for mutations)
 const apiCall = async (endpoint, method, body) => {
