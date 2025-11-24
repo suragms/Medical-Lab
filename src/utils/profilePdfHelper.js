@@ -5,6 +5,7 @@
 
 import { downloadLabReport, printLabReport } from './labReportPdfGenerator';
 import { downloadInvoice, printInvoice } from './invoicePdfGenerator';
+import { generateCombinedPDF, shareCombinedPDFViaWhatsApp, shareCombinedPDFViaEmail } from './combinedPdfGenerator';
 
 /**
  * Group tests by profile ID
@@ -273,9 +274,24 @@ export const generateAllProfileDocuments = async (visitData, profiles = [], opti
   };
 };
 
+/**
+ * Generate COMBINED PDF with Invoice + All Profile Reports in ONE PDF
+ * @param {Object} visitData - Complete visit data
+ * @param {Array} profiles - Available profiles
+ * @param {Object} options - Generation options
+ * @returns {Object} - Combined PDF generation result
+ */
+export const generateCombinedReportAndInvoice = async (visitData, profiles = [], options = {}) => {
+  console.log('📄 Generating COMBINED PDF: Invoice + All Reports in ONE document');
+  return await generateCombinedPDF(visitData, profiles, options);
+};
+
 export default {
   groupTestsByProfile,
   getProfileInfo,
   generateProfileReports,
-  generateCombinedInvoice // UPDATED: Single invoice for all profiles
+  generateCombinedInvoice, // UPDATED: Single invoice for all profiles
+  generateCombinedReportAndInvoice, // NEW: Single PDF with invoice + all reports
+  shareCombinedPDFViaWhatsApp, // NEW: Share combined PDF via WhatsApp
+  shareCombinedPDFViaEmail // NEW: Share combined PDF via Email
 };

@@ -539,6 +539,33 @@ const FinancialManagement = () => {
             <FileText size={18} />
             Export PDF
           </Button>
+          <Button 
+            variant="danger" 
+            onClick={() => {
+              const confirmed = window.confirm(
+                '⚠️ WARNING: Delete ALL Financial Data?\n\nThis will permanently delete:\n• All expenses\n• All categories\n• All reminders\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?'
+              );
+              if (confirmed) {
+                const doubleConfirm = window.confirm(
+                  '⚠️ FINAL CONFIRMATION\n\nYou are about to DELETE ALL FINANCIAL DATA!\n\nType YES to confirm or Cancel to abort.'
+                );
+                if (doubleConfirm) {
+                  try {
+                    localStorage.removeItem('medlab_expenses');
+                    localStorage.removeItem('medlab_expense_categories');
+                    localStorage.removeItem('medlab_expense_reminders');
+                    toast.success('✅ All financial data deleted successfully!');
+                    window.location.reload();
+                  } catch (error) {
+                    toast.error('❌ Failed to delete data');
+                  }
+                }
+              }
+            }}
+          >
+            <Trash2 size={18} />
+            Delete All Data
+          </Button>
         </div>
       </div>
 

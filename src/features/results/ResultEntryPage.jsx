@@ -6,7 +6,7 @@ import { getSettings } from '../../services/settingsService';
 import { useAuthStore } from '../../store';
 import { getCurrentUser, getUsers } from '../../services/authService';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
-import { generateCombinedInvoice, generateProfileReports } from '../../utils/profilePdfHelper';
+import { generateCombinedInvoice, generateProfileReports, generateCombinedReportAndInvoice } from '../../utils/profilePdfHelper';
 import { parseRange, checkRangeStatus } from '../../utils/rangeParser';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
@@ -561,172 +561,6 @@ const ResultEntryPage = () => {
     }
 
     return errors;
-  };
-
-  // Generate BOTH PDF Report AND Invoice together
-  const handleGenerateReport = async () => {
-    const errors = validateBeforeGenerate();
-
-    if (errors.length > 0) {
-      toast.error(
-        <div>
-          <strong>Cannot generate report:</strong>
-          <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
-            {errors.map((err, i) => <li key={i}>{err}</li>)}
-          </ul>
-        </div>,
-        { duration: 5000 }
-      );
-      return;
-    }
-
-    // Confirm action
-    const confirmed = window.confirm(
-      'Generate PDF Report + Invoice — This will mark as PAID and complete the visit. Continue?'
-    );
-
-    if (!confirmed) return;
-
-    setIsGeneratingPDF(true);
-
-    try {
-      // Save current results first
-      await handleSave();
-
-      // Set reportedAt and paidAt to current timestamp
-      const now = new Date().toISOString();
-
-      // Update visit with reportedAt, results, and signing technician
-      const updatedTests = visit.tests.map(test => ({
-        ...test,
-        value: results[test.testId]?.value || '',
-        status: results[test.testId]?.status || 'NORMAL'
-      }));
-
-      const updatedVisit = updateVisit(visitId, {
-        reportedAt: now,
-        tests: updatedTests,
-        signing_technician_id: selectedTechnicianId,
-        discount,
-        status: 'completed',
-        paymentStatus: 'paid',
-        paidAt: now,
-        pdfGenerated: true,
-        invoiceGenerated: true,
-        finalAmount: billing.finalAmount,
-        subtotal: billing.subtotal,
-        discountAmount: billing.discountAmount
-      });
-
-      // Force data update event to refresh ALL pages
-      window.dispatchEvent(new CustomEvent('healit-data-update', {
-        detail: {
-          type: 'visit_completed',
-          visitId,
-          status: 'completed',
-          paymentStatus: 'paid'
-        }
-      }));
-
-      // Also trigger storage event for cross-tab sync
-      window.dispatchEvent(new Event('storage'));
-      window.dispatchEvent(new Event('dataUpdated'));
-
-      // Audit log
-      console.log('AUDIT: GENERATE_BOTH', {
-        userId: currentUser?.userId,
-        visitId,
-        action: 'GENERATE_REPORT_AND_INVOICE',
-        timestamp: now,
-        details: {
-          testsCount: visit.tests.length,
-          resultsEntered: Object.values(results).filter(r => r.value !== '').length,
-          totalAmount: billing.finalAmount
-        }
-      });
-
-      // Get all profiles
-      const allProfiles = getProfiles();
-
-      // Build complete visit data
-      const visitData = {
-        ...updatedVisit,
-        patient,
-        signingTechnician: selectedTechnician
-      };
-
-      // Generate SEPARATE PDFs but DON'T auto-download - show modal instead
-      const pdfResults = await generateProfileReports(visitData, allProfiles, { download: false, print: false });
-      const successPdfs = pdfResults.filter(r => r.success);
-
-      if (successPdfs.length > 0) {
-        // CRITICAL: Also generate invoice and add to list
-        console.log('🧾 Generating invoice for checklist...');
-
-        let invoiceResult = null;
-        try {
-          invoiceResult = await generateCombinedInvoice(visitData, allProfiles, { download: false, print: false });
-          console.log('🧾 Invoice result:', invoiceResult);
-        } catch (invoiceError) {
-          console.error('❌ Invoice generation failed:', invoiceError);
-          invoiceResult = { success: false, error: invoiceError.message };
-        }
-
-        // ALWAYS add invoice to list, even if generation failed
-        const invoiceEntry = invoiceResult && invoiceResult.success ? {
-          ...invoiceResult,
-          profileId: 'invoice',
-          profileName: `💰 Invoice (${invoiceResult.profileCount} Profiles)`,
-          isInvoice: true,
-          fileName: invoiceResult.fileName || `Invoice-${visitData.visitId}.pdf`
-        } : {
-          success: false,
-          profileId: 'invoice',
-          profileName: `💰 Invoice (${successPdfs.length} Profiles)`,
-          isInvoice: true,
-          fileName: `Invoice-${visitData.visitId}.pdf`,
-          needsGeneration: true,
-          error: invoiceResult?.error || 'Not generated'
-        };
-
-        // Combine profile PDFs + invoice into one list
-        const allResults = [
-          ...successPdfs,
-          invoiceEntry // ALWAYS include invoice
-        ];
-
-        console.log('📋 Total items in checklist:', allResults.length);
-        console.log('📋 Items:', allResults.map(r => r.profileName));
-
-        // Store combined results
-        setGeneratedPdfResults(allResults);
-
-        const initialStatus = {};
-        allResults.forEach(result => {
-          initialStatus[result.profileId] = {
-            printed: false,
-            downloaded: false,
-            shared: false
-          };
-        });
-        setPdfCompletionStatus(initialStatus);
-
-        // Show modal
-        setShowPdfActionsModal(true);
-
-        toast.success(`✅ Generated ${successPdfs.length} PDF(s) + 1 Invoice!`);
-      }
-
-      // Update local state
-      setVisit(updatedVisit);
-    } catch (error) {
-      console.error('Generation error:', error);
-      toast.error('Failed to generate documents: ' + error.message);
-    } finally {
-      setTimeout(() => {
-        setIsGeneratingPDF(false);
-      }, 3000);
-    }
   };
 
   // Generate Invoice PDF with auto-redirect
@@ -1312,11 +1146,88 @@ const ResultEntryPage = () => {
 
             <Button
               variant="primary"
-              onClick={handleGenerateReport}
+              onClick={async () => {
+                const errors = validateBeforeGenerate();
+                if (errors.length > 0) {
+                  toast.error(
+                    <div>
+                      <strong>Cannot generate PDF:</strong>
+                      <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+                        {errors.map((err, i) => <li key={i}>{err}</li>)}
+                      </ul>
+                    </div>,
+                    { duration: 5000 }
+                  );
+                  return;
+                }
+                
+                const confirmed = window.confirm(
+                  '📄 Generate Complete PDF (Invoice + All Reports)?\n\nThis will:\n• Generate ONE single PDF with invoice + all reports\n• Mark visit as PAID\n• Mark visit as COMPLETED\n\nContinue?'
+                );
+                if (!confirmed) return;
+                
+                setIsGeneratingPDF(true);
+                try {
+                  // Save current results first
+                  await handleSave();
+                  
+                  // Mark as reported
+                  const now = new Date().toISOString();
+                  const updatedVisit = {
+                    ...visit,
+                    reportedAt: now,
+                    status: 'completed',
+                    pdfGenerated: true,
+                    invoiceGenerated: true,
+                    paymentStatus: 'paid',
+                    paymentMethod: 'Cash',
+                    signing_technician_id: selectedTechnicianId
+                  };
+                  
+                  updateVisit(visitId, updatedVisit);
+                  setVisit(updatedVisit);
+                  
+                  // Generate combined PDF (1 single file)
+                  const result = await generateCombinedReportAndInvoice(
+                    { ...updatedVisit, patient, signingTechnician: selectedTechnician },
+                    getProfiles(),
+                    { download: true, print: false }
+                  );
+                  
+                  if (result.success) {
+                    toast.success('✅ Single PDF Generated! Visit marked as PAID & COMPLETED');
+                    
+                    // Trigger ALL data sync events
+                    window.dispatchEvent(new Event('storage'));
+                    window.dispatchEvent(new Event('dataUpdated'));
+                    window.dispatchEvent(new CustomEvent('healit-data-update', {
+                      detail: {
+                        type: 'visit_completed',
+                        visitId,
+                        status: 'completed',
+                        paymentStatus: 'paid'
+                      }
+                    }));
+                    
+                    // Redirect after 2 seconds
+                    setTimeout(() => {
+                      toast.success('Redirecting to dashboard...');
+                      navigate('/dashboard');
+                    }, 2000);
+                  } else {
+                    toast.error('Failed to generate PDF');
+                  }
+                } catch (error) {
+                  console.error('PDF generation error:', error);
+                  toast.error('Failed to generate PDF: ' + error.message);
+                } finally {
+                  setIsGeneratingPDF(false);
+                }
+              }}
               icon={FileText}
               disabled={isGeneratingPDF || Object.values(results).filter(r => r.value).length === 0}
             >
-              {isGeneratingPDF ? 'Generating...' : 'Generate PDF Report + Invoice'}
+              {isGeneratingPDF ? 'Generating...' : '📄 Generate Complete PDF (1 File - Invoice + Reports)'}
             </Button>
           </div>
 

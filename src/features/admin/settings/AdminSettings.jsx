@@ -27,6 +27,14 @@ const AdminSettings = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
   const [storageInfo, setStorageInfo] = useState(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetOptions, setResetOptions] = useState({
+    patients: false,
+    visits: false,
+    profiles: false,
+    financial: false,
+    performance: false
+  });
   
   // Staff form
   const [staffForm, setStaffForm] = useState({
@@ -165,7 +173,76 @@ const AdminSettings = () => {
   
   // Clear all data handler (DISABLED for Firestore - use Firebase Console)
   const handleClearAllData = () => {
-    toast.error('⚠️ Data clearing is disabled in cloud mode. Please use Firebase Console to manage data.');
+    setShowResetModal(true);
+  };
+  
+  const handleResetData = () => {
+    const selectedCount = Object.values(resetOptions).filter(Boolean).length;
+    
+    if (selectedCount === 0) {
+      toast.error('⚠️ Please select at least one category to reset');
+      return;
+    }
+    
+    const confirmMessage = `⚠️ FINAL CONFIRMATION
+
+You are about to DELETE:
+${Object.entries(resetOptions).filter(([k, v]) => v).map(([k]) => `• ${k.charAt(0).toUpperCase() + k.slice(1)}`).join('
+')}
+
+This action CANNOT be undone!
+
+Type YES to confirm:`;
+    
+    const userInput = window.prompt(confirmMessage);
+    
+    if (userInput === 'YES') {
+      try {
+        let deletedCount = 0;
+        
+        if (resetOptions.patients) {
+          localStorage.removeItem('medlab_patients');
+          deletedCount++;
+        }
+        if (resetOptions.visits) {
+          localStorage.removeItem('medlab_visits');
+          deletedCount++;
+        }
+        if (resetOptions.profiles) {
+          localStorage.removeItem('healit_profiles');
+          deletedCount++;
+        }
+        if (resetOptions.financial) {
+          localStorage.removeItem('medlab_expenses');
+          localStorage.removeItem('medlab_expense_categories');
+          localStorage.removeItem('medlab_expense_reminders');
+          deletedCount++;
+        }
+        if (resetOptions.performance) {
+          // Clear any performance-related data if exists
+          deletedCount++;
+        }
+        
+        toast.success(`✅ ${deletedCount} category/categories deleted successfully!`);
+        setShowResetModal(false);
+        setResetOptions({
+          patients: false,
+          visits: false,
+          profiles: false,
+          financial: false,
+          performance: false
+        });
+        
+        // Reload page after 2 seconds
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } catch (error) {
+        toast.error('❌ Failed to delete data: ' + error.message);
+      }
+    } else if (userInput !== null) {
+      toast.error('❌ Reset cancelled - incorrect confirmation');
+    }
   };
   
   // Clear browser cache handler
@@ -951,6 +1028,105 @@ const AdminSettings = () => {
               <Button variant="primary" onClick={handleSaveNewPassword}>
                 <Save size={18} />
                 Reset Password
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Reset Data Modal */}
+      {showResetModal && (
+        <div className="modal-overlay" onClick={() => setShowResetModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '600px'}}>
+            <h3 style={{color: '#DC2626'}}>⚠️ Reset Application Data</h3>
+            <p className="help-text">Select which data categories to permanently delete. All selected data will be irreversibly removed.</p>
+            
+            <div style={{background: '#FEF2F2', border: '2px solid #DC2626', borderRadius: '8px', padding: '16px', marginBottom: '20px'}}>
+              <strong style={{color: '#DC2626'}}>⚠️ WARNING: This action CANNOT be undone!</strong>
+            </div>
+            
+            <div style={{marginBottom: '24px'}}>
+              <h4 style={{marginBottom: '12px'}}>Select Data to Delete:</h4>
+              
+              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.patients ? ' #DC2626' : ' transparent')}}>
+                <input
+                  type="checkbox"
+                  checked={resetOptions.patients}
+                  onChange={(e) => setResetOptions({...resetOptions, patients: e.target.checked})}
+                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                />
+                <div>
+                  <strong>Patients Data</strong>
+                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>All patient records and personal information</p>
+                </div>
+              </label>
+              
+              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.visits ? ' #DC2626' : ' transparent')}}>
+                <input
+                  type="checkbox"
+                  checked={resetOptions.visits}
+                  onChange={(e) => setResetOptions({...resetOptions, visits: e.target.checked})}
+                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                />
+                <div>
+                  <strong>Visits & Test Results</strong>
+                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>All visit records, test results, and reports</p>
+                </div>
+              </label>
+              
+              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.profiles ? ' #DC2626' : ' transparent')}}>
+                <input
+                  type="checkbox"
+                  checked={resetOptions.profiles}
+                  onChange={(e) => setResetOptions({...resetOptions, profiles: e.target.checked})}
+                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                />
+                <div>
+                  <strong>Test Profiles</strong>
+                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>All test profile packages and configurations</p>
+                </div>
+              </label>
+              
+              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.financial ? ' #DC2626' : ' transparent')}}>
+                <input
+                  type="checkbox"
+                  checked={resetOptions.financial}
+                  onChange={(e) => setResetOptions({...resetOptions, financial: e.target.checked})}
+                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                />
+                <div>
+                  <strong>Financial Records</strong>
+                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>All expenses, revenues, and financial data</p>
+                </div>
+              </label>
+              
+              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.performance ? ' #DC2626' : ' transparent')}}>
+                <input
+                  type="checkbox"
+                  checked={resetOptions.performance}
+                  onChange={(e) => setResetOptions({...resetOptions, performance: e.target.checked})}
+                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                />
+                <div>
+                  <strong>Performance Data</strong>
+                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>Staff performance records and analytics</p>
+                </div>
+              </label>
+            </div>
+            
+            <div className="modal-actions">
+              <Button variant="outline" onClick={() => {
+                setShowResetModal(false);
+                setResetOptions({patients: false, visits: false, profiles: false, financial: false, performance: false});
+              }}>Cancel</Button>
+              <Button 
+                variant="primary" 
+                onClick={handleResetData}
+                style={{background: '#DC2626', borderColor: '#DC2626'}}
+                disabled={Object.values(resetOptions).filter(Boolean).length === 0}
+              >
+                <Trash2 size={18} />
+                Delete Selected Data
               </Button>
             </div>
           </div>

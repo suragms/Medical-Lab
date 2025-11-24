@@ -18,12 +18,13 @@ import {
   Edit2,
   Trash2,
   Mail,
-  Share2
+  Share2,
+  Save
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getVisits, getPatients, getProfileById, getProfiles, markPDFGenerated, markInvoiceGenerated, getVisitById, deletePatient } from '../../features/shared/dataService';
+import { getVisits, getPatients, getProfileById, getProfiles, markPDFGenerated, markInvoiceGenerated, getVisitById, deletePatient, updatePatient, updateVisit } from '../../features/shared/dataService';
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
-import { generateCombinedInvoice } from '../../utils/profilePdfHelper'; // NEW: Combined invoice
+import { generateCombinedReportAndInvoice, shareCombinedPDFViaWhatsApp, shareCombinedPDFViaEmail } from '../../utils/profilePdfHelper'; // COMBINED PDF + SHARE
 import { getTechnicians } from '../../services/authService';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -38,6 +39,8 @@ const Patients = () => {
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [editingPatient, setEditingPatient] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const statusCounts = useMemo(() => {
     return visits.reduce(
@@ -135,7 +138,7 @@ const Patients = () => {
     if (!visit) return;
     
     const patient = getPatientForVisit(visit);
-    const profile = getProfileById(visit.profileId);
+    const allProfiles = getProfiles();
     
     // CRITICAL: Check if results entered AND report generated (accepts both 'report_generated' and 'completed')
     const hasResults = (
@@ -151,7 +154,6 @@ const Patients = () => {
     }
     
     // Check if tests have actual result values
-    // Tests store values directly as test.value (not test.result.value)
     const hasResultValues = visit.tests.some(t => t.value || t.result?.value);
     if (!hasResultValues) {
       toast.error('❌ Cannot generate PDF: No test result values found!');
@@ -159,13 +161,13 @@ const Patients = () => {
     }
     
     // WARNING: If already generated, ask for confirmation to re-print
-    if (visit.pdfGenerated) {
-      const confirmReprint = window.confirm('ℹ️ PDF already generated!\n\nDo you want to RE-PRINT this report?');
+    if (visit.pdfGenerated && visit.invoiceGenerated) {
+      const confirmReprint = window.confirm('ℹ️ Combined PDF (Invoice + Reports) already generated!\n\nDo you want to RE-PRINT this combined PDF?');
       if (!confirmReprint) return;
     }
     
     try {
-      // Use ADVANCED PDF template
+      // Get signing technician
       let signingTechnician = null;
       if (visit.signing_technician_id) {
         const technicians = getTechnicians();
@@ -175,110 +177,49 @@ const Patients = () => {
       const visitData = {
         ...visit,
         patient,
-        profile,
         signingTechnician
       };
       
-      // Download the PDF report
-      await downloadReportPDF(visitData);
+      console.log('📄 Generating COMBINED PDF (Invoice + All Reports) for visit:', visit.visitId);
       
-      // Also open in new tab for viewing/printing (slight delay to ensure download starts)
-      setTimeout(() => {
-        printReportPDF(visitData);
-      }, 500);
+      // Generate COMBINED PDF (Invoice + Reports in ONE file)
+      const result = await generateCombinedReportAndInvoice(visitData, allProfiles, { 
+        download: true, 
+        print: false 
+      });
       
-      if (!visit.pdfGenerated) {
-        markPDFGenerated(visitId);
-        toast.success('✅ PDF downloaded & opened in new tab!');
-        
-        // Trigger data updates
-        window.dispatchEvent(new Event('storage'));
-        window.dispatchEvent(new Event('dataUpdated'));
-      } else {
-        toast.success('🖨️ PDF re-downloaded & re-opened successfully!');
-      }
-      
-      loadData();
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      toast.error('Failed to generate PDF: ' + error.message);
-    }
-  };
-
-  const handleGenerateInvoice = async (visitId) => {
-    const visit = visits.find(v => v.visitId === visitId);
-    if (!visit) return;
-    
-    const patient = getPatientForVisit(visit);
-    const profile = getProfileById(visit.profileId);
-    const allProfiles = getProfiles(); // Get all profiles for lookup
-    
-    // CRITICAL: Check if results entered AND report generated
-    const hasResults = (
-      (visit.status === 'report_generated' || visit.status === 'completed') && 
-      visit.reportedAt && 
-      visit.tests && 
-      visit.tests.length > 0
-    );
-    
-    if (!hasResults) {
-      toast.error('❌ Cannot generate invoice: Test results must be entered first!');
-      return;
-    }
-    
-    // Check if tests have actual result values
-    const hasResultValues = visit.tests.some(t => t.value || t.result?.value);
-    if (!hasResultValues) {
-      toast.error('❌ Cannot generate invoice: No test result values found!');
-      return;
-    }
-    
-    // WARNING: If already generated and paid
-    if (visit.invoiceGenerated && visit.paymentStatus === 'paid') {
-      const confirmReInvoice = window.confirm('⚠️ INVOICE ALREADY GENERATED & PAID!\n\nAre you sure you want to RE-GENERATE?\n\n(This will NOT change payment status)');
-      if (!confirmReInvoice) return;
-    }
-    
-    try {
-      // NEW: Use profile-based invoice generation
-      const visitData = {
-        ...visit,
-        patient,
-        tests: visit.tests,
-        collectedAt: visit.collectedAt,
-        receivedAt: visit.receivedAt,
-        reportedAt: visit.reportedAt,
-        paymentStatus: visit.paymentStatus,
-        paymentMethod: visit.paymentMethod || 'Cash',
-        visitId: visit.visitId,
-        created_by_name: visit.created_by_name || 'Staff'
-      };
-
-      console.log('💵 Generating combined invoice for visit:', visit.visitId);
-      const result = await generateCombinedInvoice(visitData, allProfiles, { download: true, print: false });
-
       if (result.success) {
-        toast.success(`✅ Invoice generated with ${result.profileCount} profile(s)!`);
+        toast.success(`✅ Combined PDF generated with ${result.profileCount} profile(s)!`);
         
-        // Mark invoice as generated ONLY if first time
-        if (!visit.invoiceGenerated) {
-          markInvoiceGenerated(visitId);
+        // Mark as generated ONLY if first time
+        if (!visit.pdfGenerated || !visit.invoiceGenerated) {
+          const updatedVisit = {
+            ...visit,
+            pdfGenerated: true,
+            invoiceGenerated: true
+          };
+          updateVisit(visitId, updatedVisit);
         }
         
         // Dispatch ALL update events
         window.dispatchEvent(new Event('storage'));
         window.dispatchEvent(new Event('dataUpdated'));
         window.dispatchEvent(new CustomEvent('healit-data-update', { 
-          detail: { type: 'invoice_generated', visitId } 
+          detail: { 
+            type: 'combined_pdf_generated', 
+            visitId,
+            pdfGenerated: true,
+            invoiceGenerated: true
+          } 
         }));
       } else {
-        toast.error(`⚠️ Failed to generate invoice: ${result.error}`);
+        toast.error('Failed to generate combined PDF');
       }
       
       loadData();
     } catch (error) {
-      console.error('Invoice generation error:', error);
-      toast.error('Failed to generate invoice: ' + error.message);
+      console.error('Combined PDF generation error:', error);
+      toast.error('Failed to generate PDF: ' + error.message);
     }
   };
 
@@ -314,6 +255,36 @@ const Patients = () => {
       loadData();
     } catch (error) {
       toast.error('Failed to delete patient: ' + error.message);
+    }
+  };
+  
+  // Edit patient handler
+  const handleEditPatient = (visit) => {
+    const patient = getPatientForVisit(visit);
+    if (!patient) return;
+    setEditingPatient({ ...patient });
+    setShowEditModal(true);
+  };
+
+  const handleSavePatient = async () => {
+    if (!editingPatient) return;
+    
+    // Validation
+    if (!editingPatient.name || !editingPatient.age || !editingPatient.gender || !editingPatient.phone) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+    
+    try {
+      await updatePatient(editingPatient.patientId, editingPatient);
+      toast.success('✅ Patient details updated successfully');
+      setShowEditModal(false);
+      setEditingPatient(null);
+      loadData();
+      window.dispatchEvent(new Event('dataUpdated'));
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error('Failed to update patient: ' + error.message);
     }
   };
 
@@ -487,8 +458,7 @@ const Patients = () => {
                   <th><Phone size={14} /> Phone</th>
                   <th>Profile</th>
                   <th>Current Step</th>
-                  <th className="text-center">PDF</th>
-                  <th className="text-center">Invoice</th>
+                  <th className="text-center">PDF (Invoice + Reports)</th>
                   <th className="text-center">Payment</th>
                   <th className="text-center">Actions</th>
                 </tr>
@@ -552,24 +522,13 @@ const Patients = () => {
                         </div>
                       </td>
                       <td className="text-center">
-                        {visit.pdfGenerated ? (
-                          <button className="icon-btn-success" onClick={() => handleGeneratePDF(visit.visitId)} title="Re-Print PDF">
+                        {(visit.pdfGenerated && visit.invoiceGenerated) ? (
+                          <button className="icon-btn-success" onClick={() => handleGeneratePDF(visit.visitId)} title="Re-Print Combined PDF (Invoice + Reports)">
                             <FileText size={14} /> <span style={{fontSize: '0.65rem', marginLeft: '2px'}}>Re-Print</span>
                           </button>
                         ) : (
-                          <button className="icon-btn" onClick={() => handleGeneratePDF(visit.visitId)} title="Generate PDF">
+                          <button className="icon-btn" onClick={() => handleGeneratePDF(visit.visitId)} title="Generate Combined PDF (Invoice + Reports)">
                             <FileText size={14} />
-                          </button>
-                        )}
-                      </td>
-                      <td className="text-center">
-                        {visit.invoiceGenerated ? (
-                          <button className="icon-btn-success" onClick={() => handleGenerateInvoice(visit.visitId)} title="Re-Print Invoice">
-                            <DollarSign size={14} /> <span style={{fontSize: '0.65rem', marginLeft: '2px'}}>Re-Print</span>
-                          </button>
-                        ) : (
-                          <button className="icon-btn" onClick={() => handleGenerateInvoice(visit.visitId)} title="Generate Invoice">
-                            <DollarSign size={14} />
                           </button>
                         )}
                       </td>
@@ -596,7 +555,7 @@ const Patients = () => {
                           >
                             <Eye size={14} />
                           </button>
-                          {/* WhatsApp Share - Always visible but only functional for completed */}
+                          {/* WhatsApp Share - Share COMBINED PDF (Invoice + Reports) */}
                           <button 
                             className={`icon-btn-success ${(visit.status === 'report_generated' || visit.status === 'completed') ? '' : 'disabled'}`}
                             onClick={async () => {
@@ -610,31 +569,36 @@ const Patients = () => {
                                   const technicians = getTechnicians();
                                   signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
                                 }
-                                                      
+                                
+                                const allProfiles = getProfiles();
                                 const visitData = {
                                   ...visit,
                                   patient,
-                                  profile,
                                   signingTechnician
                                 };
-                                                      
-                                const result = await shareViaWhatsApp(visitData, patient.phone);
+                                
+                                toast.loading('📱 Preparing combined PDF for WhatsApp...');
+                                const result = await shareCombinedPDFViaWhatsApp(visitData, allProfiles, patient.phone);
+                                
                                 if (result.success) {
-                                  toast.success(result.message || 'Opening WhatsApp...');
+                                  toast.dismiss();
+                                  toast.success(result.message || 'WhatsApp opened with combined PDF!');
                                 } else {
-                                  toast.error('Failed to share via WhatsApp');
+                                  toast.dismiss();
+                                  toast.error('Failed to share combined PDF');
                                 }
                               } catch (error) {
                                 console.error('WhatsApp share error:', error);
+                                toast.dismiss();
                                 toast.error('Failed to share via WhatsApp');
                               }
                             }}
-                            title="Share via WhatsApp"
+                            title="Share Combined PDF (Invoice + Reports) via WhatsApp"
                             disabled={(visit.status !== 'report_generated' && visit.status !== 'completed')}
                           >
                             <Share2 size={14} />
                           </button>
-                          {/* Email Share - Always visible if email exists but only functional for completed */}
+                          {/* Email Share - Share COMBINED PDF (Invoice + Reports) */}
                           {patient.email && (
                             <button 
                               className={`icon-btn ${(visit.status === 'report_generated' || visit.status === 'completed') ? '' : 'disabled'}`}
@@ -649,30 +613,43 @@ const Patients = () => {
                                     const technicians = getTechnicians();
                                     signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
                                   }
-                                                        
+                                  
+                                  const allProfiles = getProfiles();
                                   const visitData = {
                                     ...visit,
                                     patient,
-                                    profile,
                                     signingTechnician
                                   };
-                                                        
-                                  const result = await shareViaEmail(visitData, patient.email);
+                                  
+                                  toast.loading('📧 Preparing combined PDF for Email...');
+                                  const result = await shareCombinedPDFViaEmail(visitData, allProfiles, patient.email);
+                                  
                                   if (result.success) {
-                                    toast.success(result.message || 'Email opened with PDF!');
+                                    toast.dismiss();
+                                    toast.success(result.message || 'Email opened with combined PDF!');
                                   } else {
-                                    toast.error('Failed to share via email');
+                                    toast.dismiss();
+                                    toast.error('Failed to share combined PDF');
                                   }
                                 } catch (error) {
+                                  console.error('Email share error:', error);
+                                  toast.dismiss();
                                   toast.error('Failed to share via email');
                                 }
                               }}
-                              title="Share via Email"
+                              title="Share Combined PDF (Invoice + Reports) via Email"
                               disabled={(visit.status !== 'report_generated' && visit.status !== 'completed')}
                             >
                               <Mail size={14} />
                             </button>
                           )}
+                          <button 
+                            className="icon-btn-edit" 
+                            onClick={() => handleEditPatient(visit)}
+                            title="Edit Patient Details"
+                          >
+                            <Edit2 size={14} />
+                          </button>
                           <button 
                             className="icon-btn-delete" 
                             onClick={() => handleDeletePatient(visit)}
@@ -690,6 +667,101 @@ const Patients = () => {
           </div>
         )}
       </Card>
+      
+      {/* Edit Patient Modal */}
+      {showEditModal && editingPatient && (
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="modal-content edit-patient-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><Edit2 size={20} /> Edit Patient Details</h3>
+              <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Name *</label>
+                  <input
+                    type="text"
+                    value={editingPatient.name || ''}
+                    onChange={(e) => setEditingPatient({...editingPatient, name: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Age *</label>
+                  <input
+                    type="number"
+                    value={editingPatient.age || ''}
+                    onChange={(e) => setEditingPatient({...editingPatient, age: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Gender *</label>
+                  <select
+                    value={editingPatient.gender || ''}
+                    onChange={(e) => setEditingPatient({...editingPatient, gender: e.target.value})}
+                    className="form-input"
+                  >
+                    <option value="">Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                  <label>Phone *</label>
+                  <input
+                    type="tel"
+                    value={editingPatient.phone || ''}
+                    onChange={(e) => setEditingPatient({...editingPatient, phone: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                
+                <div className="form-group" style={{gridColumn: '1 / -1'}}>
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    value={editingPatient.email || ''}
+                    onChange={(e) => setEditingPatient({...editingPatient, email: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+                
+                <div className="form-group" style={{gridColumn: '1 / -1'}}>
+                  <label>Address</label>
+                  <textarea
+                    value={editingPatient.address || ''}
+                    onChange={(e) => setEditingPatient({...editingPatient, address: e.target.value})}
+                    className="form-input"
+                    rows="3"
+                  />
+                </div>
+                
+                <div className="form-group" style={{gridColumn: '1 / -1'}}>
+                  <label>Referred By</label>
+                  <input
+                    type="text"
+                    value={editingPatient.referredBy || ''}
+                    onChange={(e) => setEditingPatient({...editingPatient, referredBy: e.target.value})}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <Button variant="ghost" onClick={() => setShowEditModal(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSavePatient} icon={Save}>Save Changes</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

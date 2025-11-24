@@ -137,6 +137,15 @@ const Layout = () => {
       <div className="main-content full-width">
         {/* Compact Top Nav Header */}
         <header className="top-nav">
+          {/* Mobile Menu Button (visible only on mobile) */}
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle menu"
+          >
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          
           {/* Left: Logo + App Name + Quick Nav */}
           <div className="nav-left">
             <div className="nav-logo">
@@ -301,6 +310,73 @@ const Layout = () => {
             </button>
           </div>
         </header>
+
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div 
+            className="mobile-sidebar-overlay" 
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Mobile Sidebar Menu */}
+        <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
+          <div className="mobile-sidebar-header">
+            <div className="mobile-sidebar-logo">
+              {!logoError ? (
+                <img 
+                  src={LOGO_PATHS.healit} 
+                  alt="HEALit Logo" 
+                  className="logo-image"
+                  onError={() => setLogoError(true)}
+                />
+              ) : (
+                <span className="logo-fallback">🏥</span>
+              )}
+              <span className="app-name">HEALit Med Lab</span>
+            </div>
+            <button 
+              className="mobile-sidebar-close"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close menu"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          <nav className="mobile-sidebar-nav">
+            {filteredMenu.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  setSidebarOpen(false);
+                }}
+                className={`mobile-nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="mobile-sidebar-footer">
+            <div className="mobile-user-info">
+              <UserCircle size={20} />
+              <span>{user?.fullName || user?.username || 'User'}</span>
+            </div>
+            <button 
+              className="mobile-logout-btn"
+              onClick={() => {
+                handleLogout();
+                setSidebarOpen(false);
+              }}
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </aside>
 
         {/* Page Content */}
         <main className="content">

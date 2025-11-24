@@ -6,7 +6,7 @@ import { getProfileTemplate } from '../../features/profile-manager/profileTempla
 import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
 import { getVisitById, getPatientById, getProfileById, getProfiles, updatePatient, updateVisit, markPDFGenerated, markInvoiceGenerated } from '../../features/shared/dataService';
 import { getTechnicians } from '../../services/authService';
-import { groupTestsByProfile, generateProfileReports, generateCombinedInvoice } from '../../utils/profilePdfHelper';
+import { groupTestsByProfile, generateProfileReports, generateCombinedInvoice, generateCombinedReportAndInvoice } from '../../utils/profilePdfHelper';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import './PatientDetails.css';
@@ -883,27 +883,67 @@ const PatientDetails = () => {
               )}
               
               <Button
-                variant={visit.pdfGenerated ? "outline" : "secondary"}
+                variant={(visit.pdfGenerated && visit.invoiceGenerated) ? "outline" : "primary"}
                 fullWidth
-                icon={visit.pdfGenerated ? CheckCircle : Layers}
-                onClick={handleGenerateAllProfilePDFs}
+                icon={(visit.pdfGenerated && visit.invoiceGenerated) ? CheckCircle : FileText}
+                onClick={async () => {
+                  if (!hasResults || isGenerating) return;
+                  
+                  setIsGenerating(true);
+                  try {
+                    const allProfiles = getProfiles();
+                    const visitData = {
+                      ...visit,
+                      patient,
+                      signingTechnician: visit.signing_technician_id ? 
+                        getTechnicians().find(t => t.technicianId === visit.signing_technician_id) : null
+                    };
+                    
+                    const result = await generateCombinedReportAndInvoice(visitData, allProfiles, { 
+                      download: true, 
+                      print: false 
+                    });
+                    
+                    if (result.success) {
+                      toast.success(`✅ Combined PDF generated with ${result.profileCount} profile(s)!`);
+                      
+                      // Mark as generated
+                      const updatedVisit = updateVisit(id, {
+                        pdfGenerated: true,
+                        invoiceGenerated: true
+                      });
+                      
+                      // Dispatch ALL update events
+                      window.dispatchEvent(new Event('storage'));
+                      window.dispatchEvent(new Event('dataUpdated'));
+                      window.dispatchEvent(new CustomEvent('healit-data-update', { 
+                        detail: { 
+                          type: 'combined_pdf_generated', 
+                          visitId: id,
+                          pdfGenerated: true,
+                          invoiceGenerated: true
+                        } 
+                      }));
+                      
+                      loadVisitData();
+                    } else {
+                      toast.error('Failed to generate combined PDF');
+                    }
+                  } catch (error) {
+                    console.error('Combined PDF error:', error);
+                    toast.error('Failed to generate PDF: ' + error.message);
+                  } finally {
+                    setIsGenerating(false);
+                  }
+                }}
                 disabled={!hasResults || isGenerating}
               >
-                {visit.pdfGenerated ? '🖨️ Re-Generate PDFs' : (hasResults ? '📄 Generate Profile PDFs' : '⚠️ No Results Yet')}
-              </Button>
-              <Button
-                variant={visit.invoiceGenerated ? "outline" : "primary"}
-                fullWidth
-                icon={visit.invoiceGenerated ? CheckCircle : DollarSign}
-                onClick={handleGenerateAllProfileInvoices}
-                disabled={!hasResults || isGenerating}
-              >
-                {visit.invoiceGenerated ? '🖨️ Re-Generate Invoice' : (hasResults ? '📄 Generate Invoice' : '⚠️ No Results Yet')}
+                {(visit.pdfGenerated && visit.invoiceGenerated) ? '🖨️ Re-Print Combined PDF' : (hasResults ? '📄 Generate Combined PDF (Invoice + Reports)' : '⚠️ No Results Yet')}
               </Button>
               
               <div style={{padding: '6px 8px', background: '#F9FAFB', borderRadius: '6px', marginTop: '8px'}}>
                 <p style={{fontSize: '0.7rem', color: '#6B7280', textAlign: 'center', margin: 0}}>
-                  ℹ️ One invoice with all profiles. Separate PDFs per profile.
+                  ℹ️ One PDF file with invoice + all test reports on separate pages
                 </p>
               </div>
               
