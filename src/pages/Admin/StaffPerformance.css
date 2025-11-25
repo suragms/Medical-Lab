@@ -1,0 +1,270 @@
+.staff-performance-page {
+  padding: var(--space-6);
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #FFFFFF;
+  min-height: calc(100vh - 60px);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-6);
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 var(--space-2) 0;
+}
+
+.subtitle {
+  color: #666666;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.period-selector {
+  display: flex;
+  gap: var(--space-2);
+  background: #F8FAFC;
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.period-btn {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.period-btn:hover {
+  background: #E2E8F0;
+  color: #1E293B;
+}
+
+.period-btn.active {
+  background: #000000;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #64748B;
+  margin: 0 0 var(--space-2) 0;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+}
+
+/* Performance Table */
+.performance-table-card {
+  margin-top: var(--space-6);
+}
+
+.performance-table-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-bottom: 2px solid #F1F5F9;
+}
+
+.performance-table-card .card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.performance-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.performance-table thead {
+  background: #000000;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.performance-table th {
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 700;
+  color: #FFFFFF;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.performance-table tbody tr {
+  border-bottom: 1px solid #E2E8F0;
+  transition: all 0.2s ease;
+}
+
+.performance-table tbody tr:hover {
+  background: #F8FAFC;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.performance-table tbody tr.top-performer {
+  background: #FEF3C7;
+}
+
+.performance-table tbody tr.top-performer:hover {
+  background: #FDE68A;
+}
+
+.performance-table td {
+  padding: 14px 12px;
+  vertical-align: middle;
+}
+
+.rank-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  color: #000000;
+  font-size: 1rem;
+}
+
+.username-badge {
+  background: #F5F5F5;
+  color: #000000;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.userid-badge {
+  background: #F1F5F9;
+  color: #64748B;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+}
+
+.metric-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #1E293B;
+  font-weight: 600;
+}
+
+.metric-cell svg {
+  color: #000000;
+}
+
+.revenue-amount {
+  color: #059669;
+  font-size: 1rem;
+}
+
+.last-active {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: #64748B;
+  font-size: 0.8125rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-8);
+  color: #94A3B8;
+}
+
+.empty-state p {
+  margin-top: var(--space-3);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .staff-performance-page {
+    padding: var(--space-4);
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .performance-table {
+    font-size: 0.75rem;
+  }
+
+  .performance-table th,
+  .performance-table td {
+    padding: 10px 8px;
+  }
+}

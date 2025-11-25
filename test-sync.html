@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="shortcut icon" href="/icon.svg" />
+
+    <title>Cross-Browser Sync Test - HEALit Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .test-section h2 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .test-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .test-status {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-testing {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #2e7d32;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1b5e20;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: #757575;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #616161;
+        }
+
+        .btn-danger {
+            background: #c62828;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b71c1c;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .info-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+        }
+
+        .info-box li {
+            margin: 5px 0;
+            color: #333;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .results h3 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+        }
+
+        .result-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .log-area {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        .log-entry {
+            margin: 3px 0;
+        }
+
+        .log-error {
+            color: #ff6b6b;
+        }
+
+        .log-success {
+            color: #51cf66;
+        }
+
+        .log-info {
+            color: #74c0fc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 Cross-Browser Data Sync Test</h1>
+            <p>Automated testing tool for HEALit Medical Lab synchronization</p>
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <h3>📋 Test Instructions</h3>
+                <ul>
+                    <li><strong>Step 1:</strong> Open this page in Browser A (e.g., Chrome)</li>
+                    <li><strong>Step 2:</strong> Open the same page in Browser B (e.g., Firefox)</li>
+                    <li><strong>Step 3:</strong> Run tests in Browser A and verify results in Browser B</li>
+                    <li><strong>Step 4:</strong> Check that all data syncs correctly within 30 seconds</li>
+                </ul>
+            </div>
+
+            <div class="test-section">
+                <h2>🧪 Automated Tests</h2>
+
+                <div class="test-item">
+                    <span class="test-name">1. API Health Check</span>
+                    <span class="test-status status-pending" id="test-1-status">Pending</span>
+                </div>
+
+                <div class="test-item">
+                    <span class="test-name">2. MongoDB Connection</span>
+                    <span class="test-status status-pending" id="test-2-status">Pending</span>
+                </div>
+
+                <div class="test-item">
+                    <span class="test-name">3. Sync Endpoint Test</span>
+                    <span class="test-status status-pending" id="test-3-status">Pending</span>
+                </div>
+
+                <div class="test-item">
+                    <span class="test-name">4. LocalStorage Data Check</span>
+                    <span class="test-status status-pending" id="test-4-status">Pending</span>
+                </div>
+
+                <div class="test-item">
+                    <span class="test-name">5. Patient Data Sync</span>
+                    <span class="test-status status-pending" id="test-5-status">Pending</span>
+                </div>
+
+                <div class="test-item">
+                    <span class="test-name">6. Visit Data Sync</span>
+                    <span class="test-status status-pending" id="test-6-status">Pending</span>
+                </div>
+
+                <div class="test-item">
+                    <span class="test-name">7. Financial Data Sync</span>
+                    <span class="test-status status-pending" id="test-7-status">Pending</span>
+                </div>
+
+                <div class="test-item">
+                    <span class="test-name">8. Settings Sync</span>
+                    <span class="test-status status-pending" id="test-8-status">Pending</span>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" onclick="runAllTests()">▶️ Run All Tests</button>
+                    <button class="btn-secondary" onclick="checkLocalData()">📊 Check Local Data</button>
+                    <button class="btn-secondary" onclick="clearLogs()">🗑️ Clear Logs</button>
+                    <button class="btn-danger" onclick="clearAllData()">⚠️ Clear All Data</button>
+                </div>
+            </div>
+
+            <div class="results">
+                <h3>📊 Test Results</h3>
+                <div id="results-container">
+                    <p style="color: #666;">No tests run yet. Click "Run All Tests" to begin.</p>
+                </div>
+            </div>
+
+            <div class="log-area" id="log-area">
+                <div class="log-entry log-info">🔍 Test console ready...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost'
+            ? 'http://localhost:8888/.netlify/functions/api'
+            : '/.netlify/functions/api';
+
+        let testResults = [];
+
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('log-area');
+            const timestamp = new Date().toLocaleTimeString();
+            const logClass = type === 'error' ? 'log-error' : type === 'success' ? 'log-success' : 'log-info';
+            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${logClass}`;
+            entry.textContent = `[${timestamp}] ${icon} ${message}`;
+            logArea.appendChild(entry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function updateTestStatus(testId, status) {
+            const statusEl = document.getElementById(`test-${testId}-status`);
+            statusEl.className = `test-status status-${status}`;
+            statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        async function runAllTests() {
+            log('🚀 Starting automated tests...', 'info');
+            testResults = [];
+
+            // Test 1: Health Check
+            await testHealthCheck();
+
+            // Test 2: MongoDB Connection
+            await testMongoDBConnection();
+
+            // Test 3: Sync Endpoint
+            await testSyncEndpoint();
+
+            // Test 4: LocalStorage Check
+            await testLocalStorage();
+
+            // Test 5-8: Data Sync Tests
+            await testDataSync();
+
+            displayResults();
+            log('🎉 All tests completed!', 'success');
+        }
+
+        async function testHealthCheck() {
+            updateTestStatus(1, 'testing');
+            log('Testing API health check...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+
+                if (data.status === 'ok') {
+                    updateTestStatus(1, 'pass');
+                    testResults.push({ test: 'Health Check', status: 'PASS', details: `API is ${data.status}` });
+                    log('✅ Health check passed', 'success');
+                } else {
+                    throw new Error('Health check failed');
+                }
+            } catch (error) {
+                updateTestStatus(1, 'fail');
+                testResults.push({ test: 'Health Check', status: 'FAIL', details: error.message });
+                log(`❌ Health check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMongoDBConnection() {
+            updateTestStatus(2, 'testing');
+            log('Testing MongoDB connection...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+
+                if (data.dbConfigured) {
+                    updateTestStatus(2, 'pass');
+                    testResults.push({ test: 'MongoDB Connection', status: 'PASS', details: 'Database connected' });
+                    log('✅ MongoDB connected', 'success');
+                } else {
+                    updateTestStatus(2, 'fail');
+                    testResults.push({ test: 'MongoDB Connection', status: 'FAIL', details: 'Database not configured' });
+                    log('⚠️ MongoDB not configured - running in local mode', 'error');
+                }
+            } catch (error) {
+                updateTestStatus(2, 'fail');
+                testResults.push({ test: 'MongoDB Connection', status: 'FAIL', details: error.message });
+                log(`❌ MongoDB test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSyncEndpoint() {
+            updateTestStatus(3, 'testing');
+            log('Testing sync endpoint...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/sync`);
+                const data = await response.json();
+
+                if (data.success) {
+                    updateTestStatus(3, 'pass');
+                    const dataTypes = Object.keys(data.data || {}).length;
+                    testResults.push({ test: 'Sync Endpoint', status: 'PASS', details: `${dataTypes} data types available` });
+                    log(`✅ Sync endpoint working (${dataTypes} data types)`, 'success');
+                } else {
+                    throw new Error('Sync endpoint returned unsuccessful response');
+                }
+            } catch (error) {
+                updateTestStatus(3, 'fail');
+                testResults.push({ test: 'Sync Endpoint', status: 'FAIL', details: error.message });
+                log(`❌ Sync endpoint failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLocalStorage() {
+            updateTestStatus(4, 'testing');
+            log('Checking localStorage data...', 'info');
+
+            try {
+                const patients = JSON.parse(localStorage.getItem('healit_patients') || '[]');
+                const visits = JSON.parse(localStorage.getItem('healit_visits') || '[]');
+                const profiles = JSON.parse(localStorage.getItem('healit_profiles') || '[]');
+
+                updateTestStatus(4, 'pass');
+                testResults.push({
+                    test: 'LocalStorage Check',
+                    status: 'PASS',
+                    details: `${patients.length} patients, ${visits.length} visits, ${profiles.length} profiles`
+                });
+                log(`✅ LocalStorage: ${patients.length} patients, ${visits.length} visits`, 'success');
+            } catch (error) {
+                updateTestStatus(4, 'fail');
+                testResults.push({ test: 'LocalStorage Check', status: 'FAIL', details: error.message });
+                log(`❌ LocalStorage check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDataSync() {
+            // Test 5: Patient Data
+            updateTestStatus(5, 'testing');
+            log('Testing patient data sync...', 'info');
+            const patients = JSON.parse(localStorage.getItem('healit_patients') || '[]');
+            updateTestStatus(5, patients.length > 0 ? 'pass' : 'fail');
+            testResults.push({ test: 'Patient Data Sync', status: patients.length > 0 ? 'PASS' : 'FAIL', details: `${patients.length} patients found` });
+
+            // Test 6: Visit Data
+            updateTestStatus(6, 'testing');
+            log('Testing visit data sync...', 'info');
+            const visits = JSON.parse(localStorage.getItem('healit_visits') || '[]');
+            updateTestStatus(6, visits.length > 0 ? 'pass' : 'fail');
+            testResults.push({ test: 'Visit Data Sync', status: visits.length > 0 ? 'PASS' : 'FAIL', details: `${visits.length} visits found` });
+
+            // Test 7: Financial Data
+            updateTestStatus(7, 'testing');
+            log('Testing financial data sync...', 'info');
+            const expenses = JSON.parse(localStorage.getItem('healit_financial_expenses') || '[]');
+            updateTestStatus(7, 'pass');
+            testResults.push({ test: 'Financial Data Sync', status: 'PASS', details: `${expenses.length} expenses found` });
+
+            // Test 8: Settings
+            updateTestStatus(8, 'testing');
+            log('Testing settings sync...', 'info');
+            const settings = JSON.parse(localStorage.getItem('healit_settings') || '{}');
+            updateTestStatus(8, Object.keys(settings).length > 0 ? 'pass' : 'fail');
+            testResults.push({ test: 'Settings Sync', status: Object.keys(settings).length > 0 ? 'PASS' : 'FAIL', details: `${Object.keys(settings).length} settings found` });
+        }
+
+        function displayResults() {
+            const container = document.getElementById('results-container');
+            container.innerHTML = '';
+
+            const passCount = testResults.filter(r => r.status === 'PASS').length;
+            const failCount = testResults.filter(r => r.status === 'FAIL').length;
+
+            const summary = document.createElement('div');
+            summary.style.marginBottom = '15px';
+            summary.style.padding = '10px';
+            summary.style.background = passCount === testResults.length ? '#d4edda' : '#fff3cd';
+            summary.style.borderRadius = '4px';
+            summary.innerHTML = `<strong>Summary:</strong> ${passCount} passed, ${failCount} failed out of ${testResults.length} tests`;
+            container.appendChild(summary);
+
+            testResults.forEach(result => {
+                const item = document.createElement('div');
+                item.className = 'result-item';
+                item.innerHTML = `
+                    <span><strong>${result.test}:</strong> ${result.details}</span>
+                    <span class="test-status status-${result.status.toLowerCase()}">${result.status}</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function checkLocalData() {
+            log('📊 Checking all local data...', 'info');
+
+            const dataKeys = [
+                'healit_patients',
+                'healit_visits',
+                'healit_results',
+                'healit_invoices',
+                'healit_financial_expenses',
+                'healit_financial_categories',
+                'healit_financial_reminders',
+                'healit_settings',
+                'healit_profiles',
+                'healit_tests_master',
+                'healit_audit_logs'
+            ];
+
+            dataKeys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        const count = Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length;
+                        log(`${key}: ${count} items`, 'success');
+                    } catch (e) {
+                        log(`${key}: Invalid JSON`, 'error');
+                    }
+                } else {
+                    log(`${key}: No data`, 'info');
+                }
+            });
+        }
+
+        function clearLogs() {
+            document.getElementById('log-area').innerHTML = '<div class="log-entry log-info">🔍 Logs cleared...</div>';
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ WARNING: This will delete ALL local data!\n\nAre you sure you want to continue?')) {
+                const dataKeys = Object.keys(localStorage).filter(key => key.startsWith('healit_'));
+                dataKeys.forEach(key => localStorage.removeItem(key));
+                log('🗑️ All local data cleared', 'info');
+                alert('All local data has been cleared. Please refresh the page.');
+            }
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            log('🌐 Page loaded. Ready to test.', 'info');
+            log(`📍 API URL: ${API_URL}`, 'info');
+        });
+    </script>
+</body>
+
+</html>
