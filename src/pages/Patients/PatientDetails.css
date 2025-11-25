@@ -5,17 +5,21 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  height: 100vh; /* Fixed viewport height */
-  overflow: hidden; /* No scrolling */
+  height: 100%;
+  /* Fit within layout */
+  overflow: hidden;
+  /* No scrolling */
 }
 
 .patient-details-grid {
   display: grid;
-  grid-template-columns: 1fr 380px; /* Smaller sidebar */
+  grid-template-columns: 1fr 380px;
+  /* Smaller sidebar */
   gap: var(--space-3);
   align-items: flex-start;
   flex: 1;
-  overflow: hidden; /* Prevent overflow */
+  overflow: hidden;
+  /* Prevent overflow */
 }
 
 .patient-side-column {
@@ -25,7 +29,8 @@
 }
 
 .page-header {
-  margin-bottom: 0; /* Remove bottom margin */
+  margin-bottom: 0;
+  /* Remove bottom margin */
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -46,9 +51,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px; /* Smaller icons */
+  width: 36px;
+  /* Smaller icons */
   height: 36px;
-  border-radius: 8px; /* Rounded corners */
+  border-radius: 8px;
+  /* Rounded corners */
   border: 1.5px solid var(--border);
   background: white;
   color: var(--primary);
@@ -88,8 +95,10 @@
 
 /* Patient Info Card - Scrollable */
 .patient-info-card {
-  max-height: calc(100vh - 180px); /* Fit within viewport */
-  overflow-y: auto; /* Allow scrolling if needed */
+  max-height: calc(100vh - 180px);
+  /* Fit within viewport */
+  overflow-y: auto;
+  /* Allow scrolling if needed */
   background: white;
   border-radius: 8px;
 }
@@ -266,7 +275,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  max-height: 400px; /* Limit button area height */
+  max-height: 400px;
+  /* Limit button area height */
   overflow-y: auto;
 }
 
@@ -300,8 +310,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-content {
@@ -321,6 +336,7 @@
     transform: translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -478,14 +494,28 @@
 @media (max-width: 768px) {
   .patient-details-container {
     padding: var(--space-3);
+    height: auto;
+    /* Allow natural height on mobile */
+    overflow: visible;
+    /* Allow page scroll */
   }
 
   .patient-details-grid {
     grid-template-columns: 1fr;
+    overflow: visible;
+    /* Allow content to flow */
+    display: flex;
+    flex-direction: column;
   }
 
   .patient-side-column {
     width: 100%;
+  }
+
+  /* Allow info card to expand naturally */
+  .patient-info-card {
+    max-height: none;
+    overflow: visible;
   }
 
   .info-grid {
@@ -506,6 +536,12 @@
 
   .modal-actions button {
     width: 100%;
+  }
+
+  /* Ensure quick action buttons don't get cut off */
+  .quick-action-buttons {
+    max-height: none;
+    overflow: visible;
   }
 }
 
@@ -602,9 +638,19 @@
 }
 
 @keyframes checkPulse {
-  0% { transform: scale(0); opacity: 0; }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .pdf-info {

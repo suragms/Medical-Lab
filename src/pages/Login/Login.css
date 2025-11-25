@@ -336,13 +336,58 @@
 @media (max-width: 1024px) {
   .login-split-container {
     grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
   }
 
   .login-left {
+    display: flex;
+    padding: 32px 24px;
+    min-height: auto;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .branding-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .brand-title {
+    margin-bottom: 8px;
+    justify-content: center;
+  }
+
+  .brand-main {
+    font-size: 2.5rem;
+  }
+
+  .brand-sub {
+    font-size: 1.25rem;
+  }
+
+  .tagline {
+    margin: 0;
+    font-size: 1rem;
+    opacity: 0.9;
+  }
+
+  /* Hide detailed features and footer on mobile to save space */
+  .features,
+  .branding-footer {
     display: none;
   }
 
   .login-right {
-    padding: 60px 24px;
+    padding: 40px 24px;
+    flex: 1;
+    align-items: flex-start;
+    /* Align form to top */
+  }
+
+  .login-form-container {
+    margin: 0 auto;
   }
 }
