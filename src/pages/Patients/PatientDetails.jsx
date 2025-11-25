@@ -350,7 +350,11 @@ const PatientDetails = () => {
     try {
       // Update visit
       const updatedVisit = updateVisit(id, {
+<<<<<<< HEAD
         status: 'completed',
+=======
+        visitStatus: 'completed',
+>>>>>>> f2cca546e32f30f04e56f3543ba20b044460d5e9
         paymentStatus: 'paid',
         paidAt: new Date().toISOString()
       });
@@ -882,6 +886,7 @@ const PatientDetails = () => {
                 </div>
               )}
               
+<<<<<<< HEAD
               {/* Separate Invoice Button */}
               <Button
                 variant={visit.invoiceGenerated ? "outline" : "primary"}
@@ -941,6 +946,8 @@ const PatientDetails = () => {
                 {visit.invoiceGenerated ? '🖨️ Re-Print Invoice' : (hasResults ? '🧾 Generate Invoice Only' : '⚠️ No Results Yet')}
               </Button>
               
+=======
+>>>>>>> f2cca546e32f30f04e56f3543ba20b044460d5e9
               <Button
                 variant={(visit.pdfGenerated && visit.invoiceGenerated) ? "outline" : "primary"}
                 fullWidth
@@ -1006,6 +1013,7 @@ const PatientDetails = () => {
                 </p>
               </div>
               
+<<<<<<< HEAD
               {/* Mark as Paid Button - Only show if invoice is generated and payment is not yet paid */}
               {visit.invoiceGenerated && visit.paymentStatus !== 'paid' && (
                 <Button
@@ -1046,6 +1054,8 @@ const PatientDetails = () => {
                 </Button>
               )}
               
+=======
+>>>>>>> f2cca546e32f30f04e56f3543ba20b044460d5e9
               {visit.paymentStatus === 'paid' && (
                 <div className="payment-status-indicator" style={{padding: '8px', background: '#D1FAE5', borderRadius: '8px', textAlign: 'center', marginTop: '8px'}}>
                   <span style={{color: '#065F46', fontWeight: 600, fontSize: '0.875rem'}}>✓ Payment Received</span>
