@@ -49,14 +49,11 @@
     color: #d32f2f;
 }
 
-<<<<<<< HEAD
 .sync-button.local {
     border-color: #607d8b;
     color: #607d8b;
 }
 
-=======
->>>>>>> f2cca546e32f30f04e56f3543ba20b044460d5e9
 /* Icon animations */
 .sync-icon {
     flex-shrink: 0;
@@ -82,13 +79,10 @@
     color: #666;
 }
 
-<<<<<<< HEAD
 .sync-icon.local {
     color: #607d8b;
 }
 
-=======
->>>>>>> f2cca546e32f30f04e56f3543ba20b044460d5e9
 @keyframes spin {
     from {
         transform: rotate(0deg);
