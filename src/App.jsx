@@ -8,6 +8,7 @@ import { preloadCriticalImages } from './utils/assetPath';
 import { initializeAutoClear } from './utils/browserCacheManager';
 import dataMigrationService from './services/dataMigrationService';
 import apiService from './services/apiService';
+import syncService from './services/syncService';
 
 // Pages
 import Login from './pages/Login/Login';
@@ -33,61 +34,65 @@ import Layout from './components/Layout/Layout';
 // Public Route Component (redirect to dashboard if already logged in)
 const PublicRoute = ({ children }) => {
   const { isAuthenticated } = useAuthStore();
-  
+
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return children;
 };
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { isAuthenticated, role } = useAuthStore();
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
   if (adminOnly && role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
-  
+
   return children;
 };
 
 function App() {
   const [isInitializing, setIsInitializing] = useState(true);
-  
+
   // Initialize app on load
   useEffect(() => {
     const initializeApp = async () => {
       try {
         console.log('Initializing app with centralized storage...');
-        
+
         // Initialize seed data (for first-time users)
         initializeSeedData();
         initializeAuthData();
-        
+
         // Preload critical images for PDFs and UI
         preloadCriticalImages();
-        
+
         // Initialize automatic browser cache clearing
         await initializeAutoClear();
-        
+
         // Check backend health
         try {
           const healthCheck = await apiService.healthCheck();
           console.log('✅ Backend connection:', healthCheck.status);
-          
+
           // Sync data with backend
           await dataMigrationService.fullSync();
           console.log('✅ Data synchronized with backend');
+
+          // Start automatic periodic sync (every 30 seconds)
+          syncService.startAutoSync();
+          console.log('✅ Auto-sync enabled');
         } catch (apiError) {
           console.warn('⚠️ Backend unavailable, using local storage:', apiError.message);
           // App will continue with localStorage only
         }
-        
+
         console.log('App initialization complete');
       } catch (error) {
         console.error('Error initializing app:', error);
@@ -95,10 +100,15 @@ function App() {
         setIsInitializing(false);
       }
     };
-    
+
     initializeApp();
+
+    // Cleanup on unmount
+    return () => {
+      syncService.stopAutoSync();
+    };
   }, []);
-  
+
   if (isInitializing) {
     return (
       <div style={{
@@ -111,7 +121,7 @@ function App() {
       }}>
         <div>
           <div style={{ marginBottom: '10px' }}>🔄 Initializing HEALit Lab System...</div>
-          <div style={{ fontSize: '14px', color: '#666' }}>Loading local data</div>
+          <div style={{ fontSize: '14px', color: '#666' }}>Loading and syncing data...</div>
         </div>
       </div>
     );
@@ -143,7 +153,7 @@ function App() {
           },
         }}
       />
-      
+
       <Routes>
         {/* Public Route - Login */}
         <Route path="/login" element={
@@ -151,7 +161,7 @@ function App() {
             <Login />
           </PublicRoute>
         } />
-        
+
         {/* Protected Routes */}
         <Route
           path="/"
@@ -163,17 +173,16 @@ function App() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          
+
           {/* Patients */}
           <Route path="patients" element={<Patients />} />
           <Route path="patients/:id" element={<PatientDetails />} />
-          
+
           {/* Patient Workflow */}
           <Route path="patients/add-patient" element={<AddPatientPage />} />
-          {/* Removed SimpleAddPatientPage route since component doesn't exist */}
           <Route path="sample-times/:visitId" element={<SampleTimePage />} />
           <Route path="results/:visitId" element={<ResultEntryPage />} />
-          
+
           {/* Admin Only Routes */}
           <Route
             path="financial"
@@ -212,7 +221,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Profile Manager Page - Admin AND Staff - FIXED PATH */}
+          {/* Profile Manager Page - Admin AND Staff */}
           <Route
             path="profiles"
             element={<ProfileManager />}
@@ -222,7 +231,7 @@ function App() {
             element={<ProfileManager />}
           />
         </Route>
-        
+
         {/* Catch all - redirect to login if not authenticated, else dashboard */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

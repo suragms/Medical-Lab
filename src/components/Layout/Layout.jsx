@@ -20,6 +20,7 @@ import {
 import { useAuthStore } from '../../store';
 import { getVisits, getPatients } from '../../features/shared/dataService';
 import { LOGO_PATHS } from '../../utils/assetPath';
+import SyncIndicator from '../SyncIndicator/SyncIndicator';
 import './Layout.css';
 
 const Layout = () => {
@@ -37,34 +38,34 @@ const Layout = () => {
     if (role === 'admin' || role === 'staff') {
       const allPatients = await getPatients();
       const allVisits = await getVisits();
-      
+
       // Helper to calculate waiting time
       const calculateWaitingTime = (timestamp) => {
         if (!timestamp) return null;
         const now = new Date();
         const sampleTime = new Date(timestamp);
         const diffMs = now - sampleTime;
-        
+
         if (diffMs < 0) return null; // Future time
-        
+
         const hours = Math.floor(diffMs / (1000 * 60 * 60));
         const days = Math.floor(hours / 24);
-        
+
         if (days > 0) return `${days}d ${hours % 24}h`;
         if (hours > 0) return `${hours}h`;
         return 'Just now';
       };
-      
+
       // Helper to get full visit data with patient info
       const enrichVisitData = (visit) => {
         // Find the patient for this visit
         const patient = allPatients.find(p => p.patientId === visit.patientId);
-        
+
         // Calculate waiting time if sample collected
-        const waitingTime = visit.sampleCollectedAt 
+        const waitingTime = visit.sampleCollectedAt
           ? calculateWaitingTime(visit.sampleCollectedAt)
           : null;
-        
+
         return {
           ...visit,
           name: patient?.name || 'Unknown Patient',
@@ -77,22 +78,22 @@ const Layout = () => {
           waitingTime
         };
       };
-      
+
       const waitingPatients = allVisits
         .filter(v => v.status === 'sample_times_set')
         .map(enrichVisitData)
         .slice(0, 5);
-        
+
       const unpaidInvoices = allVisits
         .filter(v => !v.paymentStatus || v.paymentStatus === 'unpaid')
         .map(enrichVisitData)
         .slice(0, 5);
-        
+
       const pendingResults = allVisits
         .filter(v => v.status === 'sample_times_set' && !v.reportedAt)
         .map(enrichVisitData)
         .slice(0, 5);
-      
+
       setAlerts({
         waiting: waitingPatients,
         unpaid: unpaidInvoices,
@@ -100,14 +101,14 @@ const Layout = () => {
       });
     }
   }, [role]);
-  
+
   useEffect(() => {
     loadAlerts();
-    
+
     const handleDataUpdate = () => {
       loadAlerts();
     };
-    
+
     window.addEventListener('healit-data-update', handleDataUpdate);
     return () => window.removeEventListener('healit-data-update', handleDataUpdate);
   }, [loadAlerts]);
@@ -138,21 +139,21 @@ const Layout = () => {
         {/* Compact Top Nav Header */}
         <header className="top-nav">
           {/* Mobile Menu Button (visible only on mobile) */}
-          <button 
+          <button
             className="mobile-menu-btn"
             onClick={() => setSidebarOpen(!sidebarOpen)}
             aria-label="Toggle menu"
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          
+
           {/* Left: Logo + App Name + Quick Nav */}
           <div className="nav-left">
             <div className="nav-logo">
               {!logoError ? (
-                <img 
-                  src={LOGO_PATHS.healit} 
-                  alt="HEALit Logo" 
+                <img
+                  src={LOGO_PATHS.healit}
+                  alt="HEALit Logo"
                   className="logo-image"
                   onError={() => setLogoError(true)}
                 />
@@ -161,7 +162,7 @@ const Layout = () => {
               )}
               <span className="app-name">HEALit Med Lab</span>
             </div>
-            
+
             {/* Quick Navigation */}
             <div className="quick-nav">
               {filteredMenu.map((item) => (
@@ -177,12 +178,12 @@ const Layout = () => {
               ))}
             </div>
           </div>
-          
+
           {/* Right: User Actions */}
           <div className="nav-right">
             <div className="notification-wrapper">
-              <button 
-                className="nav-icon-btn" 
+              <button
+                className="nav-icon-btn"
                 onClick={() => setShowNotifications(!showNotifications)}
                 title="Notifications"
               >
@@ -191,7 +192,7 @@ const Layout = () => {
                   <span className="notification-badge">{totalAlerts}</span>
                 )}
               </button>
-              
+
               {showNotifications && (
                 <>
                   <div className="notification-overlay" onClick={() => setShowNotifications(false)} />
@@ -200,7 +201,7 @@ const Layout = () => {
                       <h3>Notifications</h3>
                       <span className="notification-count">{totalAlerts} alerts</span>
                     </div>
-                    
+
                     {totalAlerts === 0 ? (
                       <div className="notification-empty">
                         <p>No notifications</p>
@@ -214,8 +215,8 @@ const Layout = () => {
                               <span>Waiting for Sample Collection ({alerts.waiting.length})</span>
                             </div>
                             {alerts.waiting.map(visit => (
-                              <div 
-                                key={visit.visitId} 
+                              <div
+                                key={visit.visitId}
                                 className="notification-item"
                                 onClick={() => {
                                   navigate(`/patients/${visit.visitId}`);
@@ -235,7 +236,7 @@ const Layout = () => {
                             ))}
                           </div>
                         )}
-                        
+
                         {alerts.pendingResults.length > 0 && (
                           <div className="notification-section">
                             <div className="notification-section-header">
@@ -243,8 +244,8 @@ const Layout = () => {
                               <span>Pending Results Entry ({alerts.pendingResults.length})</span>
                             </div>
                             {alerts.pendingResults.map(visit => (
-                              <div 
-                                key={visit.visitId} 
+                              <div
+                                key={visit.visitId}
                                 className="notification-item"
                                 onClick={() => {
                                   navigate(`/results/${visit.visitId}`);
@@ -264,7 +265,7 @@ const Layout = () => {
                             ))}
                           </div>
                         )}
-                        
+
                         {alerts.unpaid.length > 0 && (
                           <div className="notification-section">
                             <div className="notification-section-header">
@@ -272,8 +273,8 @@ const Layout = () => {
                               <span>Unpaid Invoices ({alerts.unpaid.length})</span>
                             </div>
                             {alerts.unpaid.map(visit => (
-                              <div 
-                                key={visit.visitId} 
+                              <div
+                                key={visit.visitId}
                                 className="notification-item"
                                 onClick={() => {
                                   navigate(`/patients/${visit.visitId}`);
@@ -296,6 +297,7 @@ const Layout = () => {
                 </>
               )}
             </div>
+            <SyncIndicator />
             <button className="nav-icon-btn" onClick={() => navigate(role === 'admin' ? '/settings' : '/settings/staff')} title="Settings">
               <SettingsIcon size={18} />
             </button>
@@ -313,8 +315,8 @@ const Layout = () => {
 
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
-          <div 
-            className="mobile-sidebar-overlay" 
+          <div
+            className="mobile-sidebar-overlay"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -324,9 +326,9 @@ const Layout = () => {
           <div className="mobile-sidebar-header">
             <div className="mobile-sidebar-logo">
               {!logoError ? (
-                <img 
-                  src={LOGO_PATHS.healit} 
-                  alt="HEALit Logo" 
+                <img
+                  src={LOGO_PATHS.healit}
+                  alt="HEALit Logo"
                   className="logo-image"
                   onError={() => setLogoError(true)}
                 />
@@ -335,7 +337,7 @@ const Layout = () => {
               )}
               <span className="app-name">HEALit Med Lab</span>
             </div>
-            <button 
+            <button
               className="mobile-sidebar-close"
               onClick={() => setSidebarOpen(false)}
               aria-label="Close menu"
@@ -365,7 +367,7 @@ const Layout = () => {
               <UserCircle size={20} />
               <span>{user?.fullName || user?.username || 'User'}</span>
             </div>
-            <button 
+            <button
               className="mobile-logout-btn"
               onClick={() => {
                 handleLogout();

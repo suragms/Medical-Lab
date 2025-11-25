@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Users, TrendingUp, Plus, FileText, TestTube, 
+import {
+  Users, TrendingUp, Plus, FileText, TestTube,
   ArrowUpRight, ArrowDownRight, Eye, Edit, DollarSign,
   TrendingDown, Activity, AlertCircle, Clock, CheckCircle, XCircle
 } from 'lucide-react';
@@ -22,12 +22,12 @@ const Dashboard = () => {
   // Load dashboard data
   useEffect(() => {
     loadDashboardData();
-    
+
     // Listen for data updates
     const handleDataUpdate = () => {
       loadDashboardData();
     };
-    
+
     window.addEventListener('healit-data-update', handleDataUpdate);
     return () => window.removeEventListener('healit-data-update', handleDataUpdate);
   }, [role, user]);
@@ -38,7 +38,7 @@ const Dashboard = () => {
       if (role === 'admin') {
         const data = getAdminDashboardData();
         setDashboardData(data);
-        
+
         // Load alerts for admin - FIXED LOGIC
         const allVisits = await getVisits();
         // WAITING = Sample collected, waiting for results entry (sample_times_set)
@@ -48,7 +48,7 @@ const Dashboard = () => {
         // PENDING RESULTS = Sample times set but report not yet generated
         // (This includes both entering results AND generating report)
         const pendingResults = allVisits.filter(v => v.status === 'sample_times_set' && !v.reportedAt);
-        
+
         setAlerts({
           waiting: waitingPatients.slice(0, 5),
           unpaid: unpaidInvoices.slice(0, 5),
@@ -136,22 +136,22 @@ const Dashboard = () => {
                 <tbody>
                   {dashboardData.patientsListToday.map(patient => (
                     <tr key={patient.patientId}>
-                      <td>
+                      <td data-label="Name">
                         <div className="patient-name">{patient.name}</div>
                       </td>
-                      <td>{patient.age}Y / {patient.gender}</td>
-                      <td>{patient.phone}</td>
-                      <td>
+                      <td data-label="Age/Gender">{patient.age}Y / {patient.gender}</td>
+                      <td data-label="Phone">{patient.phone}</td>
+                      <td data-label="Status">
                         <span className={`status-badge status-${patient.status.toLowerCase().replace('_', '-')}`}>
                           {patient.status === 'tests_selected' ? 'Registered' :
-                           patient.status === 'sample_times_set' ? 'Sample Collected' :
-                           patient.status === 'report_generated' ? 'Completed' : patient.status}
+                            patient.status === 'sample_times_set' ? 'Sample Collected' :
+                              patient.status === 'report_generated' ? 'Completed' : patient.status}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Actions">
                         {patient.status === 'sample_times_set' && (
-                          <Button 
-                            size="small" 
+                          <Button
+                            size="small"
                             variant="primary"
                             onClick={() => navigate(`/results/${patient.visitId}`)}
                           >
@@ -159,8 +159,8 @@ const Dashboard = () => {
                           </Button>
                         )}
                         {patient.status === 'report_generated' && (
-                          <Button 
-                            size="small" 
+                          <Button
+                            size="small"
                             variant="secondary"
                             icon={Eye}
                             onClick={() => navigate(`/patients/${patient.visitId}`)}
@@ -325,23 +325,23 @@ const Dashboard = () => {
                   <tbody>
                     {dashboardData.patientsListToday.map(patient => (
                       <tr key={patient.patientId}>
-                        <td>
+                        <td data-label="Name">
                           <div className="patient-name">{patient.name}</div>
                         </td>
-                        <td>{patient.age}Y / {patient.gender}</td>
-                        <td>{patient.phone}</td>
-                        <td>{patient.profileName || 'N/A'}</td>
-                        <td>
+                        <td data-label="Age/Gender">{patient.age}Y / {patient.gender}</td>
+                        <td data-label="Phone">{patient.phone}</td>
+                        <td data-label="Test Profile">{patient.profileName || 'N/A'}</td>
+                        <td data-label="Status">
                           <span className={`status-badge status-${patient.status.toLowerCase().replace('_', '-')}`}>
                             {patient.status === 'tests_selected' ? 'Registered' :
-                             patient.status === 'sample_times_set' ? 'Sample Collected' :
-                             patient.status === 'report_generated' ? 'Completed' : patient.status}
+                              patient.status === 'sample_times_set' ? 'Sample Collected' :
+                                patient.status === 'report_generated' ? 'Completed' : patient.status}
                           </span>
                         </td>
-                        <td>
+                        <td data-label="Actions">
                           {patient.status === 'sample_times_set' && (
-                            <Button 
-                              size="small" 
+                            <Button
+                              size="small"
                               variant="primary"
                               onClick={() => navigate(`/results/${patient.visitId}`)}
                             >
@@ -349,8 +349,8 @@ const Dashboard = () => {
                             </Button>
                           )}
                           {patient.status === 'report_generated' && (
-                            <Button 
-                              size="small" 
+                            <Button
+                              size="small"
                               variant="secondary"
                               icon={Eye}
                               onClick={() => navigate(`/patients/${patient.visitId}`)}

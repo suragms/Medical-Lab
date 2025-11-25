@@ -17,22 +17,22 @@ export const groupTestsByProfile = (tests) => {
     console.warn('⚠️ No tests provided to groupTestsByProfile');
     return {};
   }
-  
+
   console.log('📊 Grouping tests by profile. Total tests:', tests.length);
   console.log('🔍 Sample test structure:', tests[0]);
-  
+
   const grouped = {};
-  
+
   tests.forEach(test => {
     const profileId = test.profileId || test.profile || 'UNKNOWN';
     console.log(`Test "${test.name}" -> Profile ID: ${profileId}`);
-    
+
     if (!grouped[profileId]) {
       grouped[profileId] = [];
     }
     grouped[profileId].push(test);
   });
-  
+
   console.log('✅ Grouped tests:', Object.keys(grouped).map(k => `${k}: ${grouped[k].length} tests`));
   return grouped;
 };
@@ -45,21 +45,21 @@ export const groupTestsByProfile = (tests) => {
  */
 export const getProfileInfo = (tests, allProfiles = []) => {
   if (!tests || tests.length === 0) return null;
-  
+
   const firstTest = tests[0];
   let profileId = firstTest.profileId || firstTest.profile;
-  
+
   // FALLBACK: If no profileId, try to match by test names to find the profile
   if (!profileId || profileId === 'UNKNOWN') {
     console.warn('⚠️ No profileId found, attempting to match by test names...');
-    
+
     // Try to find profile that contains these tests
     for (const profile of allProfiles) {
       if (!profile.tests || !Array.isArray(profile.tests)) continue;
-      
+
       const profileTestIds = profile.tests.map(t => t.testId);
       const matchCount = tests.filter(t => profileTestIds.includes(t.testId)).length;
-      
+
       // If more than 50% tests match, assume this is the profile
       if (matchCount > 0 && matchCount / tests.length >= 0.5) {
         console.log(`✅ Matched ${matchCount}/${tests.length} tests to profile: ${profile.name}`);
@@ -68,10 +68,10 @@ export const getProfileInfo = (tests, allProfiles = []) => {
       }
     }
   }
-  
+
   // Find profile in allProfiles
   const profile = allProfiles.find(p => p.profileId === profileId);
-  
+
   if (profile) {
     return {
       profileId: profile.profileId,
@@ -79,10 +79,10 @@ export const getProfileInfo = (tests, allProfiles = []) => {
       price: profile.packagePrice || profile.price || 0
     };
   }
-  
+
   // LAST FALLBACK: Use test data or create custom profile
   const totalPrice = tests.reduce((sum, t) => sum + (parseFloat(t.price) || 0), 0);
-  
+
   return {
     profileId: profileId || 'CUSTOM',
     name: firstTest.profileName || 'Custom Test Package',
@@ -101,17 +101,17 @@ export const generateProfileReports = async (visitData, profiles = [], options =
   const { download = true, print = false, profileFilter = null } = options;
   const groupedTests = groupTestsByProfile(visitData.tests);
   const results = [];
-  
+
   // If profileFilter specified, only generate for that profile
-  const profilesToGenerate = profileFilter 
+  const profilesToGenerate = profileFilter
     ? [[profileFilter, groupedTests[profileFilter]]]
     : Object.entries(groupedTests);
-  
+
   for (const [profileId, tests] of profilesToGenerate) {
     if (!tests || tests.length === 0) continue;
-    
+
     const profileInfo = getProfileInfo(tests, profiles);
-    
+
     // Build report data for this profile
     const reportData = {
       patient: {
@@ -130,9 +130,9 @@ export const generateProfileReports = async (visitData, profiles = [], options =
         tests: tests
       }]
     };
-    
+
     const fileName = `Report-${visitData.visitId}-${profileInfo.name.replace(/\s+/g, '_')}.pdf`;
-    
+
     try {
       if (download) {
         await downloadLabReport(reportData, fileName, { profileFilter: profileId });
@@ -140,7 +140,7 @@ export const generateProfileReports = async (visitData, profiles = [], options =
       if (print) {
         await printLabReport(reportData, { profileFilter: profileId });
       }
-      
+
       results.push({
         success: true,
         profileId,
@@ -156,7 +156,7 @@ export const generateProfileReports = async (visitData, profiles = [], options =
       });
     }
   }
-  
+
   return results;
 };
 
@@ -170,27 +170,27 @@ export const generateProfileReports = async (visitData, profiles = [], options =
 export const generateCombinedInvoice = async (visitData, profiles = [], options = {}) => {
   const { download = true, print = false } = options;
   const groupedTests = groupTestsByProfile(visitData.tests);
-  
+
   console.log('💵 Generating SINGLE combined invoice for all profiles');
   console.log('Total profile groups:', Object.keys(groupedTests).length);
-  
+
   // Build items array with ALL profiles
   const items = [];
   let totalAmount = 0;
-  
+
   for (const [profileId, tests] of Object.entries(groupedTests)) {
     const profileInfo = getProfileInfo(tests, profiles);
-    
+
     console.log(`🏷️ Adding to invoice: ${profileInfo.name} - Rs. ${profileInfo.price}`);
-    
+
     items.push({
       name: profileInfo.name,  // PROFILE NAME ONLY
       price: profileInfo.price // PROFILE PRICE ONLY
     });
-    
+
     totalAmount += profileInfo.price;
   }
-  
+
   // Build ONE invoice data with ALL profiles
   const invoiceData = {
     patient: {
@@ -221,15 +221,15 @@ export const generateCombinedInvoice = async (visitData, profiles = [], options 
     finalTotal: totalAmount,
     amountPaid: visitData.paymentStatus === 'paid' ? totalAmount : 0
   };
-  
+
   console.log('📦 Combined invoice data:', {
     profileCount: items.length,
     items: items,
     total: invoiceData.finalTotal
   });
-  
+
   const fileName = `Invoice-${visitData.visitId}.pdf`;
-  
+
   try {
     if (download) {
       console.log(`⬇️ Downloading combined invoice: ${fileName}`);
@@ -239,7 +239,7 @@ export const generateCombinedInvoice = async (visitData, profiles = [], options 
       console.log(`🖨️ Printing combined invoice: ${fileName}`);
       await printInvoice(invoiceData);
     }
-    
+
     console.log(`✅ Combined invoice generated successfully`);
     return {
       success: true,
@@ -266,7 +266,7 @@ export const generateCombinedInvoice = async (visitData, profiles = [], options 
 export const generateAllProfileDocuments = async (visitData, profiles = [], options = {}) => {
   const reportResults = await generateProfileReports(visitData, profiles, options);
   const invoiceResults = await generateProfileInvoices(visitData, profiles, options);
-  
+
   return {
     reports: reportResults,
     invoices: invoiceResults,
@@ -285,6 +285,9 @@ export const generateCombinedReportAndInvoice = async (visitData, profiles = [],
   console.log('📄 Generating COMBINED PDF: Invoice + All Reports in ONE document');
   return await generateCombinedPDF(visitData, profiles, options);
 };
+
+// Re-export share functions from combinedPdfGenerator as named exports
+export { shareCombinedPDFViaWhatsApp, shareCombinedPDFViaEmail };
 
 export default {
   groupTestsByProfile,

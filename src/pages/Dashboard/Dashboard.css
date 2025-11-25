@@ -25,7 +25,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Dashboard Header */
@@ -551,116 +553,175 @@
   }
 
   .dashboard-right {
-    /* Removed staff activity card, so only financial snapshot remains */
-    grid-template-columns: 1fr; /* Changed from repeat(2, 1fr) to 1fr */
-    flex-direction: column; /* Changed from row to column */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    display: grid;
+    gap: var(--space-5);
   }
 }
 
 @media (max-width: 768px) {
   .dashboard {
-    padding: var(--space-3);
+    padding: var(--space-4);
   }
 
-  /* Both admin and staff now have 2 columns by default, so this might not be strictly needed for .quick-actions-grid unless it was 3+ */
-  /* Re-evaluating based on original: admin quick-actions-grid was 3, now 2. Staff was 2, stays 2. */
-  /* So, if we want 1 column on small screens for quick actions, this needs to be here. */
+  .dashboard-header {
+    margin-bottom: var(--space-4);
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .dashboard-header p {
+    font-size: 0.9rem;
+  }
+
   .quick-actions-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+
+  .action-card {
+    padding: var(--space-4);
+    min-height: 120px;
+  }
+
+  .action-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: var(--space-2);
+  }
+
+  .action-icon svg {
+    width: 24px;
+    height: 24px;
   }
 
   .metrics-grid {
     grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .metric-card {
+    padding: var(--space-4);
+    min-height: auto;
   }
 
   .dashboard-right {
     grid-template-columns: 1fr;
-    flex-direction: column;
   }
 
   .table-wrapper {
-    overflow-x: scroll;
+    margin: 0 -1rem;
+    padding: 0 1rem;
+    width: calc(100% + 2rem);
   }
 
-  .patients-table {
-    min-width: 700px;
-  }
-}
-
-@media (max-width: 640px) {
-  .dashboard {
-    padding: 0.5rem;
-  }
-  
-  .dashboard-header h1 {
-    font-size: 1.25rem;
-  }
-  
-  .dashboard-header p {
+  .patients-table th,
+  .patients-table td {
+    padding: var(--space-2);
     font-size: 0.875rem;
-  }
-  
-  .dashboard-grid {
-    grid-template-columns: 1fr !important;
-  }
-  
-  .quick-actions-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-  }
-
-  .action-card {
-    padding: 0.75rem;
-    min-height: 100px;
-  }
-  
-  .action-icon {
-    width: 48px;
-    height: 48px;
-  }
-  
-  .action-card h3 {
-    font-size: 0.875rem;
-  }
-  
-  .action-card p {
-    font-size: 0.75rem;
-  }
-  
-  .metrics-grid {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-  
-  .metric-card {
-    padding: 0.75rem;
-    min-height: 80px;
-  }
-  
-  .metric-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .metric-value {
-    font-size: 1.25rem;
-  }
-  
-  .metric-label {
-    font-size: 0.75rem;
-  }
-  
-  .section-title {
-    font-size: 1rem;
   }
 }
 
 @media (max-width: 480px) {
+  .dashboard {
+    padding: var(--space-3);
+  }
+
   .quick-actions-grid {
     grid-template-columns: 1fr;
+    /* Stack cards on very small screens */
   }
-  
-  .dashboard-header h1 {
-    font-size: 1.1rem;
+
+  .action-card {
+    flex-direction: row;
+    /* Horizontal layout for stacked cards */
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    min-height: auto;
+  }
+
+  .action-icon {
+    margin: 0;
+    width: 40px;
+    height: 40px;
+  }
+
+  .action-card h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .action-card p {
+    display: none;
+    /* Hide description on very small screens to save space */
+  }
+
+  .metric-card {
+    padding: var(--space-3);
+  }
+
+  .metric-value {
+    font-size: 1.5rem;
+  }
+
+  .patients-table-card {
+    padding: var(--space-4);
+  }
+
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .patients-table {
+    display: block;
+  }
+
+  .patients-table thead {
+    display: none;
+    /* Hide headers on mobile */
+  }
+
+  .patients-table tbody tr {
+    display: block;
+    margin-bottom: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: var(--space-3);
+  }
+
+  .patients-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none;
+    padding: var(--space-1) 0;
+    text-align: right;
+  }
+
+  .patients-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: left;
+    margin-right: var(--space-2);
+  }
+
+  .patients-table td:first-child {
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-2);
+    justify-content: center;
+  }
+
+  .patients-table td:first-child::before {
+    display: none;
   }
 }

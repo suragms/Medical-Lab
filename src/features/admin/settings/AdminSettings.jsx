@@ -18,7 +18,7 @@ const AdminSettings = () => {
   const navigate = useNavigate();
   const { role } = useAuthStore();
   const currentUser = getCurrentUser();
-  
+
   // State (MUST be before conditional return - React Hooks Rules)
   const [activeTab, setActiveTab] = useState('staff');
   const [users, setUsers] = useState([]);
@@ -35,7 +35,7 @@ const AdminSettings = () => {
     financial: false,
     performance: false
   });
-  
+
   // Staff form
   const [staffForm, setStaffForm] = useState({
     username: '',
@@ -46,23 +46,23 @@ const AdminSettings = () => {
     password: '',
     isActive: true
   });
-  
+
   // Load data
   useEffect(() => {
     loadData();
     loadStorageInfo();
   }, []);
-  
+
   const loadData = () => {
     setUsers(getUsers());
     setSettings(getSettings());
   };
-  
+
   const loadStorageInfo = async () => {
     const info = await getStorageInfo();
     setStorageInfo(info);
   };
-  
+
   // Permission check - Admin only (AFTER all hooks)
   if (role !== 'admin') {
     return (
@@ -76,14 +76,14 @@ const AdminSettings = () => {
       </div>
     );
   }
-  
+
   // Staff Management Handlers
   const handleAddStaff = () => {
     if (!staffForm.username || !staffForm.fullName || !staffForm.email || !staffForm.password) {
       toast.error('Username, name, email, and password are required');
       return;
     }
-    
+
     try {
       const newUser = {
         ...staffForm,
@@ -92,7 +92,7 @@ const AdminSettings = () => {
         signatureUrl: null,
         createdAt: new Date().toISOString()
       };
-      
+
       addUser(newUser);
       toast.success('Staff added successfully');
       resetStaffForm();
@@ -101,7 +101,7 @@ const AdminSettings = () => {
       toast.error('Failed to add staff: ' + error.message);
     }
   };
-  
+
   const handleDeleteUser = (userId) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
@@ -113,19 +113,19 @@ const AdminSettings = () => {
       }
     }
   };
-  
+
   const handleResetPassword = (user) => {
     setSelectedUser(user);
     setNewPassword('');
     setShowPasswordModal(true);
   };
-  
+
   const handleSaveNewPassword = () => {
     if (!newPassword || newPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
     }
-    
+
     try {
       adminResetPassword(selectedUser.userId, newPassword);
       toast.success(`Password reset successfully for ${selectedUser.fullName}`);
@@ -137,7 +137,7 @@ const AdminSettings = () => {
       toast.error('Failed to reset password: ' + error.message);
     }
   };
-  
+
   const resetStaffForm = () => {
     setStaffForm({
       username: '',
@@ -149,7 +149,7 @@ const AdminSettings = () => {
       isActive: true
     });
   };
-  
+
   // Settings Handlers
   const handleUpdateSettings = (key, value) => {
     try {
@@ -160,46 +160,45 @@ const AdminSettings = () => {
       toast.error('Failed to update settings');
     }
   };
-  
+
   const handleToggleSetting = (key) => {
     const newValue = !settings[key];
     handleUpdateSettings(key, newValue);
   };
-  
+
   // Export handlers
   const handleExport = (type) => {
     toast.success(`Exporting ${type}... (Feature coming soon)`);
   };
-  
+
   // Clear all data handler (DISABLED for Firestore - use Firebase Console)
   const handleClearAllData = () => {
     setShowResetModal(true);
   };
-  
+
   const handleResetData = () => {
     const selectedCount = Object.values(resetOptions).filter(Boolean).length;
-    
+
     if (selectedCount === 0) {
       toast.error('⚠️ Please select at least one category to reset');
       return;
     }
-    
+
     const confirmMessage = `⚠️ FINAL CONFIRMATION
 
 You are about to DELETE:
-${Object.entries(resetOptions).filter(([k, v]) => v).map(([k]) => `• ${k.charAt(0).toUpperCase() + k.slice(1)}`).join('
-')}
+${Object.entries(resetOptions).filter(([k, v]) => v).map(([k]) => `• ${k.charAt(0).toUpperCase() + k.slice(1)}`).join('\n')}
 
 This action CANNOT be undone!
 
 Type YES to confirm:`;
-    
+
     const userInput = window.prompt(confirmMessage);
-    
+
     if (userInput === 'YES') {
       try {
         let deletedCount = 0;
-        
+
         if (resetOptions.patients) {
           localStorage.removeItem('medlab_patients');
           deletedCount++;
@@ -222,7 +221,7 @@ Type YES to confirm:`;
           // Clear any performance-related data if exists
           deletedCount++;
         }
-        
+
         toast.success(`✅ ${deletedCount} category/categories deleted successfully!`);
         setShowResetModal(false);
         setResetOptions({
@@ -232,7 +231,7 @@ Type YES to confirm:`;
           financial: false,
           performance: false
         });
-        
+
         // Reload page after 2 seconds
         setTimeout(() => {
           window.location.reload();
@@ -244,7 +243,7 @@ Type YES to confirm:`;
       toast.error('❌ Reset cancelled - incorrect confirmation');
     }
   };
-  
+
   // Clear browser cache handler
   const handleClearCache = async () => {
     if (window.confirm('This will clear browser cache and temporary data. User data will be preserved. Continue?')) {
@@ -258,7 +257,7 @@ Type YES to confirm:`;
       }
     }
   };
-  
+
   // Clear all browser storage (including user data)
   const handleClearBrowserStorage = async () => {
     if (window.confirm('⚠️ WARNING: This will clear ALL browser data except authentication. You will need to re-import data. Continue?')) {
@@ -276,7 +275,7 @@ Type YES to confirm:`;
       }
     }
   };
-  
+
   if (!settings) {
     return (
       <div className="loading-container">
@@ -285,7 +284,7 @@ Type YES to confirm:`;
       </div>
     );
   }
-  
+
   return (
     <div className="admin-settings-page">
       {/* Page Header */}
@@ -848,14 +847,14 @@ Type YES to confirm:`;
           {activeTab === 'backup' && (
             <div className="tab-panel">
               <DataSync />
-              
+
               {/* Browser Cache Management */}
-              <div className="card-settings" style={{marginTop: '32px'}}>
+              <div className="card-settings" style={{ marginTop: '32px' }}>
                 <h3>Browser Cache Management</h3>
                 <p className="help-text">Manage browser storage and cache to optimize performance</p>
-                
+
                 {storageInfo && (
-                  <div className="storage-stats" style={{marginBottom: '20px'}}>
+                  <div className="storage-stats" style={{ marginBottom: '20px' }}>
                     <div className="stat-item">
                       <strong>LocalStorage:</strong> {storageInfo.localStorage.itemCount} items, ~{Math.round(storageInfo.localStorage.estimatedSize / 1024)} KB
                     </div>
@@ -870,8 +869,8 @@ Type YES to confirm:`;
                     </div>
                   </div>
                 )}
-                
-                <div className="button-grid" style={{gap: '12px'}}>
+
+                <div className="button-grid" style={{ gap: '12px' }}>
                   <Button variant="outline" onClick={handleClearCache}>
                     <Database size={18} />
                     Clear Cache Only
@@ -881,10 +880,10 @@ Type YES to confirm:`;
                   </Button>
                 </div>
               </div>
-              
+
               {/* Danger Zone - Keep Clear All Data */}
-              <div className="card-settings" style={{marginTop: '32px'}}>
-                <h3 style={{color: '#DC2626'}}>Danger Zone</h3>
+              <div className="card-settings" style={{ marginTop: '32px' }}>
+                <h3 style={{ color: '#DC2626' }}>Danger Zone</h3>
                 <div className="alert-box-danger">
                   <AlertCircle size={20} />
                   <div>
@@ -892,15 +891,15 @@ Type YES to confirm:`;
                     <p>Clear all browser data including localStorage, sessionStorage, IndexedDB, and cache. Authentication will be preserved. You'll need to re-import data afterwards.</p>
                   </div>
                 </div>
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={handleClearBrowserStorage}
-                  style={{background: '#DC2626', borderColor: '#DC2626', marginBottom: '16px'}}
+                  style={{ background: '#DC2626', borderColor: '#DC2626', marginBottom: '16px' }}
                 >
                   <Trash2 size={18} />
                   Clear All Browser Storage
                 </Button>
-                
+
                 <div className="alert-box-danger">
                   <AlertCircle size={20} />
                   <div>
@@ -908,10 +907,10 @@ Type YES to confirm:`;
                     <p>Permanently delete all patient records, visits, test results, invoices, and financial data. This action cannot be undone!</p>
                   </div>
                 </div>
-                <Button 
-                  variant="primary" 
+                <Button
+                  variant="primary"
                   onClick={handleClearAllData}
-                  style={{background: '#DC2626', borderColor: '#DC2626'}}
+                  style={{ background: '#DC2626', borderColor: '#DC2626' }}
                 >
                   <Trash2 size={18} />
                   Clear All Data & Start Fresh
@@ -1033,96 +1032,96 @@ Type YES to confirm:`;
           </div>
         </div>
       )}
-      
+
       {/* Reset Data Modal */}
       {showResetModal && (
         <div className="modal-overlay" onClick={() => setShowResetModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '600px'}}>
-            <h3 style={{color: '#DC2626'}}>⚠️ Reset Application Data</h3>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <h3 style={{ color: '#DC2626' }}>⚠️ Reset Application Data</h3>
             <p className="help-text">Select which data categories to permanently delete. All selected data will be irreversibly removed.</p>
-            
-            <div style={{background: '#FEF2F2', border: '2px solid #DC2626', borderRadius: '8px', padding: '16px', marginBottom: '20px'}}>
-              <strong style={{color: '#DC2626'}}>⚠️ WARNING: This action CANNOT be undone!</strong>
+
+            <div style={{ background: '#FEF2F2', border: '2px solid #DC2626', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+              <strong style={{ color: '#DC2626' }}>⚠️ WARNING: This action CANNOT be undone!</strong>
             </div>
-            
-            <div style={{marginBottom: '24px'}}>
-              <h4 style={{marginBottom: '12px'}}>Select Data to Delete:</h4>
-              
-              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.patients ? ' #DC2626' : ' transparent')}}>
+
+            <div style={{ marginBottom: '24px' }}>
+              <h4 style={{ marginBottom: '12px' }}>Select Data to Delete:</h4>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.patients ? ' #DC2626' : ' transparent') }}>
                 <input
                   type="checkbox"
                   checked={resetOptions.patients}
-                  onChange={(e) => setResetOptions({...resetOptions, patients: e.target.checked})}
-                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                  onChange={(e) => setResetOptions({ ...resetOptions, patients: e.target.checked })}
+                  style={{ width: '20px', height: '20px', accentColor: '#DC2626' }}
                 />
                 <div>
                   <strong>Patients Data</strong>
-                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>All patient records and personal information</p>
+                  <p style={{ fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0' }}>All patient records and personal information</p>
                 </div>
               </label>
-              
-              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.visits ? ' #DC2626' : ' transparent')}}>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.visits ? ' #DC2626' : ' transparent') }}>
                 <input
                   type="checkbox"
                   checked={resetOptions.visits}
-                  onChange={(e) => setResetOptions({...resetOptions, visits: e.target.checked})}
-                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                  onChange={(e) => setResetOptions({ ...resetOptions, visits: e.target.checked })}
+                  style={{ width: '20px', height: '20px', accentColor: '#DC2626' }}
                 />
                 <div>
                   <strong>Visits & Test Results</strong>
-                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>All visit records, test results, and reports</p>
+                  <p style={{ fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0' }}>All visit records, test results, and reports</p>
                 </div>
               </label>
-              
-              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.profiles ? ' #DC2626' : ' transparent')}}>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.profiles ? ' #DC2626' : ' transparent') }}>
                 <input
                   type="checkbox"
                   checked={resetOptions.profiles}
-                  onChange={(e) => setResetOptions({...resetOptions, profiles: e.target.checked})}
-                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                  onChange={(e) => setResetOptions({ ...resetOptions, profiles: e.target.checked })}
+                  style={{ width: '20px', height: '20px', accentColor: '#DC2626' }}
                 />
                 <div>
                   <strong>Test Profiles</strong>
-                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>All test profile packages and configurations</p>
+                  <p style={{ fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0' }}>All test profile packages and configurations</p>
                 </div>
               </label>
-              
-              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.financial ? ' #DC2626' : ' transparent')}}>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.financial ? ' #DC2626' : ' transparent') }}>
                 <input
                   type="checkbox"
                   checked={resetOptions.financial}
-                  onChange={(e) => setResetOptions({...resetOptions, financial: e.target.checked})}
-                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                  onChange={(e) => setResetOptions({ ...resetOptions, financial: e.target.checked })}
+                  style={{ width: '20px', height: '20px', accentColor: '#DC2626' }}
                 />
                 <div>
                   <strong>Financial Records</strong>
-                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>All expenses, revenues, and financial data</p>
+                  <p style={{ fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0' }}>All expenses, revenues, and financial data</p>
                 </div>
               </label>
-              
-              <label style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.performance ? ' #DC2626' : ' transparent')}}>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F9FAFB', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', border: '2px solid' + (resetOptions.performance ? ' #DC2626' : ' transparent') }}>
                 <input
                   type="checkbox"
                   checked={resetOptions.performance}
-                  onChange={(e) => setResetOptions({...resetOptions, performance: e.target.checked})}
-                  style={{width: '20px', height: '20px', accentColor: '#DC2626'}}
+                  onChange={(e) => setResetOptions({ ...resetOptions, performance: e.target.checked })}
+                  style={{ width: '20px', height: '20px', accentColor: '#DC2626' }}
                 />
                 <div>
                   <strong>Performance Data</strong>
-                  <p style={{fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0'}}>Staff performance records and analytics</p>
+                  <p style={{ fontSize: '0.85rem', color: '#666', margin: '4px 0 0 0' }}>Staff performance records and analytics</p>
                 </div>
               </label>
             </div>
-            
+
             <div className="modal-actions">
               <Button variant="outline" onClick={() => {
                 setShowResetModal(false);
-                setResetOptions({patients: false, visits: false, profiles: false, financial: false, performance: false});
+                setResetOptions({ patients: false, visits: false, profiles: false, financial: false, performance: false });
               }}>Cancel</Button>
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={handleResetData}
-                style={{background: '#DC2626', borderColor: '#DC2626'}}
+                style={{ background: '#DC2626', borderColor: '#DC2626' }}
                 disabled={Object.values(resetOptions).filter(Boolean).length === 0}
               >
                 <Trash2 size={18} />

@@ -101,23 +101,23 @@ const Patients = () => {
   // Load visits and patients from localStorage
   useEffect(() => {
     loadData();
-    
+
     // Listen for data updates from other tabs/windows
     const handleStorageChange = (e) => {
       if (e.key === 'medlab_visits' || e.key === 'medlab_patients') {
         loadData();
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
-    
+
     // Also listen for custom events from same tab
     const handleDataUpdate = () => {
       loadData();
     };
-    
+
     window.addEventListener('dataUpdated', handleDataUpdate);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('dataUpdated', handleDataUpdate);
@@ -136,36 +136,36 @@ const Patients = () => {
   const handleGeneratePDF = async (visitId) => {
     const visit = visits.find(v => v.visitId === visitId);
     if (!visit) return;
-    
+
     const patient = getPatientForVisit(visit);
     const allProfiles = getProfiles();
-    
+
     // CRITICAL: Check if results entered AND report generated (accepts both 'report_generated' and 'completed')
     const hasResults = (
-      (visit.status === 'report_generated' || visit.status === 'completed') && 
-      visit.reportedAt && 
-      visit.tests && 
+      (visit.status === 'report_generated' || visit.status === 'completed') &&
+      visit.reportedAt &&
+      visit.tests &&
       visit.tests.length > 0
     );
-    
+
     if (!hasResults) {
       toast.error('❌ Cannot generate PDF: Test results must be entered and report generated first!');
       return;
     }
-    
+
     // Check if tests have actual result values
     const hasResultValues = visit.tests.some(t => t.value || t.result?.value);
     if (!hasResultValues) {
       toast.error('❌ Cannot generate PDF: No test result values found!');
       return;
     }
-    
+
     // WARNING: If already generated, ask for confirmation to re-print
     if (visit.pdfGenerated && visit.invoiceGenerated) {
       const confirmReprint = window.confirm('ℹ️ Combined PDF (Invoice + Reports) already generated!\n\nDo you want to RE-PRINT this combined PDF?');
       if (!confirmReprint) return;
     }
-    
+
     try {
       // Get signing technician
       let signingTechnician = null;
@@ -173,24 +173,24 @@ const Patients = () => {
         const technicians = getTechnicians();
         signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
       }
-      
+
       const visitData = {
         ...visit,
         patient,
         signingTechnician
       };
-      
+
       console.log('📄 Generating COMBINED PDF (Invoice + All Reports) for visit:', visit.visitId);
-      
+
       // Generate COMBINED PDF (Invoice + Reports in ONE file)
-      const result = await generateCombinedReportAndInvoice(visitData, allProfiles, { 
-        download: true, 
-        print: false 
+      const result = await generateCombinedReportAndInvoice(visitData, allProfiles, {
+        download: true,
+        print: false
       });
-      
+
       if (result.success) {
         toast.success(`✅ Combined PDF generated with ${result.profileCount} profile(s)!`);
-        
+
         // Mark as generated ONLY if first time
         if (!visit.pdfGenerated || !visit.invoiceGenerated) {
           const updatedVisit = {
@@ -200,22 +200,22 @@ const Patients = () => {
           };
           updateVisit(visitId, updatedVisit);
         }
-        
+
         // Dispatch ALL update events
         window.dispatchEvent(new Event('storage'));
         window.dispatchEvent(new Event('dataUpdated'));
-        window.dispatchEvent(new CustomEvent('healit-data-update', { 
-          detail: { 
-            type: 'combined_pdf_generated', 
+        window.dispatchEvent(new CustomEvent('healit-data-update', {
+          detail: {
+            type: 'combined_pdf_generated',
             visitId,
             pdfGenerated: true,
             invoiceGenerated: true
-          } 
+          }
         }));
       } else {
         toast.error('Failed to generate combined PDF');
       }
-      
+
       loadData();
     } catch (error) {
       console.error('Combined PDF generation error:', error);
@@ -227,12 +227,12 @@ const Patients = () => {
   const getPatientForVisit = (visit) => {
     return patients.find(p => p.patientId === visit.patientId);
   };
-  
+
   // Delete patient handler
   const handleDeletePatient = (visit) => {
     const patient = getPatientForVisit(visit);
     if (!patient) return;
-    
+
     const confirmed = window.confirm(
       `⚠️ DELETE PATIENT & ALL DATA\n\n` +
       `Patient: ${patient.name}\n` +
@@ -246,9 +246,9 @@ const Patients = () => {
       `This action CANNOT be undone!\n\n` +
       `Are you sure you want to delete this patient?`
     );
-    
+
     if (!confirmed) return;
-    
+
     try {
       deletePatient(patient.patientId);
       toast.success(`✅ Patient "${patient.name}" deleted successfully`);
@@ -257,7 +257,7 @@ const Patients = () => {
       toast.error('Failed to delete patient: ' + error.message);
     }
   };
-  
+
   // Edit patient handler
   const handleEditPatient = (visit) => {
     const patient = getPatientForVisit(visit);
@@ -268,13 +268,13 @@ const Patients = () => {
 
   const handleSavePatient = async () => {
     if (!editingPatient) return;
-    
+
     // Validation
     if (!editingPatient.name || !editingPatient.age || !editingPatient.gender || !editingPatient.phone) {
       toast.error('Please fill all required fields');
       return;
     }
-    
+
     try {
       await updatePatient(editingPatient.patientId, editingPatient);
       toast.success('✅ Patient details updated successfully');
@@ -291,22 +291,22 @@ const Patients = () => {
   const filteredVisits = visits.filter(visit => {
     const patient = getPatientForVisit(visit);
     if (!patient) return false;
-    
+
     const matchesSearch = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           patient.phone.includes(searchTerm);
-    
+      patient.phone.includes(searchTerm);
+
     // FIXED FILTER LOGIC:
     // "Waiting" = Sample collected but results NOT entered (sample_times_set)
     // "Completed" = Results entered and report generated (report_generated OR completed)
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'waiting' && visit.status === 'sample_times_set') ||
-                         (statusFilter === 'completed' && (visit.status === 'report_generated' || visit.status === 'completed'));
-    
+    const matchesStatus = statusFilter === 'all' ||
+      (statusFilter === 'waiting' && visit.status === 'sample_times_set') ||
+      (statusFilter === 'completed' && (visit.status === 'report_generated' || visit.status === 'completed'));
+
     // Payment filter with safety check
     const matchesPayment = paymentFilter === 'all' ||
-                          (paymentFilter === 'paid' && visit.paymentStatus === 'paid') ||
-                          (paymentFilter === 'unpaid' && (!visit.paymentStatus || visit.paymentStatus === 'unpaid'));
-    
+      (paymentFilter === 'paid' && visit.paymentStatus === 'paid') ||
+      (paymentFilter === 'unpaid' && (!visit.paymentStatus || visit.paymentStatus === 'unpaid'));
+
     // Date range filter
     let matchesDate = true;
     if (fromDate || toDate) {
@@ -322,7 +322,7 @@ const Patients = () => {
         matchesDate = matchesDate && visitDate <= to;
       }
     }
-    
+
     return matchesSearch && matchesStatus && matchesPayment && matchesDate;
   });
 
@@ -373,7 +373,7 @@ const Patients = () => {
               className="search-input"
             />
           </div>
-          
+
           {/* Date Range Filters */}
           <div className="date-filters">
             <div className="date-input-group">
@@ -395,7 +395,7 @@ const Patients = () => {
               />
             </div>
             {(fromDate || toDate) && (
-              <button 
+              <button
                 className="clear-dates-btn"
                 onClick={() => { setFromDate(''); setToDate(''); }}
                 title="Clear dates"
@@ -404,33 +404,33 @@ const Patients = () => {
               </button>
             )}
           </div>
-          
+
           <div className="status-legend">
-            <button 
+            <button
               className={`status-pill ${statusFilter === 'all' ? 'active' : ''}`}
               onClick={() => setStatusFilter('all')}
             >
               All Patients
             </button>
-            <button 
+            <button
               className={`status-pill status-registered ${statusFilter === 'waiting' ? 'active' : ''}`}
               onClick={() => setStatusFilter('waiting')}
             >
               <Clock size={14} /> Waiting
             </button>
-            <button 
+            <button
               className={`status-pill status-completed ${statusFilter === 'completed' ? 'active' : ''}`}
               onClick={() => setStatusFilter('completed')}
             >
               <CheckCircle size={14} /> Completed
             </button>
-            <button 
+            <button
               className={`status-pill ${paymentFilter === 'paid' ? 'active payment-paid' : ''}`}
               onClick={() => setPaymentFilter(paymentFilter === 'paid' ? 'all' : 'paid')}
             >
               <CheckCircle size={14} /> Paid
             </button>
-            <button 
+            <button
               className={`status-pill ${paymentFilter === 'unpaid' ? 'active payment-unpaid' : ''}`}
               onClick={() => setPaymentFilter(paymentFilter === 'unpaid' ? 'all' : 'unpaid')}
             >
@@ -467,14 +467,14 @@ const Patients = () => {
                 {filteredVisits.map((visit) => {
                   const patient = getPatientForVisit(visit);
                   if (!patient) return null;
-                  
+
                   const profile = visit.profileId ? getProfileById(visit.profileId) : null;
-                  
+
                   // Determine CURRENT STEP and next action based on visit status
                   let currentStep = '';
                   let nextAction = '';
                   let editLink = '';
-                  
+
                   if (visit.status === 'tests_selected') {
                     currentStep = 'Registered';
                     nextAction = 'Set Sample Times';
@@ -482,7 +482,7 @@ const Patients = () => {
                   } else if (visit.status === 'sample_times_set') {
                     // Check if results are entered
                     const hasResults = visit.reportedAt || (visit.tests && visit.tests.some(t => t.result?.value));
-                    
+
                     if (hasResults) {
                       currentStep = 'Results Entered';
                       nextAction = 'Generate Report';
@@ -501,30 +501,30 @@ const Patients = () => {
                     nextAction = 'Check Status';
                     editLink = `/patients/${visit.visitId}`;
                   }
-                  
+
                   return (
                     <tr key={visit.visitId}>
-                      <td className="patient-name">
+                      <td className="patient-name" data-label="Name">
                         <div className="name-cell">
                           <div className="avatar">{patient.name.charAt(0).toUpperCase()}</div>
                           <span>{patient.name}</span>
                         </div>
                       </td>
-                      <td>{patient.age}Y/{patient.gender.charAt(0)}</td>
-                      <td className="phone-cell">{patient.phone}</td>
-                      <td className="profile-cell">
+                      <td data-label="Age/Sex">{patient.age}Y/{patient.gender.charAt(0)}</td>
+                      <td className="phone-cell" data-label="Phone">{patient.phone}</td>
+                      <td className="profile-cell" data-label="Profile">
                         <span className="profile-tag">{profile?.name || 'N/A'}</span>
                       </td>
-                      <td>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                      <td data-label="Current Step">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span className={`step-badge step-${currentStep.toLowerCase()}`}>{currentStep}</span>
-                          <span style={{fontSize: '0.7rem', color: '#666'}}>{nextAction}</span>
+                          <span style={{ fontSize: '0.7rem', color: '#666' }}>{nextAction}</span>
                         </div>
                       </td>
-                      <td className="text-center">
+                      <td className="text-center" data-label="PDF">
                         {(visit.pdfGenerated && visit.invoiceGenerated) ? (
                           <button className="icon-btn-success" onClick={() => handleGeneratePDF(visit.visitId)} title="Re-Print Combined PDF (Invoice + Reports)">
-                            <FileText size={14} /> <span style={{fontSize: '0.65rem', marginLeft: '2px'}}>Re-Print</span>
+                            <FileText size={14} /> <span style={{ fontSize: '0.65rem', marginLeft: '2px' }}>Re-Print</span>
                           </button>
                         ) : (
                           <button className="icon-btn" onClick={() => handleGeneratePDF(visit.visitId)} title="Generate Combined PDF (Invoice + Reports)">
@@ -532,31 +532,31 @@ const Patients = () => {
                           </button>
                         )}
                       </td>
-                      <td className="text-center">
+                      <td className="text-center" data-label="Payment">
                         {visit.paymentStatus === 'paid' ? (
                           <span className="payment-badge paid">Paid</span>
                         ) : (
                           <span className="payment-badge unpaid">Unpaid</span>
                         )}
                       </td>
-                      <td className="text-center">
-                        <div style={{display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap'}}>
-                          <button 
-                            className="icon-btn-edit" 
+                      <td className="text-center" data-label="Actions">
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                          <button
+                            className="icon-btn-edit"
                             onClick={() => navigate(editLink)}
                             title={nextAction}
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button 
-                            className="icon-btn-view" 
+                          <button
+                            className="icon-btn-view"
                             onClick={() => navigate(`/patients/${visit.visitId}`)}
                             title="View Details"
                           >
                             <Eye size={14} />
                           </button>
                           {/* WhatsApp Share - Share COMBINED PDF (Invoice + Reports) */}
-                          <button 
+                          <button
                             className={`icon-btn-success ${(visit.status === 'report_generated' || visit.status === 'completed') ? '' : 'disabled'}`}
                             onClick={async () => {
                               if (visit.status !== 'report_generated' && visit.status !== 'completed') {
@@ -569,17 +569,17 @@ const Patients = () => {
                                   const technicians = getTechnicians();
                                   signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
                                 }
-                                
+
                                 const allProfiles = getProfiles();
                                 const visitData = {
                                   ...visit,
                                   patient,
                                   signingTechnician
                                 };
-                                
+
                                 toast.loading('📱 Preparing combined PDF for WhatsApp...');
                                 const result = await shareCombinedPDFViaWhatsApp(visitData, allProfiles, patient.phone);
-                                
+
                                 if (result.success) {
                                   toast.dismiss();
                                   toast.success(result.message || 'WhatsApp opened with combined PDF!');
@@ -600,7 +600,7 @@ const Patients = () => {
                           </button>
                           {/* Email Share - Share COMBINED PDF (Invoice + Reports) */}
                           {patient.email && (
-                            <button 
+                            <button
                               className={`icon-btn ${(visit.status === 'report_generated' || visit.status === 'completed') ? '' : 'disabled'}`}
                               onClick={async () => {
                                 if (visit.status !== 'report_generated' && visit.status !== 'completed') {
@@ -613,17 +613,17 @@ const Patients = () => {
                                     const technicians = getTechnicians();
                                     signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
                                   }
-                                  
+
                                   const allProfiles = getProfiles();
                                   const visitData = {
                                     ...visit,
                                     patient,
                                     signingTechnician
                                   };
-                                  
+
                                   toast.loading('📧 Preparing combined PDF for Email...');
                                   const result = await shareCombinedPDFViaEmail(visitData, allProfiles, patient.email);
-                                  
+
                                   if (result.success) {
                                     toast.dismiss();
                                     toast.success(result.message || 'Email opened with combined PDF!');
@@ -643,15 +643,15 @@ const Patients = () => {
                               <Mail size={14} />
                             </button>
                           )}
-                          <button 
-                            className="icon-btn-edit" 
+                          <button
+                            className="icon-btn-edit"
                             onClick={() => handleEditPatient(visit)}
                             title="Edit Patient Details"
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button 
-                            className="icon-btn-delete" 
+                          <button
+                            className="icon-btn-delete"
                             onClick={() => handleDeletePatient(visit)}
                             title="Delete Patient"
                           >
@@ -667,7 +667,7 @@ const Patients = () => {
           </div>
         )}
       </Card>
-      
+
       {/* Edit Patient Modal */}
       {showEditModal && editingPatient && (
         <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
@@ -676,7 +676,7 @@ const Patients = () => {
               <h3><Edit2 size={20} /> Edit Patient Details</h3>
               <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
             </div>
-            
+
             <div className="modal-body">
               <div className="form-grid">
                 <div className="form-group">
@@ -684,26 +684,26 @@ const Patients = () => {
                   <input
                     type="text"
                     value={editingPatient.name || ''}
-                    onChange={(e) => setEditingPatient({...editingPatient, name: e.target.value})}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, name: e.target.value })}
                     className="form-input"
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label>Age *</label>
                   <input
                     type="number"
                     value={editingPatient.age || ''}
-                    onChange={(e) => setEditingPatient({...editingPatient, age: e.target.value})}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, age: e.target.value })}
                     className="form-input"
                   />
                 </div>
-                
+
                 <div className="form-group">
                   <label>Gender *</label>
                   <select
                     value={editingPatient.gender || ''}
-                    onChange={(e) => setEditingPatient({...editingPatient, gender: e.target.value})}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, gender: e.target.value })}
                     className="form-input"
                   >
                     <option value="">Select</option>
@@ -712,49 +712,49 @@ const Patients = () => {
                     <option value="Other">Other</option>
                   </select>
                 </div>
-                
+
                 <div className="form-group">
                   <label>Phone *</label>
                   <input
                     type="tel"
                     value={editingPatient.phone || ''}
-                    onChange={(e) => setEditingPatient({...editingPatient, phone: e.target.value})}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, phone: e.target.value })}
                     className="form-input"
                   />
                 </div>
-                
-                <div className="form-group" style={{gridColumn: '1 / -1'}}>
+
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label>Email</label>
                   <input
                     type="email"
                     value={editingPatient.email || ''}
-                    onChange={(e) => setEditingPatient({...editingPatient, email: e.target.value})}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, email: e.target.value })}
                     className="form-input"
                   />
                 </div>
-                
-                <div className="form-group" style={{gridColumn: '1 / -1'}}>
+
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label>Address</label>
                   <textarea
                     value={editingPatient.address || ''}
-                    onChange={(e) => setEditingPatient({...editingPatient, address: e.target.value})}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, address: e.target.value })}
                     className="form-input"
                     rows="3"
                   />
                 </div>
-                
-                <div className="form-group" style={{gridColumn: '1 / -1'}}>
+
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                   <label>Referred By</label>
                   <input
                     type="text"
                     value={editingPatient.referredBy || ''}
-                    onChange={(e) => setEditingPatient({...editingPatient, referredBy: e.target.value})}
+                    onChange={(e) => setEditingPatient({ ...editingPatient, referredBy: e.target.value })}
                     className="form-input"
                   />
                 </div>
               </div>
             </div>
-            
+
             <div className="modal-footer">
               <Button variant="ghost" onClick={() => setShowEditModal(false)}>Cancel</Button>
               <Button variant="primary" onClick={handleSavePatient} icon={Save}>Save Changes</Button>

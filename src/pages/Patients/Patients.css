@@ -629,32 +629,162 @@
 
   .patients-hero {
     padding: var(--space-4);
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .hero-actions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
   }
 
   .patients-stats-grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .stat-card {
+    padding: var(--space-4);
   }
 
   .filters-row {
     flex-direction: column;
     align-items: stretch;
+    padding: var(--space-4);
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .date-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-input-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .date-input {
+    width: 100%;
   }
 
   .status-legend {
     justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: var(--space-2);
+    flex-wrap: nowrap;
   }
 
+  .status-pill {
+    flex-shrink: 0;
+  }
+
+  /* Mobile Table Card View */
   .patients-table {
-    overflow-x: scroll;
-    -webkit-overflow-scrolling: touch;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: visible;
   }
 
   .patients-table table {
-    min-width: 800px;
+    display: block;
+    min-width: 0;
+  }
+
+  .patients-table thead {
+    display: none;
+  }
+
+  .patients-table tbody {
+    display: block;
+    gap: var(--space-3);
+  }
+
+  .patients-table tbody tr {
+    display: block;
+    background: white;
+    border-radius: 16px;
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    border: 1px solid var(--border);
+  }
+
+  .patients-table tbody tr:hover {
+    background: white;
+    transform: none;
+  }
+
+  .patients-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) 0;
+    text-align: right;
+    border: none;
+    font-size: 0.875rem;
+  }
+
+  .patients-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: left;
+    margin-right: var(--space-3);
+    font-size: 0.8125rem;
+  }
+
+  /* Special handling for first cell (Name) */
+  .patients-table td:first-child {
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border);
+    justify-content: flex-start;
+  }
+
+  .patients-table td:first-child::before {
+    display: none;
+  }
+
+  .name-cell {
+    width: 100%;
+  }
+
+  .patient-name {
+    font-size: 1rem;
+  }
+
+  /* Actions cell */
+  .patients-table td:last-child {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
+  .patients-table td:last-child::before {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .patients-page {
+    padding: var(--space-3);
+  }
+
+  .hero-text h1 {
+    font-size: 1.5rem;
+  }
+
+  .stat-value-row strong {
+    font-size: 1.5rem;
   }
 }
