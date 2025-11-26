@@ -1,0 +1,117 @@
+.sync-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sync-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border, #e0e0e0);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--color-text-secondary, #666);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.sync-button:hover:not(:disabled) {
+    background: var(--color-surface-hover, #f5f5f5);
+    border-color: var(--color-primary, #2e7d32);
+}
+
+.sync-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.sync-button:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Status-specific styles */
+.sync-button.syncing {
+    border-color: #1976d2;
+    color: #1976d2;
+}
+
+.sync-button.success {
+    border-color: #2e7d32;
+    color: #2e7d32;
+}
+
+.sync-button.error {
+    border-color: #d32f2f;
+    color: #d32f2f;
+}
+
+/* Icon animations */
+.sync-icon {
+    flex-shrink: 0;
+}
+
+.sync-icon.syncing {
+    animation: spin 1s linear infinite;
+}
+
+.sync-icon.success {
+    color: #2e7d32;
+}
+
+.sync-icon.error {
+    color: #d32f2f;
+}
+
+.sync-icon.offline {
+    color: #f57c00;
+}
+
+.sync-icon.idle {
+    color: #666;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.sync-text {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sync-text {
+        display: none;
+    }
+
+    .sync-button {
+        padding: 8px;
+    }
+}
+
+/* Tooltip on error */
+.sync-button[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 1000;
+}

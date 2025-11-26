@@ -1,0 +1,59 @@
+.theme-toggle {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius);
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--foreground);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle:hover {
+    background: var(--muted);
+    border-color: var(--primary);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
+}
+
+.theme-toggle svg {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle:hover svg {
+    transform: rotate(15deg);
+}
+
+/* Focus styles for accessibility */
+.theme-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Smooth theme transition */
+:root,
+:root.dark {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Optional: Add to header or navigation */
+.theme-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.theme-toggle-label {
+    font-size: 14px;
+    color: var(--muted-foreground);
+    user-select: none;
+}
