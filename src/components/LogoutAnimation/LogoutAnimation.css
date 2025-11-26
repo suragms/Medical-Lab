@@ -1,0 +1,342 @@
+/* Logout Animation Overlay */
+.logout-animation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Main Container */
+.logout-animation-container {
+  text-align: center;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Logo Wrapper */
+.logout-logo-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 32px;
+}
+
+/* Logo Circle with Pulse Animation */
+.logout-logo-circle {
+  width: 140px;
+  height: 140px;
+  background: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 0 0 0 rgba(255, 255, 255, 0.7),
+    0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: 
+    logoPulse 2s ease-in-out infinite,
+    logoRotate 3s linear infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 0 rgba(255, 255, 255, 0.7),
+      0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 20px rgba(255, 255, 255, 0),
+      0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@keyframes logoRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Logo Image */
+.logout-logo-image {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  animation: logoZoom 2s ease-in-out infinite;
+}
+
+.logout-logo-fallback {
+  font-size: 4rem;
+  animation: logoZoom 2s ease-in-out infinite;
+}
+
+@keyframes logoZoom {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Logout Icon Animation */
+.logout-icon-animation {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+  animation: 
+    iconBounce 1s ease-in-out infinite,
+    iconGlow 2s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes iconGlow {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 24px rgba(220, 38, 38, 0.8);
+  }
+}
+
+/* Laboratory Name */
+.logout-lab-name {
+  margin-bottom: 24px;
+  animation: textFadeIn 0.8s ease-out 0.3s both;
+}
+
+@keyframes textFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logout-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: titleGlow 2s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+  0%, 100% {
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+  50% {
+    text-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.2),
+      0 0 20px rgba(255, 255, 255, 0.5);
+  }
+}
+
+.logout-subtitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+/* Animated Dots */
+.logout-dots {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  animation: textFadeIn 0.8s ease-out 0.5s both;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-radius: 50%;
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+
+.dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Logout Message */
+.logout-message {
+  animation: textFadeIn 0.8s ease-out 0.7s both;
+}
+
+.logout-message p {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .logout-logo-circle {
+    width: 120px;
+    height: 120px;
+  }
+
+  .logout-logo-image {
+    width: 70px;
+    height: 70px;
+  }
+
+  .logout-logo-fallback {
+    font-size: 3.5rem;
+  }
+
+  .logout-icon-animation {
+    width: 48px;
+    height: 48px;
+  }
+
+  .logout-icon-animation svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .logout-title {
+    font-size: 2rem;
+  }
+
+  .logout-subtitle {
+    font-size: 1rem;
+  }
+
+  .logout-message p {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .logout-logo-circle {
+    width: 100px;
+    height: 100px;
+  }
+
+  .logout-logo-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .logout-logo-fallback {
+    font-size: 3rem;
+  }
+
+  .logout-icon-animation {
+    width: 40px;
+    height: 40px;
+  }
+
+  .logout-icon-animation svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .logout-title {
+    font-size: 1.5rem;
+  }
+
+  .logout-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .logout-message p {
+    font-size: 0.875rem;
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Fade out animation when completing */
+.logout-animation-overlay.fade-out {
+  animation: fadeOut 0.5s ease-out forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

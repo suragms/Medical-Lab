@@ -22,6 +22,7 @@ import { getVisits, getPatients } from '../../features/shared/dataService';
 import { LOGO_PATHS } from '../../utils/assetPath';
 import SyncIndicator from '../SyncIndicator/SyncIndicator';
 import MobileNav from '../MobileNav/MobileNav';
+import LogoutAnimation from '../LogoutAnimation/LogoutAnimation';
 import './Layout.css';
 
 const Layout = () => {
@@ -33,6 +34,7 @@ const Layout = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [alerts, setAlerts] = useState({ waiting: [], unpaid: [], pendingResults: [] });
   const [logoError, setLogoError] = useState(false);
+  const [showLogoutAnimation, setShowLogoutAnimation] = useState(false);
 
   // Load alerts
   const loadAlerts = useCallback(async () => {
@@ -129,271 +131,283 @@ const Layout = () => {
   const filteredMenu = menuItems.filter(item => item.roles.includes(role));
 
   const handleLogout = () => {
+    // Show logout animation
+    setShowLogoutAnimation(true);
+  };
+
+  const completeLogout = () => {
+    // Complete logout after animation
     logout();
     navigate('/login');
   };
 
-  return (
-    <div className="layout">
-      {/* Main Content - Full Width */}
-      <div className="main-content full-width">
-        {/* Compact Top Nav Header */}
-        <header className="top-nav">
-          {/* Mobile Menu Button (visible only on mobile) */}
-          <button
-            className="mobile-menu-btn"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label="Toggle menu"
-          >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
 
-          {/* Left: Logo + App Name + Quick Nav */}
-          <div className="nav-left">
-            <div className="nav-logo">
-              {!logoError ? (
-                <img
-                  src={LOGO_PATHS.healit}
-                  alt="HEALit Logo"
-                  className="logo-image"
-                  onError={() => setLogoError(true)}
-                />
-              ) : (
-                <span className="logo-fallback" style={{ color: '#FFFFFF', fontSize: '1.5rem', fontWeight: 'bold' }}>🏥</span>
-              )}
-              <span className="app-name">HEALit Med Lab</span>
+  return (
+    <>
+      {/* Logout Animation Overlay */}
+      {showLogoutAnimation && <LogoutAnimation onComplete={completeLogout} />}
+
+      <div className="layout">
+        {/* Main Content - Full Width */}
+        <div className="main-content full-width">
+          {/* Compact Top Nav Header */}
+          <header className="top-nav">
+            {/* Mobile Menu Button (visible only on mobile) */}
+            <button
+              className="mobile-menu-btn"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle menu"
+            >
+              {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            {/* Left: Logo + App Name + Quick Nav */}
+            <div className="nav-left">
+              <div className="nav-logo">
+                {!logoError ? (
+                  <img
+                    src={LOGO_PATHS.healit}
+                    alt="HEALit Logo"
+                    className="logo-image"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <span className="logo-fallback" style={{ color: '#FFFFFF', fontSize: '1.5rem', fontWeight: 'bold' }}>🏥</span>
+                )}
+                <span className="app-name">HEALit Med Lab</span>
+              </div>
+
+              {/* Quick Navigation */}
+              <div className="quick-nav">
+                {filteredMenu.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`quick-nav-btn ${location.pathname === item.path ? 'active' : ''}`}
+                    title={item.label}
+                  >
+                    <item.icon size={16} />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Quick Navigation */}
-            <div className="quick-nav">
+            {/* Right: User Actions */}
+            <div className="nav-right">
+              <div className="notification-wrapper">
+                <button
+                  className="nav-icon-btn"
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  title="Notifications"
+                >
+                  <Bell size={18} />
+                  {totalAlerts > 0 && (
+                    <span className="notification-badge">{totalAlerts}</span>
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <>
+                    <div className="notification-overlay" onClick={() => setShowNotifications(false)} />
+                    <div className="notification-dropdown">
+                      <div className="notification-header">
+                        <h3>Notifications</h3>
+                        <span className="notification-count">{totalAlerts} alerts</span>
+                      </div>
+
+                      {totalAlerts === 0 ? (
+                        <div className="notification-empty">
+                          <p>No notifications</p>
+                        </div>
+                      ) : (
+                        <div className="notification-list">
+                          {alerts.waiting.length > 0 && (
+                            <div className="notification-section">
+                              <div className="notification-section-header">
+                                <Clock size={14} />
+                                <span>Waiting for Sample Collection ({alerts.waiting.length})</span>
+                              </div>
+                              {alerts.waiting.map(visit => (
+                                <div
+                                  key={visit.visitId}
+                                  className="notification-item"
+                                  onClick={() => {
+                                    navigate(`/patients/${visit.visitId}`);
+                                    setShowNotifications(false);
+                                  }}
+                                >
+                                  <div className="notification-content">
+                                    <p className="notification-patient">{visit.name}</p>
+                                    <p className="notification-detail">{visit.age}Y / {visit.gender} • Phone: {visit.phone}</p>
+                                    <p className="notification-tests">Tests: {visit.selectedTests?.map(t => t.name).join(', ') || 'N/A'}</p>
+                                    {visit.waitingTime && (
+                                      <p className="notification-waiting">⏱️ Waiting: {visit.waitingTime}</p>
+                                    )}
+                                  </div>
+                                  <span className="notification-time">ID: {visit.visitId}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {alerts.pendingResults.length > 0 && (
+                            <div className="notification-section">
+                              <div className="notification-section-header">
+                                <Activity size={14} />
+                                <span>Pending Results Entry ({alerts.pendingResults.length})</span>
+                              </div>
+                              {alerts.pendingResults.map(visit => (
+                                <div
+                                  key={visit.visitId}
+                                  className="notification-item"
+                                  onClick={() => {
+                                    navigate(`/results/${visit.visitId}`);
+                                    setShowNotifications(false);
+                                  }}
+                                >
+                                  <div className="notification-content">
+                                    <p className="notification-patient">{visit.name}</p>
+                                    <p className="notification-detail">{visit.age}Y / {visit.gender} • Sample ID: {visit.sampleId || 'N/A'}</p>
+                                    <p className="notification-tests">Tests pending: {visit.selectedTests?.map(t => t.name).join(', ') || 'N/A'}</p>
+                                    {visit.waitingTime && (
+                                      <p className="notification-waiting urgent">⏱️ Waiting: {visit.waitingTime}</p>
+                                    )}
+                                  </div>
+                                  <span className="notification-time">ID: {visit.visitId}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {alerts.unpaid.length > 0 && (
+                            <div className="notification-section">
+                              <div className="notification-section-header">
+                                <XCircle size={14} />
+                                <span>Unpaid Invoices ({alerts.unpaid.length})</span>
+                              </div>
+                              {alerts.unpaid.map(visit => (
+                                <div
+                                  key={visit.visitId}
+                                  className="notification-item"
+                                  onClick={() => {
+                                    navigate(`/patients/${visit.visitId}`);
+                                    setShowNotifications(false);
+                                  }}
+                                >
+                                  <div className="notification-content">
+                                    <p className="notification-patient">{visit.name}</p>
+                                    <p className="notification-detail">Amount: ₹{visit.totalAmount || 0} • Phone: {visit.phone}</p>
+                                    <p className="notification-tests">Tests: {visit.selectedTests?.map(t => t.name).join(', ') || 'N/A'}</p>
+                                  </div>
+                                  <span className="notification-time">ID: {visit.visitId}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              <SyncIndicator />
+              <button className="nav-icon-btn" onClick={() => navigate(role === 'admin' ? '/settings' : '/settings/staff')} title="Settings">
+                <SettingsIcon size={18} />
+              </button>
+              <button
+                className="nav-icon-btn"
+                onClick={() => navigate(role === 'admin' ? '/settings' : '/settings/staff')}
+                title={`Profile: ${user?.fullName || user?.username || 'User'} - Click to view settings`}
+              >
+                <UserCircle size={18} />
+                <span className="username-display">
+                  {user?.fullName || user?.username || 'User'}
+                </span>
+              </button>
+              <button className="nav-icon-btn logout" onClick={handleLogout} title="Logout">
+                <LogOut size={18} />
+              </button>
+            </div>
+          </header>
+
+          {/* Mobile Sidebar Overlay */}
+          {sidebarOpen && (
+            <div
+              className="mobile-sidebar-overlay"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
+          {/* Mobile Sidebar Menu */}
+          <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
+            <div className="mobile-sidebar-header">
+              <div className="mobile-sidebar-logo">
+                {!logoError ? (
+                  <img
+                    src={LOGO_PATHS.healit}
+                    alt="HEALit Logo"
+                    className="logo-image"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <span className="logo-fallback">🏥</span>
+                )}
+                <span className="app-name">HEALit Med Lab</span>
+              </div>
+              <button
+                className="mobile-sidebar-close"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close menu"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <nav className="mobile-sidebar-nav">
               {filteredMenu.map((item) => (
                 <button
                   key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className={`quick-nav-btn ${location.pathname === item.path ? 'active' : ''}`}
-                  title={item.label}
+                  onClick={() => {
+                    navigate(item.path);
+                    setSidebarOpen(false);
+                  }}
+                  className={`mobile-nav-item ${location.pathname === item.path ? 'active' : ''}`}
                 >
-                  <item.icon size={16} />
+                  <item.icon size={20} />
                   <span>{item.label}</span>
                 </button>
               ))}
-            </div>
-          </div>
+            </nav>
 
-          {/* Right: User Actions */}
-          <div className="nav-right">
-            <div className="notification-wrapper">
+            <div className="mobile-sidebar-footer">
+              <div className="mobile-user-info">
+                <UserCircle size={20} />
+                <span>{user?.fullName || user?.username || 'User'}</span>
+              </div>
               <button
-                className="nav-icon-btn"
-                onClick={() => setShowNotifications(!showNotifications)}
-                title="Notifications"
-              >
-                <Bell size={18} />
-                {totalAlerts > 0 && (
-                  <span className="notification-badge">{totalAlerts}</span>
-                )}
-              </button>
-
-              {showNotifications && (
-                <>
-                  <div className="notification-overlay" onClick={() => setShowNotifications(false)} />
-                  <div className="notification-dropdown">
-                    <div className="notification-header">
-                      <h3>Notifications</h3>
-                      <span className="notification-count">{totalAlerts} alerts</span>
-                    </div>
-
-                    {totalAlerts === 0 ? (
-                      <div className="notification-empty">
-                        <p>No notifications</p>
-                      </div>
-                    ) : (
-                      <div className="notification-list">
-                        {alerts.waiting.length > 0 && (
-                          <div className="notification-section">
-                            <div className="notification-section-header">
-                              <Clock size={14} />
-                              <span>Waiting for Sample Collection ({alerts.waiting.length})</span>
-                            </div>
-                            {alerts.waiting.map(visit => (
-                              <div
-                                key={visit.visitId}
-                                className="notification-item"
-                                onClick={() => {
-                                  navigate(`/patients/${visit.visitId}`);
-                                  setShowNotifications(false);
-                                }}
-                              >
-                                <div className="notification-content">
-                                  <p className="notification-patient">{visit.name}</p>
-                                  <p className="notification-detail">{visit.age}Y / {visit.gender} • Phone: {visit.phone}</p>
-                                  <p className="notification-tests">Tests: {visit.selectedTests?.map(t => t.name).join(', ') || 'N/A'}</p>
-                                  {visit.waitingTime && (
-                                    <p className="notification-waiting">⏱️ Waiting: {visit.waitingTime}</p>
-                                  )}
-                                </div>
-                                <span className="notification-time">ID: {visit.visitId}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {alerts.pendingResults.length > 0 && (
-                          <div className="notification-section">
-                            <div className="notification-section-header">
-                              <Activity size={14} />
-                              <span>Pending Results Entry ({alerts.pendingResults.length})</span>
-                            </div>
-                            {alerts.pendingResults.map(visit => (
-                              <div
-                                key={visit.visitId}
-                                className="notification-item"
-                                onClick={() => {
-                                  navigate(`/results/${visit.visitId}`);
-                                  setShowNotifications(false);
-                                }}
-                              >
-                                <div className="notification-content">
-                                  <p className="notification-patient">{visit.name}</p>
-                                  <p className="notification-detail">{visit.age}Y / {visit.gender} • Sample ID: {visit.sampleId || 'N/A'}</p>
-                                  <p className="notification-tests">Tests pending: {visit.selectedTests?.map(t => t.name).join(', ') || 'N/A'}</p>
-                                  {visit.waitingTime && (
-                                    <p className="notification-waiting urgent">⏱️ Waiting: {visit.waitingTime}</p>
-                                  )}
-                                </div>
-                                <span className="notification-time">ID: {visit.visitId}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {alerts.unpaid.length > 0 && (
-                          <div className="notification-section">
-                            <div className="notification-section-header">
-                              <XCircle size={14} />
-                              <span>Unpaid Invoices ({alerts.unpaid.length})</span>
-                            </div>
-                            {alerts.unpaid.map(visit => (
-                              <div
-                                key={visit.visitId}
-                                className="notification-item"
-                                onClick={() => {
-                                  navigate(`/patients/${visit.visitId}`);
-                                  setShowNotifications(false);
-                                }}
-                              >
-                                <div className="notification-content">
-                                  <p className="notification-patient">{visit.name}</p>
-                                  <p className="notification-detail">Amount: ₹{visit.totalAmount || 0} • Phone: {visit.phone}</p>
-                                  <p className="notification-tests">Tests: {visit.selectedTests?.map(t => t.name).join(', ') || 'N/A'}</p>
-                                </div>
-                                <span className="notification-time">ID: {visit.visitId}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-            <SyncIndicator />
-            <button className="nav-icon-btn" onClick={() => navigate(role === 'admin' ? '/settings' : '/settings/staff')} title="Settings">
-              <SettingsIcon size={18} />
-            </button>
-            <button
-              className="nav-icon-btn"
-              onClick={() => navigate(role === 'admin' ? '/settings' : '/settings/staff')}
-              title={`Profile: ${user?.fullName || user?.username || 'User'} - Click to view settings`}
-            >
-              <UserCircle size={18} />
-              <span className="username-display">
-                {user?.fullName || user?.username || 'User'}
-              </span>
-            </button>
-            <button className="nav-icon-btn logout" onClick={handleLogout} title="Logout">
-              <LogOut size={18} />
-            </button>
-          </div>
-        </header>
-
-        {/* Mobile Sidebar Overlay */}
-        {sidebarOpen && (
-          <div
-            className="mobile-sidebar-overlay"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Mobile Sidebar Menu */}
-        <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
-          <div className="mobile-sidebar-header">
-            <div className="mobile-sidebar-logo">
-              {!logoError ? (
-                <img
-                  src={LOGO_PATHS.healit}
-                  alt="HEALit Logo"
-                  className="logo-image"
-                  onError={() => setLogoError(true)}
-                />
-              ) : (
-                <span className="logo-fallback">🏥</span>
-              )}
-              <span className="app-name">HEALit Med Lab</span>
-            </div>
-            <button
-              className="mobile-sidebar-close"
-              onClick={() => setSidebarOpen(false)}
-              aria-label="Close menu"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <nav className="mobile-sidebar-nav">
-            {filteredMenu.map((item) => (
-              <button
-                key={item.path}
+                className="mobile-logout-btn"
                 onClick={() => {
-                  navigate(item.path);
+                  handleLogout();
                   setSidebarOpen(false);
                 }}
-                className={`mobile-nav-item ${location.pathname === item.path ? 'active' : ''}`}
               >
-                <item.icon size={20} />
-                <span>{item.label}</span>
+                <LogOut size={18} />
+                <span>Logout</span>
               </button>
-            ))}
-          </nav>
-
-          <div className="mobile-sidebar-footer">
-            <div className="mobile-user-info">
-              <UserCircle size={20} />
-              <span>{user?.fullName || user?.username || 'User'}</span>
             </div>
-            <button
-              className="mobile-logout-btn"
-              onClick={() => {
-                handleLogout();
-                setSidebarOpen(false);
-              }}
-            >
-              <LogOut size={18} />
-              <span>Logout</span>
-            </button>
-          </div>
-        </aside>
+          </aside>
 
-        {/* Page Content */}
-        <main className="content">
-          <Outlet />
-        </main>
+          {/* Page Content */}
+          <main className="content">
+            <Outlet />
+          </main>
+        </div>
+
+        {/* Mobile Bottom Navigation */}
+        <MobileNav />
       </div>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileNav />
-    </div>
+    </>
   );
 };
 
