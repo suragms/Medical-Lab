@@ -106,19 +106,20 @@ export class DataMigrationService {
         const data = response.data;
 
         // Update localStorage with backend data directly
-        if (data.patients && data.patients.length > 0) {
+        // FIXED: Allow empty arrays to sync (handles deletions)
+        if (Array.isArray(data.patients)) {
           localStorage.setItem('healit_patients', JSON.stringify(data.patients));
         }
 
-        if (data.visits && data.visits.length > 0) {
+        if (Array.isArray(data.visits)) {
           localStorage.setItem('healit_visits', JSON.stringify(data.visits));
         }
 
-        if (data.results && data.results.length > 0) {
+        if (Array.isArray(data.results)) {
           localStorage.setItem('healit_results', JSON.stringify(data.results));
         }
 
-        if (data.invoices && data.invoices.length > 0) {
+        if (Array.isArray(data.invoices)) {
           localStorage.setItem('healit_invoices', JSON.stringify(data.invoices));
         }
 
@@ -126,27 +127,27 @@ export class DataMigrationService {
           localStorage.setItem('healit_settings', JSON.stringify(data.settings));
         }
 
-        if (data.profiles && data.profiles.length > 0) {
+        if (Array.isArray(data.profiles)) {
           localStorage.setItem('healit_profiles', JSON.stringify(data.profiles));
         }
 
-        if (data.testsMaster && data.testsMaster.length > 0) {
+        if (Array.isArray(data.testsMaster)) {
           localStorage.setItem('healit_tests_master', JSON.stringify(data.testsMaster));
         }
 
-        if (data.auditLogs && data.auditLogs.length > 0) {
+        if (Array.isArray(data.auditLogs)) {
           localStorage.setItem('healit_audit_logs', JSON.stringify(data.auditLogs));
         }
 
-        if (data.financialExpenses && data.financialExpenses.length > 0) {
+        if (Array.isArray(data.financialExpenses)) {
           localStorage.setItem('healit_financial_expenses', JSON.stringify(data.financialExpenses));
         }
 
-        if (data.financialCategories && data.financialCategories.length > 0) {
+        if (Array.isArray(data.financialCategories)) {
           localStorage.setItem('healit_financial_categories', JSON.stringify(data.financialCategories));
         }
 
-        if (data.financialReminders && data.financialReminders.length > 0) {
+        if (Array.isArray(data.financialReminders)) {
           localStorage.setItem('healit_financial_reminders', JSON.stringify(data.financialReminders));
         }
 

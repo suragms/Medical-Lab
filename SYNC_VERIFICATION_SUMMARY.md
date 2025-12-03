@@ -67,6 +67,12 @@ All pages have been verified to support real-time data synchronization:
 **Total Pages Verified:** 10  
 **Sync Coverage:** 100%
 
+### 🐛 Critical Fix Applied
+
+**Issue:** Deleting the last item in a list (e.g., last patient) would cause it to reappear after sync.  
+**Fix:** Updated `src/services/dataMigrationService.js` to correctly handle empty arrays from the server.  
+**Result:** Deletions now propagate correctly to all devices.
+
 ---
 
 ## 🔧 MongoDB Configuration
