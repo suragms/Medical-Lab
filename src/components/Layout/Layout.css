@@ -389,15 +389,6 @@
   background: var(--text-tertiary);
 }
 
-.layout--focused-editor .main-content {
-  height: 100vh;
-}
-
-.content--focused-editor {
-  padding: 0;
-  background: #eef2f7;
-}
-
 .sidebar-overlay {
   display: none;
 }

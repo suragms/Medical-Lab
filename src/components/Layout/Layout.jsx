@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -14,12 +14,12 @@ import {
   BarChart3,
   Clock,
   Activity,
-  XCircle
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 import { useAuthStore } from '../../store';
 import { getVisits, getPatients } from '../../features/shared/dataService';
 import { LOGO_PATHS } from '../../utils/assetPath';
-import SyncIndicator from '../SyncIndicator/SyncIndicator';
 import MobileNav from '../MobileNav/MobileNav';
 import LogoutAnimation from '../LogoutAnimation/LogoutAnimation';
 import './Layout.css';
@@ -29,13 +29,11 @@ const Layout = () => {
   const location = useLocation();
   const { user, role, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [alerts, setAlerts] = useState({ waiting: [], unpaid: [], pendingResults: [] });
   const [logoError, setLogoError] = useState(false);
   const [showLogoutAnimation, setShowLogoutAnimation] = useState(false);
-  const isProfileEditorRoute =
-    /^\/profiles\/(new|edit\/[^/]+)$/.test(location.pathname) ||
-    /^\/admin\/profile-manager\/(new|edit\/[^/]+)$/.test(location.pathname);
 
   // Load alerts
   const loadAlerts = useCallback(async () => {
@@ -148,11 +146,10 @@ const Layout = () => {
       {/* Logout Animation Overlay */}
       {showLogoutAnimation && <LogoutAnimation onComplete={completeLogout} />}
 
-      <div className={`layout ${isProfileEditorRoute ? 'layout--focused-editor' : ''}`}>
+      <div className="layout">
         {/* Main Content - Full Width */}
         <div className="main-content full-width">
           {/* Compact Top Nav Header */}
-          {!isProfileEditorRoute && (
           <header className="top-nav">
             {/* Mobile Menu Button (visible only on mobile) */}
             <button
@@ -313,7 +310,6 @@ const Layout = () => {
                   </>
                 )}
               </div>
-              <SyncIndicator />
               <button className="nav-icon-btn" onClick={() => navigate(role === 'admin' ? '/settings' : '/settings/staff')} title="Settings">
                 <SettingsIcon size={18} />
               </button>
@@ -332,10 +328,9 @@ const Layout = () => {
               </button>
             </div>
           </header>
-          )}
 
           {/* Mobile Sidebar Overlay */}
-          {!isProfileEditorRoute && sidebarOpen && (
+          {sidebarOpen && (
             <div
               className="mobile-sidebar-overlay"
               onClick={() => setSidebarOpen(false)}
@@ -343,7 +338,6 @@ const Layout = () => {
           )}
 
           {/* Mobile Sidebar Menu */}
-          {!isProfileEditorRoute && (
           <aside className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
             <div className="mobile-sidebar-header">
               <div className="mobile-sidebar-logo">
@@ -401,16 +395,15 @@ const Layout = () => {
               </button>
             </div>
           </aside>
-          )}
 
           {/* Page Content */}
-          <main className={`content ${isProfileEditorRoute ? 'content--focused-editor' : ''}`}>
+          <main className="content">
             <Outlet />
           </main>
         </div>
 
         {/* Mobile Bottom Navigation */}
-        {!isProfileEditorRoute && <MobileNav />}
+        <MobileNav />
       </div>
     </>
   );

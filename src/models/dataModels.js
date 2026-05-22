@@ -98,8 +98,6 @@ export class TestMaster {
     this.refHigh = data.refHigh || null;
     this.refText = data.refText || '';
     this.bioReference = data.bioReference || ''; // Multi-line bio reference range
-    this.method = data.method || ''; // Methodology (e.g., "Manual Microscopy", "Ehrlich Reaction")
-    this.sampleType = data.sampleType || 'SERUM'; // SERUM | URINE | BLOOD | PLASMA | STOOL | WHOLE BLOOD | OTHER
     this.inputType = data.inputType || 'number'; // number, text, select
     this.dropdownOptions = data.dropdownOptions || [];
     this.price = data.price || 0;
@@ -122,8 +120,6 @@ export class TestSnapshot {
     this.refHigh_snapshot = data.refHigh_snapshot !== undefined ? data.refHigh_snapshot : data.refHigh;
     this.refText_snapshot = data.refText_snapshot || data.refText || '';
     this.bioReference_snapshot = data.bioReference_snapshot || data.bioReference || ''; // Multi-line bio reference
-    this.method_snapshot = data.method_snapshot || data.method || ''; // Methodology snapshot
-    this.sampleType_snapshot = data.sampleType_snapshot || data.sampleType || 'SERUM'; // Sample type snapshot
     this.inputType_snapshot = data.inputType_snapshot || data.inputType || 'number';
     this.dropdownOptions_snapshot = data.dropdownOptions_snapshot || data.dropdownOptions || [];
     this.price_snapshot = data.price_snapshot !== undefined ? data.price_snapshot : data.price || 0;

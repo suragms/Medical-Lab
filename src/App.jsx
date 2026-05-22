@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store';
@@ -26,7 +26,6 @@ import FinancialManagement from './features/admin/financial-management/Financial
 import AdminSettings from './features/admin/settings/AdminSettings';
 import TechniciansPage from './pages/Settings/TechniciansPage';
 import ProfileManager from './pages/Admin/ProfileManager';
-import ProfileEditorWorkspace from './pages/Admin/ProfileEditorWorkspace';
 import StaffSettings from './pages/Settings/StaffSettings';
 import StaffPerformance from './pages/Admin/StaffPerformance';
 
@@ -232,14 +231,15 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Profile editor workspace (full-page, single scroll) */}
-          <Route path="profiles/new" element={<ProfileEditorWorkspace />} />
-          <Route path="profiles/edit/:profileId" element={<ProfileEditorWorkspace />} />
-          <Route path="admin/profile-manager/new" element={<ProfileEditorWorkspace />} />
-          <Route path="admin/profile-manager/edit/:profileId" element={<ProfileEditorWorkspace />} />
-          {/* Profile list - Admin AND Staff */}
-          <Route path="profiles" element={<ProfileManager />} />
-          <Route path="admin/profile-manager" element={<ProfileManager />} />
+          {/* Profile Manager Page - Admin AND Staff */}
+          <Route
+            path="profiles"
+            element={<ProfileManager />}
+          />
+          <Route
+            path="admin/profile-manager"
+            element={<ProfileManager />}
+          />
         </Route>
 
         {/* Catch all - redirect to login if not authenticated, else dashboard */}

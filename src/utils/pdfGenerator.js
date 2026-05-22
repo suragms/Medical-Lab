@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { LOGO_PATHS, SIGNATURE_PATHS, imageToBase64 } from './assetPath';
+import { SIGNATURE_PATHS, imageToBase64 } from './assetPath';
 import { parseRange, checkRangeStatus, getStatusColor, getStatusBgColor, shouldBeBold } from './rangeParser';
 
 // HEALit Brand Colors - Blue, Green, Red Theme
@@ -31,7 +31,7 @@ export const generateReportPDF = async (visitData) => {
   let yPos = margin;
 
   // ========================================
-  // HEADER SECTION - WITH LOGOS
+  // HEADER SECTION
   // ========================================
   
   // Top border
@@ -40,45 +40,11 @@ export const generateReportPDF = async (visitData) => {
   doc.line(margin, yPos, pageWidth - margin, yPos);
   yPos += 3;
   
-  // Add logos at top
-  const logoHeight = 24;
-  const logoY = yPos;
-  
-  // Left Logo - HEALit (convert to base64)
-  try {
-    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
-    doc.addImage(healitBase64, 'PNG', margin, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('HEALit logo not loaded:', error);
-  }
-  
-  // Center title - Lab Name
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
   doc.setTextColor(0, 0, 0);
-  doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
-  
-  // Right Logo - Thyrocare (convert to base64)
-  try {
-    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
-    doc.addImage(partnerBase64, 'JPEG', pageWidth - margin - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('Partner logo not loaded:', error);
-  }
-
-  yPos += logoHeight + 3;
-  
-  // Lab Address & Contact (below logos)
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor('#111'); // Black text
-  doc.text('Kunnathpeedika – Thrissur, Kerala', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 4;
-  
-  doc.setFontSize(9);
-  doc.setTextColor('#666'); // Muted gray
-  doc.text('Phone: 7356865161 | Email: healitlab@gmail.com', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 5;
+  doc.text('HEALit Med Laboratories', pageWidth / 2, yPos + 8, { align: 'center' });
+  yPos += 14;
 
   // Bottom border separator
   doc.setDrawColor(COLORS.border);
@@ -122,13 +88,6 @@ export const generateReportPDF = async (visitData) => {
   addLeftRow('Patient Name:', visitData.patient.name);
   addLeftRow('Age / Gender:', `${visitData.patient.age} yrs / ${visitData.patient.gender}`);
   addLeftRow('Phone:', visitData.patient.phone);
-  
-  // Address - multiline if needed
-  const address = visitData.patient.address || 'Not provided';
-  doc.setFont('helvetica', 'normal');
-  doc.text('Address: ' + address, leftX, leftY);
-  leftY += lineHeight;
-  
   addLeftRow('Referred By:', visitData.patient.referredBy || 'Self');
 
   // RIGHT COLUMN - Test Details (Compact format)

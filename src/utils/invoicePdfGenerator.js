@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { LOGO_PATHS, SIGNATURE_PATHS, imageToBase64 } from './assetPath';
+import { SIGNATURE_PATHS, imageToBase64 } from './assetPath';
 
 /**
  * Format date/time for display - matches report format: "20 Nov 2025, 10:23 am"
@@ -56,56 +56,13 @@ export const generateInvoicePDF = async (invoiceData) => {
   doc.setDrawColor(229, 231, 235);
   doc.setLineWidth(0.5);
   doc.line(15, yPos, pageWidth - 15, yPos);
-  yPos += 2;
-  
-  // Smaller logos
-  const logoHeight = 16; // Reduced from 18
-  const logoY = yPos;
-  
-  // Left Logo - HEALit (convert to base64)
-  try {
-    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
-    doc.addImage(healitBase64, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('HEALit logo failed:', error);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 58, 138);
-    doc.text('[HEALit]', 15, yPos + 12);
-  }
+  yPos += 6;
 
-  // Center title
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
-
-  // Right Logo - Thyrocare (convert to base64)
-  try {
-    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
-    doc.addImage(partnerBase64, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('Partner logo failed:', error);
-    doc.setFontSize(10);
-    doc.setTextColor(30, 58, 138);
-    doc.text('[Thyrocare]', pageWidth - 25, yPos + 12, { align: 'right' });
-  }
-
-  yPos += logoHeight + 2; // Reduced spacing
-
-  // Sub-title - Smaller
-  doc.setFontSize(8); // Reduced from 9
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(75, 85, 99);
-  doc.text('Kunnathpeedika – Thrissur, Kerala', pageWidth / 2, yPos, { align: 'center' });
-
-  yPos += 3; // Reduced from 3
-
-  // Contact - Smaller
-  doc.setFontSize(7); // Reduced from 8
-  doc.text('Phone: 7356865161 | Email: healitlab@gmail.com', pageWidth / 2, yPos, { align: 'center' });
-
-  yPos += 3; // Reduced from 4
+  doc.text('HEALit Med Laboratories', pageWidth / 2, yPos + 8, { align: 'center' });
+  yPos += 14;
 
   // Line
   doc.setDrawColor(229, 231, 235);
@@ -148,28 +105,14 @@ export const generateInvoicePDF = async (invoiceData) => {
 
   patientLines.forEach(line => {
     doc.text(line, leftCol, yPos);
-    yPos += 3.5; // Reduced from 4
+    yPos += 3.5;
   });
   
-  // Address - Handle multiline - Compact
-  const address = patient.address || 'Not provided';
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  doc.text('Address:', leftCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  
-  const addressLines = doc.splitTextToSize(address, 85);
-  addressLines.forEach((line, idx) => {
-    doc.text(line, leftCol + 16, yPos + (idx * 3)); // Reduced spacing
-  });
-  yPos += 3 + (addressLines.length - 1) * 3;
-  
-  yPos += 3.5; // Reduced from 4
   doc.text(`Payment: ${patient.paymentStatus || 'Unpaid'}`, leftCol, yPos);
-  yPos += 3.5; // Reduced from 4
+  yPos += 3.5;
 
   // Right: Invoice details - Smaller
-  yPos -= 22; // Adjusted positioning
+  yPos -= 18;
   
   // Add test times if available (from visit data)
   const times = invoiceData.times || {};

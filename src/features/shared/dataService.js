@@ -35,10 +35,9 @@ const apiCall = async (endpoint, method, body) => {
   }
 };
 
-// Event dispatcher for real-time updates (same-tab + Layout/Dashboard listeners)
+// Event dispatcher for real-time updates
 const dispatchDataUpdate = (type) => {
   window.dispatchEvent(new CustomEvent('healit-data-update', { detail: { type } }));
-  window.dispatchEvent(new Event('dataUpdated'));
 };
 
 // Initialize seed data on first load

@@ -200,32 +200,24 @@
 }
 
 .modal-content.large {
-  max-width: 98vw;
-  width: 98vw;
-  max-height: 96vh;
-  height: 96vh;
+  max-width: 95vw;
+  width: 1400px;
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   border-radius: 12px;
-  overflow: hidden;
-}
-
-@media (min-width: 1400px) {
-  .modal-content.large {
-    width: 1600px;
-    max-width: 96vw;
-  }
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
+  padding: var(--space-6);
   border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
   background: white;
   z-index: 10;
-  flex-shrink: 0; /* Always visible; modal body scrolls below */
 }
 
 .modal-header h2 {
@@ -336,24 +328,14 @@
   cursor: not-allowed;
 }
 
-/* Tests Table — scrollable INSIDE the modal so header / Update button stay pinned */
+/* Tests Table */
 .tests-table-wrapper {
   overflow-x: auto;
-  overflow-y: auto;
   border: 2px solid #1E40AF;
   border-radius: 8px;
   background: white;
-  /* Use viewport math so as much as possible fits without scrolling the modal itself.
-     ~430px is the rough total of: modal header + buttons + add-test-section + paddings. */
-  max-height: calc(96vh - 430px);
-  min-height: 300px;
-}
-
-/* On big desktop screens give it more breathing room */
-@media (min-width: 1400px) {
-  .tests-table-wrapper {
-    max-height: calc(96vh - 380px);
-  }
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .tests-edit-table {
@@ -427,7 +409,7 @@
   border-radius: 6px;
   font-size: 0.875rem;
   transition: all 0.2s ease;
-  min-width: 100px;
+  min-width: 120px;
   background: white;
   color: #1E293B;
   font-family: inherit;
@@ -435,33 +417,23 @@
 
 .table-textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 1.5px solid #E2E8F0;
   border-radius: 6px;
-  font-size: 0.8125rem;
+  font-size: 0.8125rem; /* Reduced from 0.875rem for more content */
   transition: all 0.2s ease;
-  min-width: 180px;
+  min-width: 150px;
   background: white;
   color: #1E293B;
-  /* Monospace makes "- : Negative / +/- : Positive (15 mg/dL)" lines align */
-  font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
-  resize: vertical;
-  line-height: 1.55;
-  min-height: 110px;
-  max-height: 240px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* Method textarea — narrower min-width but multi-line to show full pasted text */
-.table-textarea.table-textarea--method {
-  min-width: 140px;
-  min-height: 70px;
-  max-height: 160px;
   font-family: inherit;
-  font-size: 0.8125rem;
+  resize: vertical;
+  line-height: 1.5;
+  min-height: 80px; /* Increased from 60px */
+  max-height: 160px; /* Reduced from 200px for compactness */
+  white-space: pre-wrap; /* Preserve line breaks and wrap */
+  word-wrap: break-word; /* Wrap long words */
+  overflow-y: auto; /* Always show scrollbar if needed */
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .table-textarea:hover {
@@ -657,20 +629,9 @@
 
 .test-form-grid-simple {
   display: grid;
-  grid-template-columns: 2fr 1fr 1.4fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
-}
-
-/* The full-width bio reference textarea spans every column in the new-test grid */
-.test-form-grid-simple .form-group.full-width {
-  grid-column: 1 / -1;
-}
-
-@media (max-width: 1100px) {
-  .test-form-grid-simple {
-    grid-template-columns: repeat(3, 1fr);
-  }
 }
 
 .add-test-btn-container {
@@ -703,11 +664,11 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
-  padding: 14px 24px;
+  padding: var(--space-6);
   border-top: 1px solid var(--color-border);
+  position: sticky;
+  bottom: 0;
   background: white;
-  flex-shrink: 0; /* never collapse — always visible at bottom of modal */
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
 }
 
 .unauthorized-container {

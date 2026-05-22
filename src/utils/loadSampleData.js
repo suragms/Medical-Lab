@@ -50,8 +50,6 @@ export const loadSamplePatients = async () => {
           unit_snapshot: test.unit || '',
           bioReference_snapshot: test.bioReference || '',
           refText_snapshot: test.bioReference || '',
-          method_snapshot: test.method || '',
-          sampleType_snapshot: test.sampleType || 'SERUM',
           inputType_snapshot: 'number',
           price_snapshot: 50,
           value: test.value,

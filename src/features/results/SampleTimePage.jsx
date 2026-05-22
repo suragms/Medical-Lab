@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Check, AlertCircle, Copy, TestTube2, Timer, Droplet, User, FileText } from 'lucide-react';
+import { ArrowLeft, Clock, Check, AlertCircle, Copy, TestTube2, Timer, User, FileText } from 'lucide-react';
 import { getVisitById, updateVisit, getPatientById, getProfileById } from '../../features/shared/dataService';
 import { getCurrentUser } from '../../services/authService';
 import { useAuthStore } from '../../store';
@@ -22,7 +22,6 @@ const SampleTimePage = () => {
   // Time fields
   const [collectedAt, setCollectedAt] = useState('');
   const [receivedAt, setReceivedAt] = useState('');
-  const [sampleType, setSampleType] = useState('Venous Blood');
   const [collectedBy, setCollectedBy] = useState('');
   const [notes, setNotes] = useState('');
   
@@ -140,7 +139,6 @@ const SampleTimePage = () => {
       setReceivedAt(getCurrentISTTime());
     }
     
-    setSampleType(visitData.sampleType || 'Venous Blood');
     // Auto-fill collected by with current user's name or existing value
     setCollectedBy(visitData.collectedBy || currentUser?.fullName || currentUser?.username || '');
     setNotes(visitData.notes || '');
@@ -165,7 +163,7 @@ const SampleTimePage = () => {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [collectedAt, receivedAt, sampleType, collectedBy, notes]);
+  }, [collectedAt, receivedAt, collectedBy, notes]);
 
   const handleAutoSave = () => {
     if (!validate(true)) return; // Skip autosave if invalid
@@ -177,7 +175,6 @@ const SampleTimePage = () => {
       const updates = {
         collectedAt: new Date(collectedAt).toISOString(),
         receivedAt: new Date(receivedAt).toISOString(),
-        sampleType,
         collectedBy,
         notes
       };
@@ -294,7 +291,6 @@ const SampleTimePage = () => {
       updateVisit(visitId, {
         collectedAt: new Date(collectedAt).toISOString(),
         receivedAt: new Date(receivedAt).toISOString(),
-        sampleType,
         collectedBy,
         notes,
         status: 'sample_times_set' // THIS WAS MISSING!
@@ -481,22 +477,6 @@ const SampleTimePage = () => {
 
         {/* Optional Fields - Inline */}
         <div className="optional-fields-compact">
-          <div className="field-inline">
-            <Droplet size={16} className="field-icon" />
-            <label>Sample Type:</label>
-            <select
-              value={sampleType}
-              onChange={(e) => setSampleType(e.target.value)}
-              disabled={!canEdit}
-            >
-              <option value="Venous Blood">Venous Blood</option>
-              <option value="Finger Prick">Finger Prick</option>
-              <option value="Urine">Urine</option>
-              <option value="Stool">Stool</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          
           <div className="field-inline">
             <User size={16} className="field-icon" />
             <label>Collected By:</label>
