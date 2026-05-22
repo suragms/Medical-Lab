@@ -256,9 +256,11 @@ const Patients = () => {
   };
 
   const visitHasLabResults = (visit) =>
-    (visit.status === 'report_generated' || visit.status === 'completed') &&
     visit.tests?.length > 0 &&
-    visit.tests.some((t) => t.value !== undefined && t.value !== null && String(t.value).trim() !== '');
+    visit.tests.some((t) => {
+      const val = t.value ?? t.result?.value;
+      return val !== undefined && val !== null && String(val).trim() !== '';
+    });
 
   // Delete patient handler
   const handleDeletePatient = (visit) => {
