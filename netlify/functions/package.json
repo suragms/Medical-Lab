@@ -1,0 +1,11 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "express": "^4.19.2",
+    "serverless-http": "^4.0.0",
+    "cors": "^2.8.5",
+    "mongoose": "^9.0.0"
+  }
+}
