@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { LOGO_PATHS, SIGNATURE_PATHS, imageToBase64 } from './assetPath'; // ADDED: Import logo/signature helpers
+import { SIGNATURE_PATHS, imageToBase64 } from './assetPath';
 
 /**
  * Format date/time for display - matches format: "20 Nov 2025, 10:23 am"
@@ -40,51 +40,12 @@ export const generateLabReportPDF = async (reportData, options = {}) => { // CHA
   } = reportData;
 
   // ========== HEADER ==========
-  // Add logos at top
-  const logoHeight = 24;
-  const logoY = yPos;
-  
-  // Left Logo - HEALit
-  try {
-    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
-    doc.addImage(healitBase64, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('HEALit logo not loaded:', error);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 58, 138);
-    doc.text('[HEALit]', 15, logoY + 12);
-  }
-
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
+  doc.text('HEALit Med Laboratories', pageWidth / 2, yPos + 8, { align: 'center' });
 
-  // Right Logo - Thyrocare  
-  try {
-    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
-    doc.addImage(partnerBase64, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('Partner logo not loaded:', error);
-    doc.setFontSize(10);
-    doc.setTextColor(30, 58, 138);
-    doc.text('[Thyrocare]', pageWidth - 25, logoY + 12, { align: 'right' });
-  }
-
-  yPos += logoHeight + 3;
-
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(75, 85, 99);
-  doc.text('Kunnathpeedika Centre', pageWidth / 2, yPos, { align: 'center' });
-
-  yPos += 5;
-
-  doc.setFontSize(9);
-  doc.text('Phone: 7356865161 | Email: info@healitlab.com', pageWidth / 2, yPos, { align: 'center' });
-
-  yPos += 5;
+  yPos += 14;
 
   doc.setDrawColor(229, 231, 235);
   doc.setLineWidth(0.5);
@@ -121,31 +82,20 @@ export const generateLabReportPDF = async (reportData, options = {}) => { // CHA
     `Reported: ${times.reported ? formatDateTime(times.reported) : formatDateTime(new Date())}`
   ];
 
+  const detailsStartY = yPos;
+  let leftY = detailsStartY;
   leftDetails.forEach(line => {
-    doc.text(line, leftCol, yPos);
-    yPos += 5;
+    doc.text(line, leftCol, leftY);
+    leftY += 5;
   });
-  
-  // Address - Handle multiline
-  const address = patient.address || 'Not provided';
-  doc.setFont('helvetica', 'bold');
-  doc.text('Address:', leftCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  
-  const addressLines = doc.splitTextToSize(address, 80);
-  addressLines.forEach((line, idx) => {
-    doc.text(line, leftCol + 18, yPos + (idx * 4));
-  });
-  yPos += 4 + (addressLines.length - 1) * 4;
-  yPos += 5;
 
-  yPos -= 30; // Reset to align with top of left column
+  let rightY = detailsStartY;
   rightDetails.forEach(line => {
-    doc.text(line, rightCol, yPos);
-    yPos += 5;
+    doc.text(line, rightCol, rightY);
+    rightY += 5;
   });
 
-  yPos += 15; // Add more space before table to prevent overlap
+  yPos = Math.max(leftY, rightY) + 10;
 
   // ========== TEST RESULTS ==========
   // Flatten all tests for single table display

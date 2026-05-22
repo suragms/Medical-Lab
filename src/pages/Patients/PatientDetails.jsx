@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Download, Share2, Printer, Mail, User, Phone, MapPin, Calendar, Stethoscope, Edit, X, Save, Activity, DollarSign, CheckCircle, Layers } from 'lucide-react';
+import { ArrowLeft, FileText, User, Phone, MapPin, Calendar, Stethoscope, Edit, X, Save, Activity, DollarSign, CheckCircle, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getProfileTemplate } from '../../features/profile-manager/profileTemplates';
-import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
 import { getVisitById, getPatientById, getProfileById, getProfiles, updatePatient, updateVisit, markPDFGenerated, markInvoiceGenerated } from '../../features/shared/dataService';
 import { getTechnicians } from '../../services/authService';
 import { groupTestsByProfile, generateProfileReports, generateCombinedInvoice, generateCombinedReportAndInvoice } from '../../utils/profilePdfHelper';
@@ -220,13 +219,13 @@ const PatientDetails = () => {
         if (invoiceResult && !invoiceResult.success) {
           console.warn('⚠️ Invoice generation failed, will regenerate on user action');
           console.warn('⚠️ Invoice error details:', invoiceResult.error);
-          toast.success(`✅ Generated ${successCount} PDF(s)! Invoice will be generated when you click Print/Download.`);
+          toast.success(`✅ Generated ${successCount} PDF(s)! Invoice will be generated on demand.`);
         } else if (invoiceResult && invoiceResult.success) {
           console.log('✅ Invoice successfully added to checklist!');
           toast.success(`✅ Generated ${successCount} PDF(s) + 1 Invoice!`);
         } else {
           console.warn('⚠️ Invoice not pre-generated, will create on demand');
-          toast.success(`✅ Generated ${successCount} PDF(s)! Invoice ready to generate.`);
+          toast.success(`✅ Generated ${successCount} PDF(s)!`);
         }
         
         // Store combined results
@@ -237,7 +236,7 @@ const PatientDetails = () => {
         allResults.forEach(result => {
           initialStatus[result.profileId] = {
             printed: false,
-            downloaded: false,
+            downloaded: true,
             shared: false
           };
         });
@@ -403,10 +402,10 @@ const PatientDetails = () => {
       if (result.success) {
         // Store result and show modal
         setInvoiceResult(result);
-        setInvoiceActionDone(false);
+        setInvoiceActionDone(true);
         setShowInvoiceModal(true);
         
-        toast.success(`✅ Invoice generated with ${result.profileCount} profile(s) - Choose action!`);
+        toast.success(`✅ Invoice generated with ${result.profileCount} profile(s)!`);
         
         if (!visit.invoiceGenerated) {
           markInvoiceGenerated(id);
@@ -494,105 +493,6 @@ const PatientDetails = () => {
     );
   }
 
-  const handleDownloadPDF = async () => {
-    if (!hasResults) {
-      toast.error('No test results available');
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      // Get signing technician if available
-      let signingTechnician = null;
-      if (visit.signing_technician_id) {
-        const technicians = getTechnicians();
-        signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
-      }
-      
-      // Build visit data for PDF generator
-      const visitData = {
-        ...visit,
-        patient,
-        profile,
-        signingTechnician
-      };
-      
-      downloadReportPDF(visitData);
-      toast.success('PDF downloaded successfully!');
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      toast.error('Failed to generate PDF: ' + error.message);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handlePrint = async () => {
-    if (!hasResults) {
-      toast.error('No test results available');
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      // Get signing technician if available
-      let signingTechnician = null;
-      if (visit.signing_technician_id) {
-        const technicians = getTechnicians();
-        signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
-      }
-      
-      // Build visit data for PDF generator
-      const visitData = {
-        ...visit,
-        patient,
-        profile,
-        signingTechnician
-      };
-      
-      printReportPDF(visitData);
-      toast.success('Opening print dialog...');
-    } catch (error) {
-      console.error('Print error:', error);
-      toast.error('Failed to print: ' + error.message);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleWhatsAppShare = async () => {
-    if (!hasResults) {
-      toast.error('No test results available');
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      // Get signing technician if available
-      let signingTechnician = null;
-      if (visit.signing_technician_id) {
-        const technicians = getTechnicians();
-        signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
-      }
-      
-      // Build visit data for PDF generator
-      const visitData = {
-        ...visit,
-        patient,
-        profile,
-        signingTechnician
-      };
-      
-      shareViaWhatsApp(visitData, patient.phone);
-      toast.success('Opening WhatsApp...');
-    } catch (error) {
-      console.error('WhatsApp share error:', error);
-      toast.error('Failed to share via WhatsApp: ' + error.message);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   const handleOpenEditModal = () => {
     setEditData({
       name: patient.name,
@@ -639,68 +539,6 @@ const PatientDetails = () => {
         <Button variant="ghost" onClick={() => navigate('/patients')} icon={ArrowLeft}>
           Back to Patients
         </Button>
-        
-        {/* Quick Action Icons - Top Right */}
-        {hasResults && (
-          <div className="header-quick-actions">
-            <button 
-              className="icon-action-btn" 
-              onClick={handleDownloadPDF}
-              disabled={isGenerating}
-              title="Download PDF"
-            >
-              <Download size={20} />
-            </button>
-            <button 
-              className="icon-action-btn" 
-              onClick={handlePrint}
-              disabled={isGenerating}
-              title="Print Report"
-            >
-              <Printer size={20} />
-            </button>
-            <button 
-              className="icon-action-btn success" 
-              onClick={handleWhatsAppShare}
-              disabled={isGenerating}
-              title="Share via WhatsApp"
-            >
-              <Share2 size={20} />
-            </button>
-            <button 
-              className="icon-action-btn" 
-              onClick={async () => {
-                setIsGenerating(true);
-                try {
-                  const signingTechnician = visit.signing_technician_id ? 
-                    getTechnicians().find(t => t.technicianId === visit.signing_technician_id) : null;
-                  
-                  const result = await shareViaEmail({
-                    ...visit,
-                    patient,
-                    profile,
-                    signingTechnician
-                  }, patient.email || '');
-                  
-                  if (result.success) {
-                    toast.success(result.message || 'Email opened with PDF ready to share!');
-                  } else {
-                    toast.error('Failed to share via email: ' + (result.error || 'Unknown error'));
-                  }
-                } catch (error) {
-                  console.error('Email share error:', error);
-                  toast.error('Failed to share via email');
-                } finally {
-                  setIsGenerating(false);
-                }
-              }}
-              disabled={isGenerating}
-              title="Share via Email"
-            >
-              <Mail size={20} />
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="patient-details-grid">
@@ -900,7 +738,7 @@ const PatientDetails = () => {
                     };
                     
                     const result = await generateCombinedReportAndInvoice(visitData, allProfiles, { 
-                      download: true, 
+                      download: false, 
                       print: false 
                     });
                     
@@ -938,7 +776,7 @@ const PatientDetails = () => {
                 }}
                 disabled={!hasResults || isGenerating}
               >
-                {(visit.pdfGenerated && visit.invoiceGenerated) ? '🖨️ Re-Print Combined PDF' : (hasResults ? '📄 Generate Combined PDF (Invoice + Reports)' : '⚠️ No Results Yet')}
+                {(visit.pdfGenerated && visit.invoiceGenerated) ? '📄 Regenerate Combined PDF' : (hasResults ? '📄 Generate Combined PDF (Invoice + Reports)' : '⚠️ No Results Yet')}
               </Button>
               
               <div style={{padding: '6px 8px', background: '#F9FAFB', borderRadius: '6px', marginTop: '8px'}}>
@@ -1112,168 +950,10 @@ const PatientDetails = () => {
                         <h4>{pdfResult.profileName}</h4>
                         <p className="pdf-filename">{pdfResult.fileName}</p>
                         {isCompleted && (
-                          <p className="completion-status">
-                            {status.printed && '🖨️ Printed'}
-                            {status.downloaded && ' ⬇️ Downloaded'}
-                            {status.shared && ' 📤 Shared'}
-                          </p>
+                          <p className="completion-status">✓ Generated</p>
                         )}
                       </div>
                     </div>
-                  
-                  <div className="pdf-actions">
-                    <button 
-                      className="action-btn print-btn"
-                      onClick={async () => {
-                        // Show loading toast immediately
-                        const loadingToast = toast.loading(pdfResult.isInvoice ? '🖨️ Preparing invoice for print...' : `🖨️ Preparing ${pdfResult.profileName} for print...`);
-                        
-                        try {
-                          // Get signing technician
-                          const signingTechnician = visit.signing_technician_id ? 
-                            getTechnicians().find(t => t.technicianId === visit.signing_technician_id) : null;
-                          
-                          const visitData = {
-                            ...visit,
-                            patient,
-                            tests: visit.tests,
-                            collectedAt: visit.collectedAt,
-                            receivedAt: visit.receivedAt,
-                            reportedAt: visit.reportedAt,
-                            paymentStatus: visit.paymentStatus,
-                            paymentMethod: visit.paymentMethod || 'Cash',
-                            signingTechnician // ADDED: Include signing technician
-                          };
-                          
-                          // Check if this is invoice or profile PDF
-                          if (pdfResult.isInvoice) {
-                            // Print invoice
-                            await generateCombinedInvoice(visitData, allProfiles, { 
-                              download: false, 
-                              print: true
-                            });
-                            toast.success('🖨️ Invoice print dialog opened', { id: loadingToast });
-                          } else {
-                            // Print profile PDF
-                            await generateProfileReports(visitData, allProfiles, { 
-                              download: false, 
-                              print: true,
-                              profileFilter: pdfResult.profileId 
-                            });
-                            toast.success(`🖨️ Print dialog opened for ${pdfResult.profileName}`, { id: loadingToast });
-                          }
-                          
-                          markPdfActionComplete(pdfResult.profileId, 'printed');
-                        } catch (error) {
-                          console.error('Print error:', error);
-                          toast.error('❌ Failed to print: ' + (error.message || 'Unknown error'), { id: loadingToast });
-                        }
-                      }}
-                      title="Print"
-                    >
-                      <Printer size={18} />
-                      Print
-                    </button>
-                    
-                    <button 
-                      className="action-btn download-btn"
-                      onClick={async () => {
-                        // Show loading toast immediately
-                        const loadingToast = toast.loading(pdfResult.isInvoice ? '⬇️ Generating invoice PDF...' : `⬇️ Generating ${pdfResult.profileName}...`);
-                        
-                        try {
-                          // Get signing technician
-                          const signingTechnician = visit.signing_technician_id ? 
-                            getTechnicians().find(t => t.technicianId === visit.signing_technician_id) : null;
-                          
-                          const visitData = {
-                            ...visit,
-                            patient,
-                            tests: visit.tests,
-                            collectedAt: visit.collectedAt,
-                            receivedAt: visit.receivedAt,
-                            reportedAt: visit.reportedAt,
-                            paymentStatus: visit.paymentStatus,
-                            paymentMethod: visit.paymentMethod || 'Cash',
-                            signingTechnician // ADDED: Include signing technician
-                          };
-                          
-                          // Check if this is invoice or profile PDF
-                          if (pdfResult.isInvoice) {
-                            // Download invoice
-                            await generateCombinedInvoice(visitData, allProfiles, { 
-                              download: true, 
-                              print: false
-                            });
-                            toast.success('✅ Invoice downloaded successfully!', { id: loadingToast });
-                          } else {
-                            // Download profile PDF
-                            await generateProfileReports(visitData, allProfiles, { 
-                              download: true, 
-                              print: false,
-                              profileFilter: pdfResult.profileId 
-                            });
-                            toast.success(`✅ Downloaded ${pdfResult.profileName} successfully!`, { id: loadingToast });
-                          }
-                          
-                          markPdfActionComplete(pdfResult.profileId, 'downloaded');
-                        } catch (error) {
-                          console.error('Download error:', error);
-                          toast.error('❌ Failed to download: ' + (error.message || 'Unknown error'), { id: loadingToast });
-                        }
-                      }}
-                      title="Download"
-                    >
-                      <Download size={18} />
-                      Download
-                    </button>
-                    
-                    <button 
-                      className="action-btn whatsapp-btn"
-                      onClick={() => {
-                        const phone = patient.phone || '';
-                        if (!phone) {
-                          toast.error('No phone number available');
-                          return;
-                        }
-                        markPdfActionComplete(pdfResult.profileId, 'shared');
-                        toast.info(`📱 Opening WhatsApp for ${pdfResult.profileName}`);
-                        const message = `Hi ${patient.name}, your ${pdfResult.profileName} report is ready. Visit ID: ${visit.visitId}`;
-                        window.open(`https://wa.me/${phone.replace(/^0/, '91')}?text=${encodeURIComponent(message)}`, '_blank');
-                      }}
-                      title="Share via WhatsApp"
-                    >
-                      <Share2 size={18} />
-                      WhatsApp
-                    </button>
-                    
-                    <button 
-                      className="action-btn email-btn"
-                      onClick={() => {
-                        const email = patient.email || '';
-                        if (!email) {
-                          toast.error('No email address available');
-                          return;
-                        }
-                        markPdfActionComplete(pdfResult.profileId, 'shared');
-                        toast.info(`📧 Opening email for ${pdfResult.profileName}`);
-                        const subject = `Lab Report - ${pdfResult.profileName} - ${patient.name}`;
-                        const body = `Dear ${patient.name},
-
-Your ${pdfResult.profileName} report is attached.
-
-Visit ID: ${visit.visitId}
-
-Thank you,
-HEALit Med Laboratories`;
-                        window.open(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-                      }}
-                      title="Share via Email"
-                    >
-                      <Mail size={18} />
-                      Email
-                    </button>
-                  </div>
                 </div>
                 );
               })}
@@ -1351,98 +1031,8 @@ HEALit Med Laboratories`;
                   <div className="pdf-details">
                     <h4>Combined Invoice - {invoiceResult.profileCount} Profile(s)</h4>
                     <p className="pdf-filename">{invoiceResult.fileName}</p>
-                    {invoiceActionDone && <p className="completion-status">✓ Action completed</p>}
+                    {invoiceActionDone && <p className="completion-status">✓ Generated</p>}
                   </div>
-                </div>
-                
-                <div className="pdf-actions">
-                  {/* Print */}
-                  <button
-                    className="action-btn print-btn"
-                    onClick={async () => {
-                      const visitData = {
-                        ...visit,
-                        patient,
-                        tests: visit.tests,
-                        collectedAt: visit.collectedAt,
-                        receivedAt: visit.receivedAt,
-                        reportedAt: visit.reportedAt,
-                        paymentStatus: visit.paymentStatus,
-                        paymentMethod: visit.paymentMethod || 'Cash'
-                      };
-                      await generateCombinedInvoice(visitData, allProfiles, { download: false, print: true });
-                      setInvoiceActionDone(true);
-                      toast.success('🖨️ Invoice print dialog opened');
-                    }}
-                  >
-                    <Printer size={18} />
-                    Print
-                  </button>
-                  
-                  {/* Download */}
-                  <button
-                    className="action-btn download-btn"
-                    onClick={async () => {
-                      const visitData = {
-                        ...visit,
-                        patient,
-                        tests: visit.tests,
-                        collectedAt: visit.collectedAt,
-                        receivedAt: visit.receivedAt,
-                        reportedAt: visit.reportedAt,
-                        paymentStatus: visit.paymentStatus,
-                        paymentMethod: visit.paymentMethod || 'Cash'
-                      };
-                      await generateCombinedInvoice(visitData, allProfiles, { download: true, print: false });
-                      setInvoiceActionDone(true);
-                      toast.success('⬇️ Invoice downloaded');
-                    }}
-                  >
-                    <Download size={18} />
-                    Download
-                  </button>
-                  
-                  {/* WhatsApp */}
-                  <button
-                    className="action-btn whatsapp-btn"
-                    onClick={() => {
-                      const phone = patient.phone || '1234567890';
-                      const message = `Hi ${patient.name}, your invoice for visit ${visit.visitNumber} is ready. Total amount: ₹${visit.totalAmount || 0}. Please contact us for payment. - Lab`;
-                      const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-                      window.open(whatsappUrl, '_blank');
-                      setInvoiceActionDone(true);
-                      toast.success('📱 WhatsApp opened with invoice details');
-                    }}
-                  >
-                    <Share2 size={18} />
-                    WhatsApp
-                  </button>
-                  
-                  {/* Email */}
-                  <button
-                    className="action-btn email-btn"
-                    onClick={() => {
-                      const email = patient.email || '';
-                      const subject = `Invoice - Visit ${visit.visitNumber} - ${patient.name}`;
-                      const body = `Dear ${patient.name},
-
-Your invoice for visit ${visit.visitNumber} is ready.
-
-Total Amount: ₹${visit.totalAmount || 0}
-
-Please contact us for payment details.
-
-Thank you,
-Lab Team`;
-                      const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                      window.open(mailtoUrl, '_blank');
-                      setInvoiceActionDone(true);
-                      toast.success('📧 Email opened with invoice details');
-                    }}
-                  >
-                    <Mail size={18} />
-                    Email
-                  </button>
                 </div>
               </div>
             </div>
@@ -1452,7 +1042,7 @@ Lab Team`;
                 <>
                   <div className="completion-message">
                     <CheckCircle size={20} color="#10B981" />
-                    <span>Invoice action completed! Mark as paid?</span>
+                    <span>Invoice generated! Mark as paid?</span>
                   </div>
                   <Button 
                     variant="success" 

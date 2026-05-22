@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, FileText, Receipt, Check, Loader, Download, Printer, Share2, Mail, AlertCircle, TrendingUp, TrendingDown, MessageCircle, TestTube2, Plus, Search, X, Home, Activity, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, FileText, Receipt, Check, Loader, AlertCircle, TrendingUp, TrendingDown, TestTube2, Plus, Search, X, Home, Activity, CheckCircle } from 'lucide-react';
 import { getVisitById, updateVisit, getPatientById, getProfileById, getTestsMaster, getProfiles } from '../../features/shared/dataService';
 import { getSettings } from '../../services/settingsService';
 import { useAuthStore } from '../../store';
 import { getCurrentUser, getUsers } from '../../services/authService';
-import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
-import { generateCombinedInvoice, generateProfileReports, generateCombinedReportAndInvoice, generateCombinedLabReports } from '../../utils/profilePdfHelper';
+import { generateCombinedInvoice, generateCombinedLabReports } from '../../utils/profilePdfHelper';
 import { parseRange, checkRangeStatus } from '../../utils/rangeParser';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
@@ -24,7 +23,6 @@ const ResultEntryPage = () => {
   const [profile, setProfile] = useState(null);
   const [results, setResults] = useState({});
   const [saveStatus, setSaveStatus] = useState('saved'); // 'saving', 'saved', 'error'
-  const [showShareOptions, setShowShareOptions] = useState(false);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState('');
   const [useMySignatureDefault, setUseMySignatureDefault] = useState(false);
   const [discount, setDiscount] = useState(0);
@@ -804,7 +802,7 @@ const ResultEntryPage = () => {
       };
 
       // Generate combined invoice with all profiles
-      const result = await generateCombinedInvoice(visitData, allProfiles, { download: true, print: false });
+      const result = await generateCombinedInvoice(visitData, allProfiles, { download: false, print: false });
 
       if (result.success) {
         toast.success(`✅ Invoice generated with ${result.profileCount} profile(s)!`);
@@ -839,76 +837,6 @@ const ResultEntryPage = () => {
     } catch (error) {
       console.error('Invoice generation error:', error);
       toast.error('Failed to generate invoice: ' + error.message);
-    }
-  };
-
-  // Print Report
-  const handlePrintReport = () => {
-    if (!visit.reportedAt) {
-      toast.error('Please generate report first');
-      return;
-    }
-
-    const visitData = {
-      ...visit,
-      patient,
-      profile
-    };
-
-    printReportPDF(visitData);
-    toast.success('Opening print dialog...');
-  };
-
-  // Share via WhatsApp
-  const handleShareWhatsApp = () => {
-    if (!visit.reportedAt) {
-      toast.error('Please generate report first');
-      return;
-    }
-
-    const visitData = {
-      ...visit,
-      patient,
-      profile
-    };
-
-    shareViaWhatsApp(visitData, patient.phone);
-  };
-
-  // Share via Email
-  const handleShareEmail = async () => {
-    if (!visit.reportedAt) {
-      toast.error('Please generate report first');
-      return;
-    }
-
-    let signingTechnician = null;
-    if (visit.signing_technician_id) {
-      // Use getUsers() which is already imported
-      const users = getUsers();
-      signingTechnician = users.find(u => u.userId === visit.signing_technician_id);
-    }
-
-    const visitData = {
-      ...visit,
-      patient,
-      profile,
-      signingTechnician
-    };
-
-    const email = prompt('Enter email address:', patient.email || '');
-    if (email) {
-      try {
-        const result = await shareViaEmail(visitData, email);
-        if (result.success) {
-          toast.success(result.message || 'Email opened with PDF ready to share!');
-        } else {
-          toast.error('Failed to share via email: ' + (result.error || 'Unknown error'));
-        }
-      } catch (error) {
-        console.error('Email share error:', error);
-        toast.error('Failed to share via email');
-      }
     }
   };
 
@@ -1172,15 +1100,6 @@ const ResultEntryPage = () => {
           <Button variant="ghost" size="small" onClick={() => navigate('/dashboard')} icon={Home}>
             Home
           </Button>
-          <button className="icon-btn-glass" onClick={handleShareWhatsApp} title="Share via WhatsApp">
-            <MessageCircle size={20} />
-          </button>
-          <button className="icon-btn-glass" onClick={handlePrintReport} title="Print">
-            <Printer size={20} />
-          </button>
-          <button className="icon-btn-glass" onClick={handleShareEmail} title="Email">
-            <Mail size={20} />
-          </button>
         </div>
       </div>
 
@@ -1488,7 +1407,7 @@ const ResultEntryPage = () => {
                     const result = await generateCombinedLabReports(
                       { ...latestVisit, patient, signingTechnician: selectedTechnician },
                       getProfiles(),
-                      { download: true, print: false }
+                      { download: false, print: false }
                     );
                     
                     // STEP 9: Handle result
@@ -1589,7 +1508,7 @@ const ResultEntryPage = () => {
                     const result = await generateCombinedInvoice(
                       { ...latestVisit, patient, signingTechnician: selectedTechnician },
                       getProfiles(),
-                      { download: true, print: false }
+                      { download: false, print: false }
                     );
                     
                     if (result.success) {
@@ -1641,33 +1560,6 @@ const ResultEntryPage = () => {
         </div>
       </div>
 
-      {/* Share Options Modal */}
-      {showShareOptions && (
-        <div className="share-modal-overlay" onClick={() => setShowShareOptions(false)}>
-          <div className="share-modal-premium" onClick={(e) => e.stopPropagation()}>
-            <h3>Share Report</h3>
-            <p className="help-text">Choose how to share the medical report</p>
-            <div className="share-options-grid">
-              <Button variant="primary" onClick={() => downloadReportPDF({ ...visit, patient, profile, signingTechnician: selectedTechnician })} icon={Download} fullWidth>
-                Download PDF
-              </Button>
-              <Button variant="outline" onClick={handlePrintReport} icon={Printer} fullWidth>
-                Print Report
-              </Button>
-              <Button variant="outline" onClick={handleShareWhatsApp} icon={MessageCircle} fullWidth>
-                Share via WhatsApp
-              </Button>
-              <Button variant="outline" onClick={handleShareEmail} icon={Mail} fullWidth>
-                Share via Email
-              </Button>
-            </div>
-            <Button variant="ghost" onClick={() => setShowShareOptions(false)} fullWidth>
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* PDF Actions Modal - Checklist */}
       {showPdfActionsModal && (
         <div className="modal-overlay" onClick={() => setShowPdfActionsModal(false)}>
@@ -1695,109 +1587,8 @@ const ResultEntryPage = () => {
                       <div className="pdf-details">
                         <h4>{pdfResult.profileName}</h4>
                         <p className="pdf-filename">{pdfResult.fileName}</p>
-                        {isCompleted && <p className="completion-status">✓ Handled</p>}
+                        {isCompleted && <p className="completion-status">✓ Generated</p>}
                       </div>
-                    </div>
-
-                    <div className="pdf-actions">
-                      {/* Print */}
-                      <button
-                        className="action-btn print-btn"
-                        onClick={async () => {
-                          if (pdfResult.isInvoice) {
-                            await generateCombinedInvoice(
-                              { ...visit, patient, signingTechnician: selectedTechnician },
-                              getProfiles(),
-                              { download: false, print: true }
-                            );
-                            // Mark all as complete for Invoice when printed, as requested
-                            markPdfActionComplete(pdfResult.profileId, 'printed');
-                            markPdfActionComplete(pdfResult.profileId, 'downloaded');
-                            markPdfActionComplete(pdfResult.profileId, 'shared');
-                            toast.success(`🖨️ Print dialog opened for Invoice`);
-                          } else {
-                            await generateProfileReports(
-                              { ...visit, patient, signingTechnician: selectedTechnician },
-                              getProfiles(),
-                              { download: false, print: true, profileFilter: pdfResult.profileId }
-                            );
-                            markPdfActionComplete(pdfResult.profileId, 'printed');
-                            toast.success(`🖨️ Print dialog opened for ${pdfResult.profileName}`);
-                          }
-                        }}
-                      >
-                        <Printer size={18} />
-                        Print
-                      </button>
-
-                      {/* Download */}
-                      <button
-                        className="action-btn download-btn"
-                        onClick={async () => {
-                          if (pdfResult.isInvoice) {
-                            await generateCombinedInvoice(
-                              { ...visit, patient, signingTechnician: selectedTechnician },
-                              getProfiles(),
-                              { download: true, print: false }
-                            );
-                            markPdfActionComplete(pdfResult.profileId, 'downloaded');
-                            toast.success(`⬇️ Downloaded: ${pdfResult.fileName}`);
-                          } else {
-                            await generateProfileReports(
-                              { ...visit, patient, signingTechnician: selectedTechnician },
-                              getProfiles(),
-                              { download: true, print: false, profileFilter: pdfResult.profileId }
-                            );
-                            markPdfActionComplete(pdfResult.profileId, 'downloaded');
-                            toast.success(`⬇️ Downloaded: ${pdfResult.fileName}`);
-                          }
-                        }}
-                      >
-                        <Download size={18} />
-                        Download
-                      </button>
-
-                      {/* WhatsApp */}
-                      <button
-                        className="action-btn whatsapp-btn"
-                        onClick={() => {
-                          const phone = patient.phone || '1234567890';
-                          const reportType = pdfResult.isInvoice ? 'Invoice' : pdfResult.profileName;
-                          const message = `Hi ${patient.name}, your ${pdfResult.isInvoice ? 'invoice' : 'lab report'} for ${reportType} is ready. Please contact us to collect it. - ${currentUser?.fullName || 'Lab'}`;
-                          const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-                          window.open(whatsappUrl, '_blank');
-                          markPdfActionComplete(pdfResult.profileId, 'shared');
-                          toast.success(`📱 WhatsApp opened for ${reportType}`);
-                        }}
-                      >
-                        <MessageCircle size={18} />
-                        WhatsApp
-                      </button>
-
-                      {/* Email */}
-                      <button
-                        className="action-btn email-btn"
-                        onClick={() => {
-                          const email = patient.email || '';
-                          const reportType = pdfResult.isInvoice ? 'Invoice' : pdfResult.profileName;
-                          const subject = `Lab ${pdfResult.isInvoice ? 'Invoice' : 'Report'} - ${reportType} - ${patient.name}`;
-                          const body = `Dear ${patient.name},
-
-Your ${pdfResult.isInvoice ? 'invoice' : 'lab report'} for ${reportType} is ready.
-
-Please contact us to collect it.
-
-Thank you,
-${currentUser?.fullName || 'Lab Team'}`;
-                          const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                          window.open(mailtoUrl, '_blank');
-                          markPdfActionComplete(pdfResult.profileId, 'shared');
-                          toast.success(`📧 Email opened for ${reportType}`);
-                        }}
-                      >
-                        <Mail size={18} />
-                        Email
-                      </button>
                     </div>
                   </div>
                 );

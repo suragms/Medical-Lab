@@ -20,7 +20,6 @@ import {
 import { useAuthStore } from '../../store';
 import { getVisits, getPatients } from '../../features/shared/dataService';
 import { LOGO_PATHS } from '../../utils/assetPath';
-import SyncIndicator from '../SyncIndicator/SyncIndicator';
 import MobileNav from '../MobileNav/MobileNav';
 import LogoutAnimation from '../LogoutAnimation/LogoutAnimation';
 import './Layout.css';
@@ -311,7 +310,6 @@ const Layout = () => {
                   </>
                 )}
               </div>
-              <SyncIndicator />
               <button className="nav-icon-btn" onClick={() => navigate(role === 'admin' ? '/settings' : '/settings/staff')} title="Settings">
                 <SettingsIcon size={18} />
               </button>

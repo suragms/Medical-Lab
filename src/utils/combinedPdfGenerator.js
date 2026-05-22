@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { LOGO_PATHS, SIGNATURE_PATHS, imageToBase64 } from './assetPath';
+import { SIGNATURE_PATHS, imageToBase64 } from './assetPath';
 
 /**
  * COMBINED PDF GENERATOR - Invoice + All Profile Reports in ONE PDF
@@ -53,41 +53,13 @@ const generateInvoicePage = async (doc, invoiceData) => {
   doc.setDrawColor(229, 231, 235);
   doc.setLineWidth(0.5);
   doc.line(15, yPos, pageWidth - 15, yPos);
-  yPos += 2;
-  
-  const logoHeight = 16;
-  const logoY = yPos;
-  
-  try {
-    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
-    doc.addImage(healitBase64, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('Logo error:', error);
-  }
+  yPos += 6;
 
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
-
-  try {
-    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
-    doc.addImage(partnerBase64, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('Partner logo error:', error);
-  }
-
-  yPos += logoHeight + 2;
-
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(75, 85, 99);
-  doc.text('Kunnathpeedika – Thrissur, Kerala', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 3;
-
-  doc.setFontSize(7);
-  doc.text('Phone: 7356865161 | Email: healitlab@gmail.com', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 3;
+  doc.text('HEALit Med Laboratories', pageWidth / 2, yPos + 8, { align: 'center' });
+  yPos += 14;
 
   doc.setDrawColor(229, 231, 235);
   doc.setLineWidth(0.5);
@@ -127,22 +99,10 @@ const generateInvoicePage = async (doc, invoiceData) => {
     yPos += 3.5;
   });
   
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  doc.text('Address:', leftCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  
-  const address = patient.address || 'Not provided';
-  const addressLines = doc.splitTextToSize(address, 85);
-  addressLines.forEach((line, idx) => {
-    doc.text(line, leftCol + 16, yPos + (idx * 3));
-  });
-  yPos += 3 + (addressLines.length - 1) * 3 + 3.5;
-  
   doc.text(`Payment: ${patient.paymentStatus || 'Unpaid'}`, leftCol, yPos);
   yPos += 3.5;
 
-  yPos -= 22;
+  yPos -= 18;
   
   const invoiceLines = [
     `Invoice: ${invoice.invoiceNumber || 'INV-' + Date.now()}`,
@@ -337,39 +297,11 @@ const generateLabReportPage = async (doc, reportData) => {
   } = reportData;
 
   // Header
-  const logoHeight = 24;
-  const logoY = yPos;
-  
-  try {
-    const healitBase64 = await imageToBase64(LOGO_PATHS.healit);
-    doc.addImage(healitBase64, 'PNG', 15, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('Logo error:', error);
-  }
-
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('HEALit Med Laboratories', pageWidth / 2, logoY + 12, { align: 'center' });
-
-  try {
-    const partnerBase64 = await imageToBase64(LOGO_PATHS.partner);
-    doc.addImage(partnerBase64, 'JPEG', pageWidth - 15 - logoHeight * 1.5, logoY, logoHeight * 1.5, logoHeight);
-  } catch (error) {
-    console.error('Partner logo error:', error);
-  }
-
-  yPos += logoHeight + 3;
-
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(75, 85, 99);
-  doc.text('Kunnathpeedika Centre', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 5;
-
-  doc.setFontSize(9);
-  doc.text('Phone: 7356865161 | Email: info@healitlab.com', pageWidth / 2, yPos, { align: 'center' });
-  yPos += 5;
+  doc.text('HEALit Med Laboratories', pageWidth / 2, yPos + 8, { align: 'center' });
+  yPos += 14;
 
   doc.setDrawColor(229, 231, 235);
   doc.setLineWidth(0.5);
@@ -404,29 +336,20 @@ const generateLabReportPage = async (doc, reportData) => {
     `Reported: ${times.reported ? formatDateTime(times.reported) : formatDateTime(new Date())}`
   ];
 
+  const detailsStartY = yPos;
+  let leftY = detailsStartY;
   leftDetails.forEach(line => {
-    doc.text(line, leftCol, yPos);
-    yPos += 5;
+    doc.text(line, leftCol, leftY);
+    leftY += 5;
   });
-  
-  const address = patient.address || 'Not provided';
-  doc.setFont('helvetica', 'bold');
-  doc.text('Address:', leftCol, yPos);
-  doc.setFont('helvetica', 'normal');
-  
-  const addressLines = doc.splitTextToSize(address, 80);
-  addressLines.forEach((line, idx) => {
-    doc.text(line, leftCol + 18, yPos + (idx * 4));
-  });
-  yPos += 4 + (addressLines.length - 1) * 4 + 5;
 
-  yPos -= 30;
+  let rightY = detailsStartY;
   rightDetails.forEach(line => {
-    doc.text(line, rightCol, yPos);
-    yPos += 5;
+    doc.text(line, rightCol, rightY);
+    rightY += 5;
   });
 
-  yPos += 15;
+  yPos = Math.max(leftY, rightY) + 10;
 
   // Test Results
   let allTests = testGroups.flatMap(group => group.tests || []);

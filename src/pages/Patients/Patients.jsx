@@ -17,14 +17,11 @@ import {
   Clock,
   Edit2,
   Trash2,
-  Mail,
-  Share2,
   Save
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getVisits, getPatients, getProfileById, getProfiles, markPDFGenerated, markInvoiceGenerated, getVisitById, deletePatient, updatePatient, updateVisit } from '../../features/shared/dataService';
-import { downloadReportPDF, printReportPDF, shareViaWhatsApp, shareViaEmail } from '../../utils/pdfGenerator';
-import { generateCombinedReportAndInvoice, shareCombinedPDFViaWhatsApp, shareCombinedPDFViaEmail, generateProfileReports, generateCombinedInvoice, generateCombinedLabReports } from '../../utils/profilePdfHelper';
+import { generateCombinedReportAndInvoice } from '../../utils/profilePdfHelper';
 import { getTechnicians } from '../../services/authService';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -193,7 +190,7 @@ const Patients = () => {
 
       // Generate COMBINED PDF (Invoice + Reports in ONE file)
       const result = await generateCombinedReportAndInvoice(visitData, allProfiles, {
-        download: true,
+        download: false,
         print: false
       });
 
@@ -535,216 +532,16 @@ const Patients = () => {
                       {/* PDF Column - Lab Reports Only */}
                       <td className="text-center" data-label="PDF (Lab Reports)">
                         {visit.pdfGenerated ? (
-                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                            <button 
-                              className="icon-btn-success" 
-                              onClick={async () => {
-                                try {
-                                  // STEP 1: Reload visit from localStorage to get latest test values
-                                  const latestVisit = getVisitById(visit.visitId);
-                                  if (!latestVisit) {
-                                    toast.error('❌ Visit not found!');
-                                    return;
-                                  }
-                                  
-                                  // STEP 2: VALIDATION - Check if test values exist
-                                  const testsWithValues = latestVisit.tests?.filter(t => t.value && t.value.trim() !== '') || [];
-                                  const totalTests = latestVisit.tests?.length || 0;
-                                  
-                                  if (testsWithValues.length === 0) {
-                                    toast.error(
-                                      `❌ Cannot generate PDF!\n\nNo test values entered.\nPlease enter results first.`,
-                                      { duration: 5000 }
-                                    );
-                                    return;
-                                  }
-                                  
-                                  if (testsWithValues.length < totalTests) {
-                                    const emptyCount = totalTests - testsWithValues.length;
-                                    const proceed = window.confirm(
-                                      `⚠️ WARNING: ${emptyCount}/${totalTests} tests have NO values!\n\n` +
-                                      `Filled: ${testsWithValues.length}/${totalTests}\n\n` +
-                                      `Do you want to generate PDF with missing values?`
-                                    );
-                                    if (!proceed) return;
-                                  }
-                                  
-                                  console.log('🔍 PDF Re-Print - Latest visit data:', latestVisit);
-                                  console.log('🔍 PDF Re-Print - Test values:', latestVisit.tests?.map(t => ({ name: t.name, value: t.value })));
-                                  
-                                  // STEP 3: Get signing technician
-                                  let signingTechnician = null;
-                                  if (latestVisit.signing_technician_id) {
-                                    const technicians = getTechnicians();
-                                    signingTechnician = technicians.find(t => t.technicianId === latestVisit.signing_technician_id);
-                                  }
-                                  const allProfiles = getProfiles();
-                                  const visitData = { ...latestVisit, patient, signingTechnician };
-                                  
-                                  toast.loading('📄 Generating ALL profiles in ONE PDF...');
-                                  
-                                  // STEP 4: Generate combined PDF
-                                  const result = await generateCombinedLabReports(visitData, allProfiles, { download: true, print: false });
-                                  
-                                  toast.dismiss();
-                                  
-                                  if (result && result.success) {
-                                    toast.success(`✅ Downloaded lab reports with ${result.profileCount} profile(s) in ONE PDF!`);
-                                  } else {
-                                    toast.error('❌ Failed to generate PDF: ' + (result?.error || 'Unknown error'));
-                                  }
-                                } catch (error) {
-                                  console.error('❌ PDF generation error:', error);
-                                  toast.dismiss();
-                                  toast.error('Failed to generate PDF: ' + error.message);
-                                }
-                              }} 
-                              title="Re-Print Lab Reports PDF"
-                            >
-                              <FileText size={14} /> <span style={{ fontSize: '0.65rem', marginLeft: '2px' }}>Re-Print</span>
-                            </button>
-                            <button
-                              className="icon-btn-success"
-                              onClick={async () => {
-                                if (visit.status !== 'report_generated' && visit.status !== 'completed') {
-                                  toast.error('❌ Report must be generated first!');
-                                  return;
-                                }
-                                try {
-                                  // Reload latest data
-                                  const latestVisit = getVisitById(visit.visitId);
-                                  if (!latestVisit) {
-                                    toast.error('❌ Visit not found!');
-                                    return;
-                                  }
-                                  
-                                  let signingTechnician = null;
-                                  if (latestVisit.signing_technician_id) {
-                                    const technicians = getTechnicians();
-                                    signingTechnician = technicians.find(t => t.technicianId === latestVisit.signing_technician_id);
-                                  }
-                                  const allProfiles = getProfiles();
-                                  const visitData = { ...latestVisit, patient, signingTechnician };
-                                  
-                                  toast.loading('📥 Generating ALL profiles for WhatsApp...');
-                                  
-                                  // Use combined PDF (all profiles in ONE PDF)
-                                  const result = await generateCombinedLabReports(visitData, allProfiles, { download: true, print: false });
-                                  
-                                  toast.dismiss();
-                                  
-                                  if (result && result.success) {
-                                    const message = `Lab Report for ${patient.name}\nVisit ID: ${visit.visitId}\nProfiles: ${result.profileCount}`;
-                                    const whatsappUrl = `https://wa.me/${patient.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-                                    window.open(whatsappUrl, '_blank');
-                                    
-                                    // Show detailed instructions
-                                    toast.success(
-                                      '✅ PDF DOWNLOADED!\n\n📱 WhatsApp opened\n📎 PDF saved in Downloads folder\n\n➡️ NEXT STEP:\nAttach the PDF manually in WhatsApp',
-                                      { duration: 7000 }
-                                    );
-                                  } else {
-                                    toast.error('Failed to generate PDF');
-                                  }
-                                } catch (error) {
-                                  console.error('WhatsApp share error:', error);
-                                  toast.dismiss();
-                                  toast.error('Failed to share via WhatsApp');
-                                }
-                              }}
-                              title="Share Lab Reports PDF via WhatsApp"
-                            >
-                              <Share2 size={14} />
-                            </button>
-                          </div>
+                          <CheckCircle size={16} color="#10B981" title="PDF generated" />
                         ) : (
                           <span style={{ fontSize: '0.7rem', color: '#999' }}>—</span>
                         )}
                       </td>
                       
-                      {/* Invoice Column - with Share */}
+                      {/* Invoice Column */}
                       <td className="text-center" data-label="Invoice">
                         {visit.invoiceGenerated ? (
-                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                            <button 
-                              className="icon-btn-success" 
-                              onClick={async () => {
-                                try {
-                                  let signingTechnician = null;
-                                  if (visit.signing_technician_id) {
-                                    const technicians = getTechnicians();
-                                    signingTechnician = technicians.find(t => t.technicianId === visit.signing_technician_id);
-                                  }
-                                  const allProfiles = getProfiles();
-                                  const visitData = { ...visit, patient, signingTechnician };
-                                  
-                                  const result = await generateCombinedInvoice(visitData, allProfiles, { download: true, print: false });
-                                  if (result.success) {
-                                    toast.success('✅ Invoice downloaded!');
-                                  }
-                                } catch (error) {
-                                  toast.error('Failed to generate invoice');
-                                }
-                              }} 
-                              title="Re-Print Invoice"
-                            >
-                              <FileText size={14} /> <span style={{ fontSize: '0.65rem', marginLeft: '2px' }}>Re-Print</span>
-                            </button>
-                            <button
-                              className="icon-btn-success"
-                              onClick={async () => {
-                                try {
-                                  // Reload latest data
-                                  const latestVisit = getVisitById(visit.visitId);
-                                  if (!latestVisit) {
-                                    toast.error('❌ Visit not found!');
-                                    return;
-                                  }
-                                  
-                                  // Check if invoice was actually generated
-                                  if (!latestVisit.invoiceGenerated) {
-                                    toast.error('❌ Invoice must be generated first!');
-                                    return;
-                                  }
-                                  
-                                  let signingTechnician = null;
-                                  if (latestVisit.signing_technician_id) {
-                                    const technicians = getTechnicians();
-                                    signingTechnician = technicians.find(t => t.technicianId === latestVisit.signing_technician_id);
-                                  }
-                                  const allProfiles = getProfiles();
-                                  const visitData = { ...latestVisit, patient, signingTechnician };
-                                  
-                                  toast.loading('📥 Generating Invoice for WhatsApp...');
-                                  const result = await generateCombinedInvoice(visitData, allProfiles, { download: true, print: false });
-                                  
-                                  toast.dismiss();
-                                  
-                                  if (result && result.success) {
-                                    const amount = latestVisit.finalAmount || latestVisit.totalAmount || 0;
-                                    const message = `Invoice for ${patient.name}\nVisit ID: ${visit.visitId}\nAmount: ₹${amount.toFixed(2)}`;
-                                    const whatsappUrl = `https://wa.me/${patient.phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-                                    window.open(whatsappUrl, '_blank');
-                                    
-                                    // Show detailed instructions
-                                    toast.success(
-                                      '✅ INVOICE DOWNLOADED!\n\n📱 WhatsApp opened\n📎 Invoice saved in Downloads folder\n\n➡️ NEXT STEP:\nAttach the Invoice PDF manually in WhatsApp',
-                                      { duration: 7000 }
-                                    );
-                                  } else {
-                                    toast.error('Failed to generate Invoice');
-                                  }
-                                } catch (error) {
-                                  console.error('WhatsApp share error:', error);
-                                  toast.dismiss();
-                                  toast.error('Failed to share via WhatsApp');
-                                }
-                              }}
-                              title="Share Invoice via WhatsApp"
-                            >
-                              <Share2 size={14} />
-                            </button>
-                          </div>
+                          <CheckCircle size={16} color="#10B981" title="Invoice generated" />
                         ) : (
                           <span style={{ fontSize: '0.7rem', color: '#999' }}>—</span>
                         )}
